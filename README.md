@@ -45,11 +45,16 @@ identity and layout while sharing storage. Numerical operations allocate new,
 contiguous storage. `reshape` shares storage only when its input is contiguous;
 otherwise it materializes logical element order first.
 
+`Shape` is a validated value type that owns extent validation, checked element
+counts, broadcasting, reduction-shape inference, and reshape compatibility.
+`Layout` builds on it by owning stride- and offset-aware view transformations
+such as transpose, slice, reshape, and internal broadcasting.
+
 The implementation is divided into four boundaries:
 
-- `src/core`: storage, layout invariants, and private tensor state.
+- `src/core`: shape algebra, storage, layout invariants, and private tensor state.
 - `src/kernels`: non-owning read/write arguments and scalar strided kernels.
-- `src/ops`: validation, output construction, view logic, and gradient rules.
+- `src/ops`: public orchestration, output construction, and gradient rules.
 - `src/autograd`: graph nodes, reverse-topological traversal, and accumulation.
 
 Kernels do not inspect autograd state. Autograd nodes point only toward parents,

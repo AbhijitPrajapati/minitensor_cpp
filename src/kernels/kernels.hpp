@@ -28,9 +28,13 @@ namespace minitensor::detail
 
     struct BroadcastPlan final
     {
-        Shape output_shape;
-        Strides lhs_strides;
-        Strides rhs_strides;
+        Layout lhs_layout;
+        Layout rhs_layout;
+
+        [[nodiscard]] const Shape &output_shape() const noexcept
+        {
+            return lhs_layout.shape();
+        }
     };
 
     [[nodiscard]] BroadcastPlan make_broadcast_plan(

@@ -41,11 +41,6 @@ namespace minitensor::detail
 
     } // namespace
 
-    Index checked_numel(const Shape &shape)
-    {
-        return std::accumulate(shape.begin(), shape.end(), Index{1}, checked_multiply);
-    }
-
     Layout Layout::contiguous(Shape shape, const Index offset)
     {
         Strides strides(shape.size());
@@ -57,8 +52,7 @@ namespace minitensor::detail
     Layout::Layout(Shape shape, Strides strides, const Index offset)
         : shape_(std::move(shape)),
           strides_(std::move(strides)),
-          offset_(offset),
-          numel_(checked_numel(shape_))
+          offset_(offset)
     {
         if (shape_.size() != strides_.size())
         {
@@ -74,12 +68,12 @@ namespace minitensor::detail
     const Shape &Layout::shape() const noexcept { return shape_; }
     const Strides &Layout::strides() const noexcept { return strides_; }
     Index Layout::offset() const noexcept { return offset_; }
-    Index Layout::rank() const noexcept { return static_cast<Index>(shape_.size()); }
-    Index Layout::numel() const noexcept { return numel_; }
+    Index Layout::rank() const noexcept { return shape_.rank(); }
+    Index Layout::numel() const noexcept { return shape_.numel(); }
 
     bool Layout::is_contiguous() const noexcept
     {
-        if (numel_ == 0)
+        if (numel() == 0)
         {
             return true;
         }
@@ -103,7 +97,7 @@ namespace minitensor::detail
 
     Index Layout::maximum_offset() const
     {
-        if (numel_ == 0)
+        if (numel() == 0)
         {
             return offset_;
         }
@@ -119,9 +113,84 @@ namespace minitensor::detail
             });
     }
 
+    Layout Layout::transposed(const Index dim0, const Index dim1) const
+    {
+        auto result_shape = shape_.transposed(dim0, dim1);
+        auto result_strides = strides_;
+        std::swap(
+            result_strides[static_cast<std::size_t>(dim0)],
+            result_strides[static_cast<std::size_t>(dim1)]);
+        return Layout(std::move(result_shape), std::move(result_strides), offset_);
+    }
+
+    Layout Layout::sliced(
+        const Index dim,
+        const Index start,
+        const Index stop,
+        const Index step) const
+    {
+        shape_.require_axis(dim, "slice");
+        if (step <= 0)
+        {
+            throw std::invalid_argument("slice step must be positive");
+        }
+
+        const auto dimension = static_cast<std::size_t>(dim);
+        if (start < 0 || stop < 0 || start > stop || stop > shape_[dimension])
+        {
+            throw std::out_of_range("slice bounds are outside the selected dimension");
+        }
+
+        const auto span = stop - start;
+        const auto slice_extent = span == 0 ? Index{0} : 1 + (span - 1) / step;
+        auto result_shape = shape_.with_extent(dim, slice_extent);
+        auto result_strides = strides_;
+        result_strides[dimension] = checked_multiply(result_strides[dimension], step);
+
+        auto result_offset = offset_;
+        if (span != 0)
+        {
+            Coordinates first_coordinates(shape_.size(), 0);
+            first_coordinates[dimension] = start;
+            result_offset = offset_from_coordinates(first_coordinates);
+        }
+        return Layout(std::move(result_shape), std::move(result_strides), result_offset);
+    }
+
+    Layout Layout::reshaped(Shape shape) const
+    {
+        shape_.require_reshape_compatible(shape);
+        if (!is_contiguous())
+        {
+            throw std::logic_error("reshape view requires a contiguous layout");
+        }
+        return Layout::contiguous(std::move(shape), offset_);
+    }
+
+    Layout Layout::broadcast_to(const Shape &shape) const
+    {
+        if (!shape_.is_broadcastable_to(shape))
+        {
+            throw std::invalid_argument("cannot broadcast layout to requested shape");
+        }
+
+        Strides result_strides(shape.size(), 0);
+        const auto rank_difference = shape.rank() - rank();
+        for (Index dim = rank_difference; dim < shape.rank(); ++dim)
+        {
+            const auto result_index = static_cast<std::size_t>(dim);
+            const auto source_index = static_cast<std::size_t>(dim - rank_difference);
+            if (shape_[source_index] == shape[result_index])
+            {
+                result_strides[result_index] = strides_[source_index];
+            }
+        }
+        return Layout(shape, std::move(result_strides), offset_);
+    }
+
     Coordinates Layout::coordinates_from_linear(Index linear) const
     {
-        if (linear < 0 || linear >= numel_)
+        if (linear < 0 || linear >= numel())
         {
             throw std::out_of_range("linear tensor index is outside the layout");
         }

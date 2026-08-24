@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <ranges>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace minitensor::detail
@@ -40,18 +40,6 @@ namespace minitensor::detail
                 throw std::out_of_range("kernel write is outside tensor storage");
             }
             return storage[index];
-        }
-
-        // Returns a value from a virtually left-padded shape or stride vector.
-        Index get_padded(
-            const std::vector<Index> &values,
-            const Index index,
-            const Index padding_value,
-            const Index rank_difference)
-        {
-            return index < rank_difference
-                       ? padding_value
-                       : values[as_size(index - rank_difference)];
         }
 
         void require_same_shape(const Layout &lhs, const Layout &rhs, const char *operation)
@@ -107,35 +95,10 @@ namespace minitensor::detail
 
     BroadcastPlan make_broadcast_plan(const Layout &lhs, const Layout &rhs)
     {
-        const Index output_rank = std::max(lhs.rank(), rhs.rank());
-        BroadcastPlan plan{
-            Shape(as_size(output_rank), 1),
-            Strides(as_size(output_rank), 0),
-            Strides(as_size(output_rank), 0)};
-
-        const Index lhs_difference = output_rank - lhs.rank();
-        const Index rhs_difference = output_rank - rhs.rank();
-
-        for (const Index dim : std::views::iota(Index{0}, output_rank))
-        {
-            const Index lhs_extent = get_padded(lhs.shape(), dim, 1, lhs_difference);
-            const Index rhs_extent = get_padded(rhs.shape(), dim, 1, rhs_difference);
-            if (lhs_extent != rhs_extent && lhs_extent != 1 && rhs_extent != 1)
-            {
-                throw std::invalid_argument("tensor shapes are not broadcast-compatible");
-            }
-
-            const Index output_extent = lhs_extent == 1 ? rhs_extent : lhs_extent;
-            const auto index = as_size(dim);
-            plan.output_shape[index] = output_extent;
-            plan.lhs_strides[index] = lhs_extent == output_extent
-                                          ? get_padded(lhs.strides(), dim, 0, lhs_difference)
-                                          : 0;
-            plan.rhs_strides[index] = rhs_extent == output_extent
-                                          ? get_padded(rhs.strides(), dim, 0, rhs_difference)
-                                          : 0;
-        }
-        return plan;
+        auto output_shape = lhs.shape().broadcast_with(rhs.shape());
+        auto lhs_layout = lhs.broadcast_to(output_shape);
+        auto rhs_layout = rhs.broadcast_to(output_shape);
+        return BroadcastPlan{std::move(lhs_layout), std::move(rhs_layout)};
     }
 
     void fill(const WriteTensorArg output, const float value)
@@ -166,18 +129,16 @@ namespace minitensor::detail
         const BroadcastPlan &plan,
         const BinaryKernel operation)
     {
-        if (output.layout.shape() != plan.output_shape)
+        if (output.layout.shape() != plan.output_shape())
         {
             throw std::logic_error("binary kernel output shape does not match broadcast plan");
         }
 
-        const Layout broadcast_lhs(plan.output_shape, plan.lhs_strides, lhs.layout.offset());
-        const Layout broadcast_rhs(plan.output_shape, plan.rhs_strides, rhs.layout.offset());
         for (Index linear = 0; linear < output.layout.numel(); ++linear)
         {
             const auto coordinates = output.layout.coordinates_from_linear(linear);
-            const auto lhs_offset = broadcast_lhs.offset_from_coordinates(coordinates);
-            const auto rhs_offset = broadcast_rhs.offset_from_coordinates(coordinates);
+            const auto lhs_offset = plan.lhs_layout.offset_from_coordinates(coordinates);
+            const auto rhs_offset = plan.rhs_layout.offset_from_coordinates(coordinates);
             const auto output_offset = output.layout.offset_from_coordinates(coordinates);
             write_at(output.storage, output_offset) = apply_binary(
                 read_at(lhs.storage, lhs_offset), read_at(rhs.storage, rhs_offset), operation);
@@ -286,20 +247,11 @@ namespace minitensor::detail
 
     void sum_to_shape(const ReadTensorArg input, const WriteTensorArg output)
     {
-        if (output.layout.rank() > input.layout.rank())
+        if (!output.layout.shape().is_broadcastable_to(input.layout.shape()))
         {
-            throw std::invalid_argument("cannot sum a gradient to a higher-rank shape");
+            throw std::invalid_argument("gradient cannot be summed to requested shape");
         }
         const Index rank_difference = input.layout.rank() - output.layout.rank();
-        for (Index dim = 0; dim < output.layout.rank(); ++dim)
-        {
-            const auto input_extent = input.layout.shape()[as_size(rank_difference + dim)];
-            const auto output_extent = output.layout.shape()[as_size(dim)];
-            if (output_extent != 1 && output_extent != input_extent)
-            {
-                throw std::invalid_argument("gradient cannot be summed to requested shape");
-            }
-        }
 
         fill(output, 0.0F);
         for (Index linear = 0; linear < input.layout.numel(); ++linear)

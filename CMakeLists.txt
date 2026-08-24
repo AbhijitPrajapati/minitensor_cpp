@@ -13,6 +13,7 @@ target_sources(
         src/autograd/engine.cpp
         src/autograd/node.cpp
         src/core/layout.cpp
+        src/core/shape.cpp
         src/core/storage.cpp
         src/core/tensor_access.cpp
         src/core/tensor_impl.cpp
@@ -63,7 +64,7 @@ if(BUILD_TESTING)
     # Add test w/ command to run
     add_test(NAME minitensor_tests COMMAND minitensor_tests)
 
-    # Internal unit tests exercise Layout's validated coordinate conversions.
+    # Internal geometry tests exercise Shape invariants and Layout transformations.
     add_executable(minitensor_layout_tests tests/layout_test.cpp)
     target_link_libraries(minitensor_layout_tests PRIVATE minitensor)
     target_include_directories(

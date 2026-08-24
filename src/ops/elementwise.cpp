@@ -27,7 +27,7 @@ namespace minitensor
                 detail::read_arg(lhs).layout,
                 detail::read_arg(rhs).layout);
             const bool needs_grad = lhs.requires_grad() || rhs.requires_grad();
-            auto result = detail::make_contiguous_tensor(plan.output_shape, needs_grad);
+            auto result = detail::make_contiguous_tensor(plan.output_shape(), needs_grad);
             detail::binary(
                 detail::read_arg(lhs),
                 detail::read_arg(rhs),
