@@ -27,4 +27,6 @@ namespace minitensor
     [[nodiscard]] Tensor sigmoid(const Tensor &input);
     [[nodiscard]] Tensor tanh(const Tensor &input);
 
+    [[nodiscard]] Tensor sum(const Tensor &tensor, std::optional<Index> dim = std::nullopt, bool keepdim = false);
+
 } // namespace minitensor

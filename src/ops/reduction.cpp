@@ -10,11 +10,9 @@
 namespace minitensor
 {
 
-    Tensor Tensor::sum(
-        const std::optional<Index> dim,
-        const bool keepdim) const
+    Tensor sum(const Tensor &tensor, const std::optional<Index> dim, const bool keepdim)
     {
-        if (dim.has_value() && (*dim < 0 || *dim >= rank()))
+        if (dim.has_value() && (*dim < 0 || *dim >= tensor.rank()))
         {
             throw std::out_of_range("sum dimension is out of range");
         }
@@ -24,12 +22,12 @@ namespace minitensor
         {
             if (keepdim)
             {
-                output_shape.assign(static_cast<std::size_t>(rank()), 1);
+                output_shape.assign(static_cast<std::size_t>(tensor.rank()), 1);
             }
         }
         else
         {
-            output_shape = shape();
+            output_shape = tensor.shape();
             if (keepdim)
             {
                 output_shape[static_cast<std::size_t>(*dim)] = 1;
@@ -40,16 +38,16 @@ namespace minitensor
             }
         }
 
-        auto result = detail::make_contiguous_tensor(output_shape, requires_grad());
-        detail::reduce_sum(detail::read_arg(*this), detail::write_arg(result), dim, keepdim);
+        auto result = detail::make_contiguous_tensor(output_shape, tensor.requires_grad());
+        detail::reduce_sum(detail::read_arg(tensor), detail::write_arg(result), dim, keepdim);
 
-        if (requires_grad())
+        if (tensor.requires_grad())
         {
-            const auto input_shape = shape();
+            const auto input_shape = tensor.shape();
             detail::set_history(
                 result,
                 "sum",
-                {*this},
+                {tensor},
                 [input_shape, dim, keepdim](const Tensor &gradient)
                 {
                     auto broadcastable = gradient.detach();

@@ -63,9 +63,9 @@ namespace minitensor
         [[nodiscard]] Tensor detach() const;
 
         // Reduces every element if no dimension is provided
-        [[nodiscard]] Tensor sum(
-            std::optional<Index> dim = std::nullopt,
-            bool keepdim = false) const;
+        // [[nodiscard]] Tensor sum(
+        //     std::optional<Index> dim = std::nullopt,
+        //     bool keepdim = false) const;
 
         [[nodiscard]] std::optional<Tensor> grad() const;
         void backward() const;

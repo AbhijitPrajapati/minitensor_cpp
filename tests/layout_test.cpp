@@ -5,36 +5,46 @@
 #include <stdexcept>
 #include <string>
 
-namespace {
+namespace
+{
 
-using minitensor::Coordinates;
-using minitensor::Shape;
-using minitensor::Strides;
-using minitensor::detail::Layout;
+    using minitensor::Coordinates;
+    using minitensor::Shape;
+    using minitensor::Strides;
+    using minitensor::detail::Layout;
 
-int failures = 0;
+    int failures = 0;
 
-void expect(const bool condition, const std::string& message) {
-    if (!condition) {
-        ++failures;
-        std::cerr << "FAIL: " << message << '\n';
+    void expect(const bool condition, const std::string &message)
+    {
+        if (!condition)
+        {
+            ++failures;
+            std::cerr << "FAIL: " << message << '\n';
+        }
     }
-}
 
-template <typename Exception>
-void expect_throws(const std::function<void()>& action, const std::string& message) {
-    try {
-        action();
-        expect(false, message + " (no exception was thrown)");
-    } catch (const Exception&) {
-    } catch (...) {
-        expect(false, message + " (wrong exception type)");
+    template <typename Exception>
+    void expect_throws(const std::function<void()> &action, const std::string &message)
+    {
+        try
+        {
+            action();
+            expect(false, message + " (no exception was thrown)");
+        }
+        catch (const Exception &)
+        {
+        }
+        catch (...)
+        {
+            expect(false, message + " (wrong exception type)");
+        }
     }
-}
 
 } // namespace
 
-int main() {
+int main()
+{
     const auto contiguous = Layout::contiguous(Shape{2, 3}, 3);
     expect(
         contiguous.coordinates_from_linear(4) == Coordinates{1, 1},
@@ -56,28 +66,35 @@ int main() {
     expect(scalar.offset_from_coordinates(Coordinates{}) == 5, "scalar uses its base offset");
 
     expect_throws<std::out_of_range>(
-        [&] { static_cast<void>(contiguous.coordinates_from_linear(-1)); },
+        [&]
+        { static_cast<void>(contiguous.coordinates_from_linear(-1)); },
         "negative linear ordinals are rejected");
     expect_throws<std::out_of_range>(
-        [&] { static_cast<void>(contiguous.coordinates_from_linear(6)); },
+        [&]
+        { static_cast<void>(contiguous.coordinates_from_linear(6)); },
         "linear ordinals beyond numel are rejected");
     expect_throws<std::invalid_argument>(
-        [&] { static_cast<void>(contiguous.offset_from_coordinates(Coordinates{1})); },
+        [&]
+        { static_cast<void>(contiguous.offset_from_coordinates(Coordinates{1})); },
         "coordinate rank is validated");
     expect_throws<std::out_of_range>(
-        [&] { static_cast<void>(contiguous.offset_from_coordinates(Coordinates{-1, 0})); },
+        [&]
+        { static_cast<void>(contiguous.offset_from_coordinates(Coordinates{-1, 0})); },
         "negative coordinates are rejected");
     expect_throws<std::out_of_range>(
-        [&] { static_cast<void>(contiguous.offset_from_coordinates(Coordinates{2, 0})); },
+        [&]
+        { static_cast<void>(contiguous.offset_from_coordinates(Coordinates{2, 0})); },
         "coordinates beyond an extent are rejected");
     expect_throws<std::out_of_range>(
-        [] {
+        []
+        {
             const auto empty = Layout::contiguous(Shape{0, 3});
             static_cast<void>(empty.coordinates_from_linear(0));
         },
         "empty layouts have no valid linear ordinal");
 
-    if (failures != 0) {
+    if (failures != 0)
+    {
         std::cerr << failures << " layout test(s) failed\n";
         return 1;
     }

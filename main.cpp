@@ -3,7 +3,8 @@
 #include <iostream>
 #include <vector>
 
-int main() {
+int main()
+{
     using minitensor::Shape;
     using minitensor::Tensor;
 
@@ -14,12 +15,13 @@ int main() {
     const auto weights = Tensor::from_data(
         std::vector<float>{0.5F, 1.0F, 1.5F}, Shape{3});
 
-    const auto loss = minitensor::relu(features * weights).sum();
+    const auto loss = minitensor::sum(minitensor::relu(features * weights));
     loss.backward();
 
     std::cout << "loss = " << loss.item() << '\n';
     std::cout << "feature gradient:";
-    for (const auto value : features.grad()->to_vector()) {
+    for (const auto value : features.grad()->to_vector())
+    {
         std::cout << ' ' << value;
     }
     std::cout << '\n';
