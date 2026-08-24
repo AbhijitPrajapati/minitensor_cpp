@@ -2,8 +2,9 @@
 
 #include "minitensor/tensor.hpp"
 
-namespace minitensor::detail {
+namespace minitensor::detail
+{
 
-void run_backward(const Tensor& root, const Tensor& gradient);
+    void run_backward(const Tensor &root, const Tensor &gradient);
 
 } // namespace minitensor::detail
