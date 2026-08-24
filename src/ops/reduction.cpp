@@ -2,6 +2,7 @@
 
 #include "autograd/node.hpp"
 #include "ops/operation_utils.hpp"
+#include "core/shape.hpp"
 
 #include <optional>
 #include <utility>
@@ -11,7 +12,7 @@ namespace minitensor
 
     Tensor sum(const Tensor &tensor, const std::optional<Index> dim, const bool keepdim)
     {
-        const auto output_shape = tensor.shape().reduced(dim, keepdim);
+        const auto output_shape = detail::reduce_shape(tensor.shape(), dim, keepdim);
         auto result = detail::make_contiguous_tensor(output_shape, tensor.requires_grad());
         detail::reduce_sum(detail::read_arg(tensor), detail::write_arg(result), dim, keepdim);
 
@@ -27,7 +28,7 @@ namespace minitensor
                     auto broadcastable = gradient.detach();
                     if (dim.has_value() && !keepdim)
                     {
-                        auto expanded_shape = gradient.shape().with_inserted_axis(*dim);
+                        auto expanded_shape = detail::insert_shape_axis(gradient.shape(), *dim);
                         broadcastable = gradient.reshape(std::move(expanded_shape));
                     }
                     auto expanded = Tensor::ones(input_shape) * broadcastable;

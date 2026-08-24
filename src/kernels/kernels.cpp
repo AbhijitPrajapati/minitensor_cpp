@@ -1,4 +1,5 @@
 #include "kernels/kernels.hpp"
+#include "core/shape.hpp"
 
 #include <algorithm>
 #include <array>
@@ -95,7 +96,7 @@ namespace minitensor::detail
 
     BroadcastPlan make_broadcast_plan(const Layout &lhs, const Layout &rhs)
     {
-        auto output_shape = lhs.shape().broadcast_with(rhs.shape());
+        auto output_shape = broadcast_shapes(lhs.shape(), rhs.shape());
         auto lhs_layout = lhs.broadcast_to(output_shape);
         auto rhs_layout = rhs.broadcast_to(output_shape);
         return BroadcastPlan{std::move(lhs_layout), std::move(rhs_layout)};
@@ -105,7 +106,7 @@ namespace minitensor::detail
     {
         for (Index linear = 0; linear < output.layout.numel(); ++linear)
         {
-            const auto coordinates = output.layout.coordinates_from_linear(linear);
+            const auto coordinates = coordinates_from_linear(output.layout.shape(), linear);
             write_at(output.storage, output.layout.offset_from_coordinates(coordinates)) = value;
         }
     }
@@ -115,7 +116,7 @@ namespace minitensor::detail
         require_same_shape(input.layout, output.layout, "copy");
         for (Index linear = 0; linear < input.layout.numel(); ++linear)
         {
-            const auto coordinates = input.layout.coordinates_from_linear(linear);
+            const auto coordinates = coordinates_from_linear(input.layout.shape(), linear);
             const auto input_offset = input.layout.offset_from_coordinates(coordinates);
             const auto output_offset = output.layout.offset_from_coordinates(coordinates);
             write_at(output.storage, output_offset) = read_at(input.storage, input_offset);
@@ -136,7 +137,7 @@ namespace minitensor::detail
 
         for (Index linear = 0; linear < output.layout.numel(); ++linear)
         {
-            const auto coordinates = output.layout.coordinates_from_linear(linear);
+            const auto coordinates = coordinates_from_linear(output.layout.shape(), linear);
             const auto lhs_offset = plan.lhs_layout.offset_from_coordinates(coordinates);
             const auto rhs_offset = plan.rhs_layout.offset_from_coordinates(coordinates);
             const auto output_offset = output.layout.offset_from_coordinates(coordinates);
@@ -153,7 +154,7 @@ namespace minitensor::detail
         require_same_shape(input.layout, output.layout, "unary kernel");
         for (Index linear = 0; linear < input.layout.numel(); ++linear)
         {
-            const auto coordinates = input.layout.coordinates_from_linear(linear);
+            const auto coordinates = coordinates_from_linear(input.layout.shape(), linear);
             const auto input_offset = input.layout.offset_from_coordinates(coordinates);
             const auto output_offset = output.layout.offset_from_coordinates(coordinates);
             write_at(output.storage, output_offset) = apply_unary(
@@ -213,7 +214,7 @@ namespace minitensor::detail
         fill(output, 0.0F);
         for (Index linear = 0; linear < input.layout.numel(); ++linear)
         {
-            const auto input_coordinates = input.layout.coordinates_from_linear(linear);
+            const auto input_coordinates = coordinates_from_linear(input.layout.shape(), linear);
             Coordinates output_coordinates;
             output_coordinates.reserve(as_size(output.layout.rank()));
 
@@ -247,7 +248,8 @@ namespace minitensor::detail
 
     void sum_to_shape(const ReadTensorArg input, const WriteTensorArg output)
     {
-        if (!output.layout.shape().is_broadcastable_to(input.layout.shape()))
+        if (!shape_is_broadcastable_to(output.layout.shape(), input.layout.shape()))
+
         {
             throw std::invalid_argument("gradient cannot be summed to requested shape");
         }
@@ -256,7 +258,7 @@ namespace minitensor::detail
         fill(output, 0.0F);
         for (Index linear = 0; linear < input.layout.numel(); ++linear)
         {
-            const auto input_coordinates = input.layout.coordinates_from_linear(linear);
+            const auto input_coordinates = coordinates_from_linear(input.layout.shape(), linear);
             Coordinates output_coordinates(as_size(output.layout.rank()), 0);
             for (Index dim = 0; dim < output.layout.rank(); ++dim)
             {
@@ -282,7 +284,7 @@ namespace minitensor::detail
         fill(output, 0.0F);
         for (Index linear = 0; linear < gradient.layout.numel(); ++linear)
         {
-            auto coordinates = gradient.layout.coordinates_from_linear(linear);
+            auto coordinates = coordinates_from_linear(gradient.layout.shape(), linear);
             const auto gradient_offset = gradient.layout.offset_from_coordinates(coordinates);
             coordinates[as_size(dim)] = start + coordinates[as_size(dim)] * step;
             const auto output_offset = output.layout.offset_from_coordinates(coordinates);
@@ -299,7 +301,7 @@ namespace minitensor::detail
         require_same_shape(input.layout, output.layout, "relu backward");
         for (Index linear = 0; linear < input.layout.numel(); ++linear)
         {
-            const auto coordinates = input.layout.coordinates_from_linear(linear);
+            const auto coordinates = coordinates_from_linear(input.layout.shape(), linear);
             const auto input_offset = input.layout.offset_from_coordinates(coordinates);
             const auto gradient_offset = gradient.layout.offset_from_coordinates(coordinates);
             const auto output_offset = output.layout.offset_from_coordinates(coordinates);

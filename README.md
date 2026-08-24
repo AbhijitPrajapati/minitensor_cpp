@@ -45,10 +45,12 @@ identity and layout while sharing storage. Numerical operations allocate new,
 contiguous storage. `reshape` shares storage only when its input is contiguous;
 otherwise it materializes logical element order first.
 
-`Shape` is a validated value type that owns extent validation, checked element
-counts, broadcasting, reduction-shape inference, and reshape compatibility.
-`Layout` builds on it by owning stride- and offset-aware view transformations
-such as transpose, slice, reshape, and internal broadcasting.
+`Shape` remains a public `std::vector<Index>` alias for simple construction.
+Private shape-geometry functions validate extents and centralize checked element
+counts, broadcasting, reduction-shape inference, reshape compatibility, and
+logical coordinate conversion. `Layout` builds on that geometry and owns
+stride- and offset-aware view transformations such as transpose, slice, reshape,
+and internal broadcasting.
 
 The implementation is divided into four boundaries:
 

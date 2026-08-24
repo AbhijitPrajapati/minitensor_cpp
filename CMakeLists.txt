@@ -64,7 +64,7 @@ if(BUILD_TESTING)
     # Add test w/ command to run
     add_test(NAME minitensor_tests COMMAND minitensor_tests)
 
-    # Internal geometry tests exercise Shape invariants and Layout transformations.
+    # Internal geometry tests exercise shape validation and Layout transformations.
     add_executable(minitensor_layout_tests tests/layout_test.cpp)
     target_link_libraries(minitensor_layout_tests PRIVATE minitensor)
     target_include_directories(

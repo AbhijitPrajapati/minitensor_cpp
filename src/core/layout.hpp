@@ -30,10 +30,6 @@ namespace minitensor::detail
         [[nodiscard]] Layout reshaped(Shape shape) const;
         [[nodiscard]] Layout broadcast_to(const Shape &shape) const;
 
-        // Converts a logical row-major ordinal to coordinates in this layout's
-        // shape. The layout's physical strides do not affect this conversion.
-        [[nodiscard]] Coordinates coordinates_from_linear(Index linear) const;
-
         // Converts validated logical coordinates into an index in the underlying
         // storage, accounting for this layout's strides and base offset.
         [[nodiscard]] Index offset_from_coordinates(std::span<const Index> coordinates) const;
@@ -42,6 +38,7 @@ namespace minitensor::detail
         Shape shape_;
         Strides strides_;
         Index offset_{0};
+        Index numel_{0};
     };
 
 } // namespace minitensor::detail

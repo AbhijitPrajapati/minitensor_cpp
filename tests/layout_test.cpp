@@ -1,4 +1,5 @@
 #include "core/layout.hpp"
+#include "core/shape.hpp"
 
 #include <functional>
 #include <iostream>
@@ -13,6 +14,12 @@ namespace
     using minitensor::Shape;
     using minitensor::Strides;
     using minitensor::detail::Layout;
+    using minitensor::detail::broadcast_shapes;
+    using minitensor::detail::coordinates_from_linear;
+    using minitensor::detail::is_reshape_compatible;
+    using minitensor::detail::reduce_shape;
+    using minitensor::detail::shape_is_broadcastable_to;
+    using minitensor::detail::shape_numel;
 
     int failures = 0;
 
@@ -47,36 +54,34 @@ namespace
 int main()
 {
     const Shape matrix_shape{2, 3};
-    expect(matrix_shape.rank() == 2, "shape owns its rank");
-    expect(matrix_shape.numel() == 6, "shape owns its checked element count");
-    expect(Shape{}.numel() == 1, "rank-zero shape represents one scalar element");
+    expect(shape_numel(matrix_shape) == 6, "shape element count is correct");
+    expect(shape_numel(Shape{}) == 1, "rank-zero shape represents one scalar element");
     expect(
-        Shape{2, 1, 3}.broadcast_with(Shape{4, 3}) == Shape{2, 4, 3},
+        broadcast_shapes(Shape{2, 1, 3}, Shape{4, 3}) == Shape{2, 4, 3},
         "shape infers a trailing-dimension broadcast result");
     expect(
-        Shape{3}.is_broadcastable_to(Shape{2, 3}),
-        "shape recognizes a valid broadcast target");
+        shape_is_broadcastable_to(Shape{3}, Shape{2, 3}), "shape recognizes a valid broadcast target");
     expect(
-        matrix_shape.reduced(1, true) == Shape{2, 1},
+        reduce_shape(matrix_shape, 1, true) == Shape{2, 1},
         "shape infers a kept reduction dimension");
     expect(
-        matrix_shape.reduced(0, false) == Shape{3},
+        reduce_shape(matrix_shape, 0, false) == Shape{3},
         "shape infers a removed reduction dimension");
     expect(
-        matrix_shape.is_reshape_compatible_with(Shape{3, 2}),
+        is_reshape_compatible(matrix_shape, Shape{3, 2}),
         "shape recognizes reshape compatibility");
     expect_throws<std::invalid_argument>(
         []
-        { static_cast<void>(Shape{2, -1}); },
-        "shape rejects negative extents at construction");
+        { static_cast<void>(shape_numel(Shape{2, -1})); },
+        "shape geometry rejects negative extents");
     expect_throws<std::overflow_error>(
         []
-        { static_cast<void>(Shape{std::numeric_limits<minitensor::Index>::max(), 2}); },
-        "shape rejects overflowing element counts at construction");
+        { static_cast<void>(shape_numel(Shape{std::numeric_limits<minitensor::Index>::max(), 2})); },
+        "shape geometry rejects overflowing element counts");
 
     const auto contiguous = Layout::contiguous(Shape{2, 3}, 3);
     expect(
-        contiguous.coordinates_from_linear(4) == Coordinates{1, 1},
+        coordinates_from_linear(contiguous.shape(), 4) == Coordinates{1, 1},
         "linear ordinal converts to row-major coordinates");
     expect(
         contiguous.offset_from_coordinates(Coordinates{1, 1}) == 7,
@@ -120,23 +125,23 @@ int main()
 
     const Layout transposed(Shape{3, 2}, Strides{1, 3}, 2);
     expect(
-        transposed.coordinates_from_linear(3) == Coordinates{1, 1},
+        coordinates_from_linear(transposed.shape(), 3) == Coordinates{1, 1},
         "linear conversion depends on shape, not physical strides");
     expect(
         transposed.offset_from_coordinates(Coordinates{1, 1}) == 6,
         "offset conversion honors non-contiguous strides");
 
     const auto scalar = Layout::contiguous(Shape{}, 5);
-    expect(scalar.coordinates_from_linear(0).empty(), "scalar coordinate is rank zero");
+    expect(coordinates_from_linear(scalar.shape(), 0).empty(), "scalar coordinate is rank zero");
     expect(scalar.offset_from_coordinates(Coordinates{}) == 5, "scalar uses its base offset");
 
     expect_throws<std::out_of_range>(
         [&]
-        { static_cast<void>(contiguous.coordinates_from_linear(-1)); },
+        { static_cast<void>(coordinates_from_linear(contiguous.shape(), -1)); },
         "negative linear ordinals are rejected");
     expect_throws<std::out_of_range>(
         [&]
-        { static_cast<void>(contiguous.coordinates_from_linear(6)); },
+        { static_cast<void>(coordinates_from_linear(contiguous.shape(), 6)); },
         "linear ordinals beyond numel are rejected");
     expect_throws<std::invalid_argument>(
         [&]
@@ -154,7 +159,7 @@ int main()
         []
         {
             const auto empty = Layout::contiguous(Shape{0, 3});
-            static_cast<void>(empty.coordinates_from_linear(0));
+            static_cast<void>(coordinates_from_linear(empty.shape(), 0));
         },
         "empty layouts have no valid linear ordinal");
 
