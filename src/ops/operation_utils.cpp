@@ -46,10 +46,13 @@ namespace minitensor::detail
         const Shape &input_shape,
         const Index dim,
         const Index start,
+        const Index stop,
         const Index step)
     {
         auto result = make_contiguous_tensor(input_shape, false);
-        slice_scatter(read_arg(gradient), write_arg(result), dim, start, step);
+        const auto result_view = write_arg(result);
+        const auto destination_layout = result_view.layout.sliced(dim, start, stop, step);
+        copy(read_arg(gradient), WriteTensorArg{result_view.storage, destination_layout});
         return result;
     }
 

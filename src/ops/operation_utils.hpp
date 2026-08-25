@@ -22,6 +22,7 @@ namespace minitensor::detail
         const Shape &input_shape,
         Index dim,
         Index start,
+        Index stop,
         Index step);
     [[nodiscard]] Tensor relu_gradient(const Tensor &input, const Tensor &gradient);
 

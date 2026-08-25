@@ -75,7 +75,7 @@ if(BUILD_TESTING)
     )
     add_test(NAME minitensor_layout_tests COMMAND minitensor_layout_tests)
 
-    # Kernel iteration tests exercise coordinated elementwise and reduction traversal.
+    # Kernel iteration tests exercise elementwise, reduction, and contraction traversal.
     add_executable(minitensor_iteration_tests tests/iteration_test.cpp)
     target_link_libraries(minitensor_iteration_tests PRIVATE minitensor)
     target_include_directories(

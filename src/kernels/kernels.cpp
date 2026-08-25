@@ -1,13 +1,10 @@
 #include "kernels/kernels.hpp"
-#include "core/shape.hpp"
 #include "kernels/iteration.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 namespace minitensor::detail
 {
@@ -151,42 +148,14 @@ namespace minitensor::detail
         const ReadTensorArg rhs,
         const WriteTensorArg output)
     {
-        if (lhs.layout.rank() != 2 || rhs.layout.rank() != 2 || output.layout.rank() != 2)
-        {
-            throw std::invalid_argument("matmul requires rank-2 tensors");
-        }
-        if (lhs.layout.shape()[1] != rhs.layout.shape()[0])
-        {
-            throw std::invalid_argument("matmul inner dimensions do not match");
-        }
-        if (output.layout.shape() != Shape{lhs.layout.shape()[0], rhs.layout.shape()[1]})
-        {
-            throw std::logic_error("matmul output has the wrong shape");
-        }
-
-        const Index rows = lhs.layout.shape()[0];
-        const Index inner = lhs.layout.shape()[1];
-        const Index columns = rhs.layout.shape()[1];
-        for (Index row = 0; row < rows; ++row)
-        {
-            for (Index column = 0; column < columns; ++column)
+        const MatrixMultiplyPlan plan(lhs.layout, rhs.layout, output.layout);
+        fill(output, 0.0F);
+        plan.for_each(
+            [&](const Index output_offset, const Index lhs_offset, const Index rhs_offset)
             {
-                float value = 0.0F;
-                for (Index k = 0; k < inner; ++k)
-                {
-                    const std::array<Index, 2> lhs_coordinates{row, k};
-                    const std::array<Index, 2> rhs_coordinates{k, column};
-                    value += read_at(
-                                 lhs.storage, lhs.layout.offset_from_coordinates(lhs_coordinates)) *
-                             read_at(
-                                 rhs.storage, rhs.layout.offset_from_coordinates(rhs_coordinates));
-                }
-                const std::array<Index, 2> output_coordinates{row, column};
-                write_at(
-                    output.storage,
-                    output.layout.offset_from_coordinates(output_coordinates)) = value;
-            }
-        }
+                write_at(output.storage, output_offset) +=
+                    read_at(lhs.storage, lhs_offset) * read_at(rhs.storage, rhs_offset);
+            });
     }
 
     void reduce_sum(
@@ -213,24 +182,6 @@ namespace minitensor::detail
             {
                 write_at(output.storage, output_offset) += read_at(input.storage, input_offset);
             });
-    }
-
-    void slice_scatter(
-        const ReadTensorArg gradient,
-        const WriteTensorArg output,
-        const Index dim,
-        const Index start,
-        const Index step)
-    {
-        fill(output, 0.0F);
-        for (Index linear = 0; linear < gradient.layout.numel(); ++linear)
-        {
-            auto coordinates = coordinates_from_linear(gradient.layout.shape(), linear);
-            const auto gradient_offset = gradient.layout.offset_from_coordinates(coordinates);
-            coordinates[as_size(dim)] = start + coordinates[as_size(dim)] * step;
-            const auto output_offset = output.layout.offset_from_coordinates(coordinates);
-            write_at(output.storage, output_offset) += read_at(gradient.storage, gradient_offset);
-        }
     }
 
     void relu_backward(

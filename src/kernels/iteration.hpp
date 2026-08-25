@@ -2,6 +2,7 @@
 
 #include "core/layout.hpp"
 
+#include <array>
 #include <cstddef>
 #include <functional>
 #include <initializer_list>
@@ -136,6 +137,56 @@ namespace minitensor::detail
         Layout input_layout_;
         Layout output_layout_;
         Layout normalized_output_layout_;
+    };
+
+    // Owns the rank-2 contraction geometry used by matrix multiplication.
+    // Numerical multiplication and accumulation remain the kernel's concern.
+    class MatrixMultiplyPlan final
+    {
+    public:
+        MatrixMultiplyPlan(
+            const Layout &lhs,
+            const Layout &rhs,
+            const Layout &output);
+
+        [[nodiscard]] Index rows() const noexcept;
+        [[nodiscard]] Index inner_size() const noexcept;
+        [[nodiscard]] Index columns() const noexcept;
+        [[nodiscard]] const Layout &lhs_layout() const noexcept;
+        [[nodiscard]] const Layout &rhs_layout() const noexcept;
+        [[nodiscard]] const Layout &output_layout() const noexcept;
+
+        template <typename Visitor>
+        void for_each(Visitor &&visitor) const
+        {
+            for (Index row = 0; row < rows_; ++row)
+            {
+                for (Index column = 0; column < columns_; ++column)
+                {
+                    const std::array<Index, 2> output_coordinates{row, column};
+                    const auto output_offset =
+                        output_layout_.offset_from_coordinates(output_coordinates);
+                    for (Index inner = 0; inner < inner_size_; ++inner)
+                    {
+                        const std::array<Index, 2> lhs_coordinates{row, inner};
+                        const std::array<Index, 2> rhs_coordinates{inner, column};
+                        std::invoke(
+                            visitor,
+                            output_offset,
+                            lhs_layout_.offset_from_coordinates(lhs_coordinates),
+                            rhs_layout_.offset_from_coordinates(rhs_coordinates));
+                    }
+                }
+            }
+        }
+
+    private:
+        Layout lhs_layout_;
+        Layout rhs_layout_;
+        Layout output_layout_;
+        Index rows_{0};
+        Index inner_size_{0};
+        Index columns_{0};
     };
 
 } // namespace minitensor::detail

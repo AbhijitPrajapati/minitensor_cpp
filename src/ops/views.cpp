@@ -59,10 +59,10 @@ namespace minitensor
                 result,
                 "slice",
                 {*this},
-                [input_shape, dim, start, step](const Tensor &gradient)
+                [input_shape, dim, start, stop, step](const Tensor &gradient)
                 {
                     return detail::GradList{std::optional<Tensor>{
-                        detail::slice_gradient(gradient, input_shape, dim, start, step)}};
+                        detail::slice_gradient(gradient, input_shape, dim, start, stop, step)}};
                 });
         }
         return result;

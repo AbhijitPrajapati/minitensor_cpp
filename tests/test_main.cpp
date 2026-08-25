@@ -147,6 +147,10 @@ namespace
             minitensor::matmul(lhs.transpose(0, 1), Tensor::ones({2, 1})),
             {5, 7, 9},
             "matmul accepts strided inputs");
+        expect_values(
+            minitensor::matmul(Tensor::zeros({2, 0}), Tensor::zeros({0, 3})),
+            {0, 0, 0, 0, 0, 0},
+            "matmul initializes outputs with an empty contraction dimension");
 
         expect_close(minitensor::sum(tensor).item(), 21.0F, "sum all elements");
         expect_values(minitensor::sum(tensor, 0), {5, 7, 9}, "sum along dimension zero");
@@ -196,6 +200,13 @@ namespace
         auto input = matrix_2x3(true);
         minitensor::sum(input.slice(1, 0, 3, 2)).backward();
         expect_values(*input.grad(), {1, 0, 1, 1, 0, 1}, "slice backward scatters into input shape");
+
+        auto empty_slice_input = matrix_2x3(true);
+        minitensor::sum(empty_slice_input.slice(1, 1, 1, 2)).backward();
+        expect_values(
+            *empty_slice_input.grad(),
+            {0, 0, 0, 0, 0, 0},
+            "empty slice backward preserves a zero destination");
 
         auto transposed_input = matrix_2x3(true);
         const auto weights = Tensor::from_data({1, 2, 3, 4, 5, 6}, Shape{2, 3});

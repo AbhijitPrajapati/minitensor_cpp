@@ -1,5 +1,6 @@
 #include "kernels/iteration.hpp"
 
+#include <array>
 #include <functional>
 #include <iostream>
 #include <optional>
@@ -17,6 +18,7 @@ namespace
     using minitensor::Strides;
     using minitensor::detail::ElementwiseIterator;
     using minitensor::detail::Layout;
+    using minitensor::detail::MatrixMultiplyPlan;
     using minitensor::detail::ReductionIterator;
 
     int failures = 0;
@@ -183,6 +185,43 @@ int main()
                 false));
         },
         "reduction iterator rejects an output shape inconsistent with its axis");
+
+    const MatrixMultiplyPlan matrix_plan(
+        Layout::contiguous(Shape{2, 3}, 2),
+        Layout(Shape{3, 2}, Strides{1, 3}, 10),
+        Layout::contiguous(Shape{2, 2}, 20));
+    expect(
+        matrix_plan.rows() == 2 &&
+            matrix_plan.inner_size() == 3 &&
+            matrix_plan.columns() == 2,
+        "matrix multiplication plan owns its contraction dimensions");
+    expect(
+        matrix_plan.lhs_layout().offset() == 2 &&
+            matrix_plan.rhs_layout().offset() == 10 &&
+            matrix_plan.output_layout().offset() == 20,
+        "matrix multiplication plan owns all operand layouts");
+
+    std::vector<std::array<Index, 3>> matrix_offsets;
+    matrix_plan.for_each(
+        [&](const Index output_offset, const Index lhs_offset, const Index rhs_offset)
+        { matrix_offsets.push_back({output_offset, lhs_offset, rhs_offset}); });
+    expect(matrix_offsets.size() == 12, "matrix plan visits every contraction product");
+    expect(
+        matrix_offsets.front() == std::array<Index, 3>{20, 2, 10} &&
+            matrix_offsets[2] == std::array<Index, 3>{20, 4, 12} &&
+            matrix_offsets[3] == std::array<Index, 3>{21, 2, 13} &&
+            matrix_offsets.back() == std::array<Index, 3>{23, 7, 15},
+        "matrix plan coordinates strided operands with each output bucket");
+
+    expect_throws<std::logic_error>(
+        [&]
+        {
+            static_cast<void>(MatrixMultiplyPlan(
+                Layout::contiguous(Shape{2, 3}),
+                Layout::contiguous(Shape{3, 2}),
+                Layout::contiguous(Shape{2, 3})));
+        },
+        "matrix plan rejects an inconsistent output shape");
 
     if (failures != 0)
     {

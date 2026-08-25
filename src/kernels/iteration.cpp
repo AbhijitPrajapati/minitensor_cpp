@@ -249,4 +249,60 @@ namespace minitensor::detail
                 output.offset())};
     }
 
+    MatrixMultiplyPlan::MatrixMultiplyPlan(
+        const Layout &lhs,
+        const Layout &rhs,
+        const Layout &output)
+        : lhs_layout_(lhs),
+          rhs_layout_(rhs),
+          output_layout_(output)
+    {
+        if (lhs.rank() != 2 || rhs.rank() != 2 || output.rank() != 2)
+        {
+            throw std::invalid_argument("matmul requires rank-2 layouts");
+        }
+        if (lhs.shape()[1] != rhs.shape()[0])
+        {
+            throw std::invalid_argument("matmul inner dimensions do not match");
+        }
+        if (output.shape() != Shape{lhs.shape()[0], rhs.shape()[1]})
+        {
+            throw std::logic_error("matmul output has the wrong shape");
+        }
+
+        rows_ = lhs.shape()[0];
+        inner_size_ = lhs.shape()[1];
+        columns_ = rhs.shape()[1];
+    }
+
+    Index MatrixMultiplyPlan::rows() const noexcept
+    {
+        return rows_;
+    }
+
+    Index MatrixMultiplyPlan::inner_size() const noexcept
+    {
+        return inner_size_;
+    }
+
+    Index MatrixMultiplyPlan::columns() const noexcept
+    {
+        return columns_;
+    }
+
+    const Layout &MatrixMultiplyPlan::lhs_layout() const noexcept
+    {
+        return lhs_layout_;
+    }
+
+    const Layout &MatrixMultiplyPlan::rhs_layout() const noexcept
+    {
+        return rhs_layout_;
+    }
+
+    const Layout &MatrixMultiplyPlan::output_layout() const noexcept
+    {
+        return output_layout_;
+    }
+
 } // namespace minitensor::detail

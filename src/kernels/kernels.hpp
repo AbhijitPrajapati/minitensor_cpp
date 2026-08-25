@@ -41,12 +41,6 @@ namespace minitensor::detail
         std::optional<Index> dim,
         bool keepdim);
     void sum_to_shape(ReadTensorArg input, WriteTensorArg output);
-    void slice_scatter(
-        ReadTensorArg gradient,
-        WriteTensorArg output,
-        Index dim,
-        Index start,
-        Index step);
     void relu_backward(ReadTensorArg input, ReadTensorArg gradient, WriteTensorArg output);
 
 } // namespace minitensor::detail
