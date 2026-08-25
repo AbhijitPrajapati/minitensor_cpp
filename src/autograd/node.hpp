@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace minitensor::detail
+namespace minitensor::detail::autograd
 {
 
     using GradList = std::vector<std::optional<Tensor>>;
@@ -26,4 +26,4 @@ namespace minitensor::detail
         std::vector<Tensor> parents,
         BackwardFn backward);
 
-} // namespace minitensor::detail
+} // namespace minitensor::detail::autograd

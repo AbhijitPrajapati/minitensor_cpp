@@ -60,6 +60,12 @@ The implementation is divided into four boundaries:
 - `src/ops`: public orchestration, output construction, and gradient rules.
 - `src/autograd`: graph nodes, reverse-topological traversal, and accumulation.
 
+Private subsystem namespaces mirror the important architectural boundaries:
+`detail::shape` owns shape algebra, `detail::kernel` owns kernels and their
+execution plans, and `detail::autograd` owns graph construction and backward
+execution. Shared tensor representation and access-bridge types remain directly
+in `detail`.
+
 Kernels do not inspect autograd state. Autograd nodes point only toward parents,
 so temporary intermediates remain alive without parent-to-child reference cycles.
 Saved values are detached handles, and public data is immutable, so this baseline

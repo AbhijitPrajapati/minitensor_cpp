@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace minitensor::detail
+namespace minitensor::detail::autograd
 {
 
     void set_history(
@@ -25,4 +25,4 @@ namespace minitensor::detail
                 std::move(name), std::move(parents), std::move(backward)}));
     }
 
-} // namespace minitensor::detail
+} // namespace minitensor::detail::autograd

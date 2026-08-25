@@ -7,12 +7,12 @@
 namespace minitensor::detail
 {
 
-    ReadTensorArg read_arg(const Tensor &tensor) noexcept
+    kernel::ReadTensorArg read_arg(const Tensor &tensor) noexcept
     {
         return TensorAccess::view(tensor);
     }
 
-    WriteTensorArg write_arg(Tensor &tensor) noexcept
+    kernel::WriteTensorArg write_arg(Tensor &tensor) noexcept
     {
         return TensorAccess::mutable_view(tensor);
     }
@@ -25,7 +25,7 @@ namespace minitensor::detail
         auto result = Tensor::zeros(std::move(shape), requires_grad);
         if (fill_value != 0.0F)
         {
-            fill(write_arg(result), fill_value);
+            kernel::fill(write_arg(result), fill_value);
         }
         return result;
     }
@@ -37,7 +37,7 @@ namespace minitensor::detail
             return gradient.detach();
         }
         auto result = make_contiguous_tensor(target_shape, false);
-        sum_to_shape(read_arg(gradient), write_arg(result));
+        kernel::sum_to_shape(read_arg(gradient), write_arg(result));
         return result;
     }
 
@@ -52,14 +52,16 @@ namespace minitensor::detail
         auto result = make_contiguous_tensor(input_shape, false);
         const auto result_view = write_arg(result);
         const auto destination_layout = result_view.layout.sliced(dim, start, stop, step);
-        copy(read_arg(gradient), WriteTensorArg{result_view.storage, destination_layout});
+        kernel::copy(
+            read_arg(gradient),
+            kernel::WriteTensorArg{result_view.storage, destination_layout});
         return result;
     }
 
     Tensor relu_gradient(const Tensor &input, const Tensor &gradient)
     {
         auto result = make_contiguous_tensor(input.shape(), false);
-        relu_backward(read_arg(input), read_arg(gradient), write_arg(result));
+        kernel::relu_backward(read_arg(input), read_arg(gradient), write_arg(result));
         return result;
     }
 

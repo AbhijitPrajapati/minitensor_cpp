@@ -8,27 +8,31 @@
 namespace minitensor::detail
 {
 
-    struct Node;
     struct TensorImpl;
 
-    struct AutogradMeta final
+    namespace autograd
     {
-        bool requires_grad{false};
-        std::shared_ptr<TensorImpl> grad;
-        std::unique_ptr<Node> grad_fn;
+        struct Node;
 
-        explicit AutogradMeta(bool requires_grad = false);
-        ~AutogradMeta();
+        struct Meta final
+        {
+            bool requires_grad{false};
+            std::shared_ptr<TensorImpl> grad;
+            std::unique_ptr<Node> grad_fn;
 
-        AutogradMeta(const AutogradMeta &) = delete;
-        AutogradMeta &operator=(const AutogradMeta &) = delete;
-    };
+            explicit Meta(bool requires_grad = false);
+            ~Meta();
+
+            Meta(const Meta &) = delete;
+            Meta &operator=(const Meta &) = delete;
+        };
+    } // namespace autograd
 
     struct TensorImpl final
     {
         std::shared_ptr<Storage> storage;
         Layout layout;
-        AutogradMeta autograd;
+        autograd::Meta autograd;
 
         TensorImpl(std::shared_ptr<Storage> storage, Layout layout, bool requires_grad);
         ~TensorImpl();

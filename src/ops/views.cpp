@@ -28,13 +28,13 @@ namespace minitensor
 
         if (requires_grad())
         {
-            detail::set_history(
+            detail::autograd::set_history(
                 result,
                 "transpose",
                 {*this},
                 [dim0, dim1](const Tensor &gradient)
                 {
-                    return detail::GradList{
+                    return detail::autograd::GradList{
                         std::optional<Tensor>{gradient.transpose(dim0, dim1)}};
                 });
         }
@@ -55,13 +55,13 @@ namespace minitensor
 
         if (requires_grad())
         {
-            detail::set_history(
+            detail::autograd::set_history(
                 result,
                 "slice",
                 {*this},
                 [input_shape, dim, start, stop, step](const Tensor &gradient)
                 {
-                    return detail::GradList{std::optional<Tensor>{
+                    return detail::autograd::GradList{std::optional<Tensor>{
                         detail::slice_gradient(gradient, input_shape, dim, start, stop, step)}};
                 });
         }
@@ -76,16 +76,17 @@ namespace minitensor
         }
 
         auto result = detail::make_contiguous_tensor(shape(), requires_grad());
-        detail::copy(detail::read_arg(*this), detail::write_arg(result));
+        detail::kernel::copy(detail::read_arg(*this), detail::write_arg(result));
         if (requires_grad())
         {
-            detail::set_history(
+            detail::autograd::set_history(
                 result,
                 "contiguous",
                 {*this},
                 [](const Tensor &gradient)
                 {
-                    return detail::GradList{std::optional<Tensor>{gradient.detach()}};
+                    return detail::autograd::GradList{
+                        std::optional<Tensor>{gradient.detach()}};
                 });
         }
         return result;
@@ -93,7 +94,7 @@ namespace minitensor
 
     Tensor Tensor::reshape(Shape new_shape) const
     {
-        detail::require_reshape_compatible(shape(), new_shape);
+        detail::shape::require_reshape_compatible(shape(), new_shape);
         if (!is_contiguous())
         {
             return contiguous().reshape(std::move(new_shape));
@@ -110,13 +111,13 @@ namespace minitensor
             requires_grad()));
         if (requires_grad())
         {
-            detail::set_history(
+            detail::autograd::set_history(
                 result,
                 "reshape",
                 {*this},
                 [input_shape](const Tensor &gradient)
                 {
-                    return detail::GradList{
+                    return detail::autograd::GradList{
                         std::optional<Tensor>{gradient.reshape(input_shape)}};
                 });
         }

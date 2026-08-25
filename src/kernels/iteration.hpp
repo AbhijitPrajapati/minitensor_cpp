@@ -10,7 +10,7 @@
 #include <span>
 #include <vector>
 
-namespace minitensor::detail
+namespace minitensor::detail::kernel
 {
 
     // Advances validated row-major logical coordinates by one element.
@@ -189,4 +189,4 @@ namespace minitensor::detail
         Index columns_{0};
     };
 
-} // namespace minitensor::detail
+} // namespace minitensor::detail::kernel

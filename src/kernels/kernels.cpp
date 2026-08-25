@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace minitensor::detail
+namespace minitensor::detail::kernel
 {
     namespace
     {
@@ -202,4 +202,4 @@ namespace minitensor::detail
             });
     }
 
-} // namespace minitensor::detail
+} // namespace minitensor::detail::kernel

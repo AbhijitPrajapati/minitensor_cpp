@@ -14,12 +14,12 @@ namespace
     using minitensor::Shape;
     using minitensor::Strides;
     using minitensor::detail::Layout;
-    using minitensor::detail::broadcast_shapes;
-    using minitensor::detail::coordinates_from_linear;
-    using minitensor::detail::is_reshape_compatible;
-    using minitensor::detail::reduce_shape;
-    using minitensor::detail::shape_is_broadcastable_to;
-    using minitensor::detail::shape_numel;
+    using minitensor::detail::shape::broadcast;
+    using minitensor::detail::shape::coordinates_from_linear;
+    using minitensor::detail::shape::is_broadcastable_to;
+    using minitensor::detail::shape::is_reshape_compatible;
+    using minitensor::detail::shape::numel;
+    using minitensor::detail::shape::reduce;
 
     int failures = 0;
 
@@ -54,29 +54,29 @@ namespace
 int main()
 {
     const Shape matrix_shape{2, 3};
-    expect(shape_numel(matrix_shape) == 6, "shape element count is correct");
-    expect(shape_numel(Shape{}) == 1, "rank-zero shape represents one scalar element");
+    expect(numel(matrix_shape) == 6, "shape element count is correct");
+    expect(numel(Shape{}) == 1, "rank-zero shape represents one scalar element");
     expect(
-        broadcast_shapes(Shape{2, 1, 3}, Shape{4, 3}) == Shape{2, 4, 3},
+        broadcast(Shape{2, 1, 3}, Shape{4, 3}) == Shape{2, 4, 3},
         "shape infers a trailing-dimension broadcast result");
     expect(
-        shape_is_broadcastable_to(Shape{3}, Shape{2, 3}), "shape recognizes a valid broadcast target");
+        is_broadcastable_to(Shape{3}, Shape{2, 3}), "shape recognizes a valid broadcast target");
     expect(
-        reduce_shape(matrix_shape, 1, true) == Shape{2, 1},
+        reduce(matrix_shape, 1, true) == Shape{2, 1},
         "shape infers a kept reduction dimension");
     expect(
-        reduce_shape(matrix_shape, 0, false) == Shape{3},
+        reduce(matrix_shape, 0, false) == Shape{3},
         "shape infers a removed reduction dimension");
     expect(
         is_reshape_compatible(matrix_shape, Shape{3, 2}),
         "shape recognizes reshape compatibility");
     expect_throws<std::invalid_argument>(
         []
-        { static_cast<void>(shape_numel(Shape{2, -1})); },
+        { static_cast<void>(numel(Shape{2, -1})); },
         "shape geometry rejects negative extents");
     expect_throws<std::overflow_error>(
         []
-        { static_cast<void>(shape_numel(Shape{std::numeric_limits<minitensor::Index>::max(), 2})); },
+        { static_cast<void>(numel(Shape{std::numeric_limits<minitensor::Index>::max(), 2})); },
         "shape geometry rejects overflowing element counts");
 
     const auto contiguous = Layout::contiguous(Shape{2, 3}, 3);

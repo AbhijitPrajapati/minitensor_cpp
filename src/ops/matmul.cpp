@@ -23,7 +23,7 @@ namespace minitensor
         const bool needs_grad = lhs.requires_grad() || rhs.requires_grad();
         auto result = detail::make_contiguous_tensor(
             Shape{lhs.shape()[0], rhs.shape()[1]}, needs_grad);
-        detail::matrix_multiply(
+        detail::kernel::matrix_multiply(
             detail::read_arg(lhs), detail::read_arg(rhs), detail::write_arg(result));
 
         if (needs_grad)
@@ -32,13 +32,13 @@ namespace minitensor
             const bool rhs_needs_grad = rhs.requires_grad();
             const auto saved_lhs = lhs.detach();
             const auto saved_rhs = rhs.detach();
-            detail::set_history(
+            detail::autograd::set_history(
                 result,
                 "matmul",
                 {lhs, rhs},
                 [lhs_needs_grad, rhs_needs_grad, saved_lhs, saved_rhs](const Tensor &gradient)
                 {
-                    detail::GradList gradients(2);
+                    detail::autograd::GradList gradients(2);
                     if (lhs_needs_grad)
                     {
                         gradients[0] = matmul(gradient, saved_rhs.transpose(0, 1));

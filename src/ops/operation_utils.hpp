@@ -8,8 +8,8 @@
 namespace minitensor::detail
 {
 
-    [[nodiscard]] ReadTensorArg read_arg(const Tensor &tensor) noexcept;
-    [[nodiscard]] WriteTensorArg write_arg(Tensor &tensor) noexcept;
+    [[nodiscard]] kernel::ReadTensorArg read_arg(const Tensor &tensor) noexcept;
+    [[nodiscard]] kernel::WriteTensorArg write_arg(Tensor &tensor) noexcept;
     [[nodiscard]] Tensor make_contiguous_tensor(
         Shape shape,
         bool requires_grad,

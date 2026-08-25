@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace minitensor::detail
+namespace minitensor::detail::kernel
 {
 
     void advance_coordinates(const Shape &shape, Coordinates &coordinates) noexcept
@@ -38,7 +38,7 @@ namespace minitensor::detail
 
         for (const auto &input : inputs)
         {
-            if (!shape_is_broadcastable_to(input.shape(), shape_))
+            if (!shape::is_broadcastable_to(input.shape(), shape_))
             {
                 throw std::logic_error(
                     "elementwise input shape cannot broadcast to the output shape");
@@ -156,7 +156,7 @@ namespace minitensor::detail
         const std::optional<Index> dimension,
         const bool keepdim)
     {
-        const auto expected_output_shape = reduce_shape(input.shape(), dimension, keepdim);
+        const auto expected_output_shape = shape::reduce(input.shape(), dimension, keepdim);
         if (output.shape() != expected_output_shape)
         {
             throw std::logic_error("reduction output shape does not match its dimensions");
@@ -214,7 +214,7 @@ namespace minitensor::detail
         const Layout &input,
         const Layout &output)
     {
-        if (!shape_is_broadcastable_to(output.shape(), input.shape()))
+        if (!shape::is_broadcastable_to(output.shape(), input.shape()))
         {
             throw std::invalid_argument("reduction target cannot broadcast to the input shape");
         }
@@ -305,4 +305,4 @@ namespace minitensor::detail
         return output_layout_;
     }
 
-} // namespace minitensor::detail
+} // namespace minitensor::detail::kernel

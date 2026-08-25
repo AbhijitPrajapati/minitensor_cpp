@@ -9,7 +9,10 @@
 namespace minitensor::detail
 {
 
-    struct Node;
+    namespace autograd
+    {
+        struct Node;
+    } // namespace autograd
 
     struct ConstTensorView final
     {
@@ -35,8 +38,10 @@ namespace minitensor::detail
         // Autograd needs stable identity and graph-specific mutations, not general
         // access to storage or layout internals.
         [[nodiscard]] static Identity identity(const Tensor &tensor) noexcept;
-        [[nodiscard]] static const Node *grad_fn(const Tensor &tensor) noexcept;
-        static void set_grad_fn(Tensor &tensor, std::unique_ptr<Node> node) noexcept;
+        [[nodiscard]] static const autograd::Node *grad_fn(const Tensor &tensor) noexcept;
+        static void set_grad_fn(
+            Tensor &tensor,
+            std::unique_ptr<autograd::Node> node) noexcept;
         static void set_grad(Tensor &tensor, const Tensor &gradient) noexcept;
     };
 

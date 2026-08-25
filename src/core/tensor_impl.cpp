@@ -8,8 +8,8 @@
 namespace minitensor::detail
 {
 
-    AutogradMeta::AutogradMeta(const bool requires_grad) : requires_grad(requires_grad) {}
-    AutogradMeta::~AutogradMeta() = default;
+    autograd::Meta::Meta(const bool requires_grad) : requires_grad(requires_grad) {}
+    autograd::Meta::~Meta() = default;
 
     TensorImpl::TensorImpl(
         std::shared_ptr<Storage> storage_value,

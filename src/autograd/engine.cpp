@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-namespace minitensor::detail
+namespace minitensor::detail::autograd
 {
     namespace
     {
@@ -148,4 +148,4 @@ namespace minitensor::detail
         }
     }
 
-} // namespace minitensor::detail
+} // namespace minitensor::detail::autograd

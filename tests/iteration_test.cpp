@@ -16,10 +16,10 @@ namespace
     using minitensor::Index;
     using minitensor::Shape;
     using minitensor::Strides;
-    using minitensor::detail::ElementwiseIterator;
     using minitensor::detail::Layout;
-    using minitensor::detail::MatrixMultiplyPlan;
-    using minitensor::detail::ReductionIterator;
+    using minitensor::detail::kernel::ElementwiseIterator;
+    using minitensor::detail::kernel::MatrixMultiplyPlan;
+    using minitensor::detail::kernel::ReductionIterator;
 
     int failures = 0;
 

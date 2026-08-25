@@ -44,7 +44,7 @@ namespace minitensor::detail
 
     Layout Layout::contiguous(Shape shape, const Index offset)
     {
-        static_cast<void>(shape_numel(shape));
+        static_cast<void>(shape::numel(shape));
         Strides strides(shape.size());
         std::exclusive_scan(
             shape.rbegin(), shape.rend(), strides.rbegin(), Index{1}, checked_multiply);
@@ -55,7 +55,7 @@ namespace minitensor::detail
         : shape_(std::move(shape)),
           strides_(std::move(strides)),
           offset_(offset),
-          numel_(shape_numel(shape_))
+          numel_(shape::numel(shape_))
     {
         if (shape_.size() != strides_.size())
         {
@@ -71,7 +71,7 @@ namespace minitensor::detail
     const Shape &Layout::shape() const noexcept { return shape_; }
     const Strides &Layout::strides() const noexcept { return strides_; }
     Index Layout::offset() const noexcept { return offset_; }
-    Index Layout::rank() const noexcept { return shape_rank(shape_); }
+    Index Layout::rank() const noexcept { return shape::rank(shape_); }
     Index Layout::numel() const noexcept { return numel_; }
 
     bool Layout::is_contiguous() const noexcept
@@ -118,7 +118,7 @@ namespace minitensor::detail
 
     Layout Layout::transposed(const Index dim0, const Index dim1) const
     {
-        auto result_shape = transpose_shape(shape_, dim0, dim1);
+        auto result_shape = shape::transpose(shape_, dim0, dim1);
         auto result_strides = strides_;
         std::swap(
             result_strides[static_cast<std::size_t>(dim0)],
@@ -132,7 +132,7 @@ namespace minitensor::detail
         const Index stop,
         const Index step) const
     {
-        require_shape_axis(shape_, dim, "slice");
+        shape::require_axis(shape_, dim, "slice");
         if (step <= 0)
         {
             throw std::invalid_argument("slice step must be positive");
@@ -146,7 +146,7 @@ namespace minitensor::detail
 
         const auto span = stop - start;
         const auto slice_extent = span == 0 ? Index{0} : 1 + (span - 1) / step;
-        auto result_shape = replace_shape_extent(shape_, dim, slice_extent);
+        auto result_shape = shape::replace_extent(shape_, dim, slice_extent);
         auto result_strides = strides_;
         result_strides[dimension] = checked_multiply(result_strides[dimension], step);
 
@@ -162,7 +162,7 @@ namespace minitensor::detail
 
     Layout Layout::reshaped(Shape shape) const
     {
-        require_reshape_compatible(shape_, shape);
+        shape::require_reshape_compatible(shape_, shape);
         if (!is_contiguous())
         {
             throw std::logic_error("reshape view requires a contiguous layout");
@@ -172,13 +172,13 @@ namespace minitensor::detail
 
     Layout Layout::broadcast_to(const Shape &shape) const
     {
-        if (!shape_is_broadcastable_to(shape_, shape))
+        if (!shape::is_broadcastable_to(shape_, shape))
         {
             throw std::invalid_argument("cannot broadcast layout to requested shape");
         }
 
         Strides result_strides(shape.size(), 0);
-        const auto output_rank = shape_rank(shape);
+        const auto output_rank = shape::rank(shape);
         const auto rank_difference = output_rank - rank();
         for (Index dim = rank_difference; dim < output_rank; ++dim)
         {

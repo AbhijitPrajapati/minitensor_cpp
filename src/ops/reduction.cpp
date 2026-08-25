@@ -12,14 +12,15 @@ namespace minitensor
 
     Tensor sum(const Tensor &tensor, const std::optional<Index> dim, const bool keepdim)
     {
-        const auto output_shape = detail::reduce_shape(tensor.shape(), dim, keepdim);
+        const auto output_shape = detail::shape::reduce(tensor.shape(), dim, keepdim);
         auto result = detail::make_contiguous_tensor(output_shape, tensor.requires_grad());
-        detail::reduce_sum(detail::read_arg(tensor), detail::write_arg(result), dim, keepdim);
+        detail::kernel::reduce_sum(
+            detail::read_arg(tensor), detail::write_arg(result), dim, keepdim);
 
         if (tensor.requires_grad())
         {
             const auto input_shape = tensor.shape();
-            detail::set_history(
+            detail::autograd::set_history(
                 result,
                 "sum",
                 {tensor},
@@ -28,11 +29,12 @@ namespace minitensor
                     auto broadcastable = gradient.detach();
                     if (dim.has_value() && !keepdim)
                     {
-                        auto expanded_shape = detail::insert_shape_axis(gradient.shape(), *dim);
+                        auto expanded_shape = detail::shape::insert_axis(gradient.shape(), *dim);
                         broadcastable = gradient.reshape(std::move(expanded_shape));
                     }
                     auto expanded = Tensor::ones(input_shape) * broadcastable;
-                    return detail::GradList{std::optional<Tensor>{std::move(expanded)}};
+                    return detail::autograd::GradList{
+                        std::optional<Tensor>{std::move(expanded)}};
                 });
         }
         return result;

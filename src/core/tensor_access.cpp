@@ -23,12 +23,14 @@ namespace minitensor::detail
         return tensor.impl_.get();
     }
 
-    const Node *TensorAccess::grad_fn(const Tensor &tensor) noexcept
+    const autograd::Node *TensorAccess::grad_fn(const Tensor &tensor) noexcept
     {
         return tensor.impl_->autograd.grad_fn.get();
     }
 
-    void TensorAccess::set_grad_fn(Tensor &tensor, std::unique_ptr<Node> node) noexcept
+    void TensorAccess::set_grad_fn(
+        Tensor &tensor,
+        std::unique_ptr<autograd::Node> node) noexcept
     {
         tensor.impl_->autograd.grad_fn = std::move(node);
     }

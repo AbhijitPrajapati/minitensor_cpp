@@ -65,8 +65,8 @@ namespace minitensor
     {
         std::vector<float> values(static_cast<std::size_t>(numel()));
         auto output_layout = detail::Layout::contiguous(shape());
-        const detail::WriteTensorArg output{values, output_layout};
-        detail::copy(detail::read_arg(*this), output);
+        const detail::kernel::WriteTensorArg output{values, output_layout};
+        detail::kernel::copy(detail::read_arg(*this), output);
         return values;
     }
 
@@ -100,12 +100,12 @@ namespace minitensor
         {
             throw std::logic_error("backward() without a gradient requires a one-element tensor");
         }
-        detail::run_backward(*this, Tensor::ones(shape()));
+        detail::autograd::run_backward(*this, Tensor::ones(shape()));
     }
 
     void Tensor::backward(const Tensor &gradient) const
     {
-        detail::run_backward(*this, gradient);
+        detail::autograd::run_backward(*this, gradient);
     }
 
     void Tensor::clear_grad()

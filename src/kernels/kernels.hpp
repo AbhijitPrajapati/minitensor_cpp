@@ -5,7 +5,7 @@
 #include <optional>
 #include <span>
 
-namespace minitensor::detail
+namespace minitensor::detail::kernel
 {
 
     using ReadTensorArg = ConstTensorView;
@@ -43,4 +43,4 @@ namespace minitensor::detail
     void sum_to_shape(ReadTensorArg input, WriteTensorArg output);
     void relu_backward(ReadTensorArg input, ReadTensorArg gradient, WriteTensorArg output);
 
-} // namespace minitensor::detail
+} // namespace minitensor::detail::kernel
