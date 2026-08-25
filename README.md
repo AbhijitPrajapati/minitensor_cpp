@@ -55,7 +55,8 @@ and internal broadcasting.
 The implementation is divided into four boundaries:
 
 - `src/core`: shape algebra, storage, layout invariants, and private tensor state.
-- `src/kernels`: non-owning read/write arguments and scalar strided kernels.
+- `src/kernels`: non-owning read/write arguments, private iteration plans, and
+  scalar strided kernels.
 - `src/ops`: public orchestration, output construction, and gradient rules.
 - `src/autograd`: graph nodes, reverse-topological traversal, and accumulation.
 

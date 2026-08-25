@@ -1,6 +1,7 @@
 #include "minitensor/ops.hpp"
 
 #include "autograd/node.hpp"
+#include "core/shape.hpp"
 #include "ops/operation_utils.hpp"
 
 #include <optional>
@@ -23,16 +24,13 @@ namespace minitensor
             const detail::BinaryKernel operation,
             const char *name)
         {
-            const auto plan = detail::make_broadcast_plan(
-                detail::read_arg(lhs).layout,
-                detail::read_arg(rhs).layout);
+            const auto output_shape = detail::broadcast_shapes(lhs.shape(), rhs.shape());
             const bool needs_grad = lhs.requires_grad() || rhs.requires_grad();
-            auto result = detail::make_contiguous_tensor(plan.output_shape(), needs_grad);
+            auto result = detail::make_contiguous_tensor(output_shape, needs_grad);
             detail::binary(
                 detail::read_arg(lhs),
                 detail::read_arg(rhs),
                 detail::write_arg(result),
-                plan,
                 operation);
 
             if (needs_grad)

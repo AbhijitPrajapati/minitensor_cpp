@@ -152,6 +152,10 @@ namespace
         expect_values(minitensor::sum(tensor, 0), {5, 7, 9}, "sum along dimension zero");
         expect_values(minitensor::sum(tensor, 1, true), {6, 15}, "sum keepdim values");
         expect(minitensor::sum(tensor, 1, true).shape() == Shape{2, 1}, "sum keepdim shape");
+        expect_values(
+            minitensor::sum(tensor.transpose(0, 1), 1),
+            {5, 7, 9},
+            "sum accepts a strided input layout");
 
         expect_values(minitensor::relu(Tensor::from_data({-2, 0, 3}, {3})), {0, 0, 3}, "relu");
         expect_values(minitensor::sigmoid(Tensor::from_data({0}, {1})), {0.5F}, "sigmoid");

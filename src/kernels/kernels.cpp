@@ -1,12 +1,12 @@
 #include "kernels/kernels.hpp"
 #include "core/shape.hpp"
+#include "kernels/iteration.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace minitensor::detail
@@ -94,56 +94,41 @@ namespace minitensor::detail
 
     } // namespace
 
-    BroadcastPlan make_broadcast_plan(const Layout &lhs, const Layout &rhs)
-    {
-        auto output_shape = broadcast_shapes(lhs.shape(), rhs.shape());
-        auto lhs_layout = lhs.broadcast_to(output_shape);
-        auto rhs_layout = rhs.broadcast_to(output_shape);
-        return BroadcastPlan{std::move(lhs_layout), std::move(rhs_layout)};
-    }
-
     void fill(const WriteTensorArg output, const float value)
     {
-        for (Index linear = 0; linear < output.layout.numel(); ++linear)
-        {
-            const auto coordinates = coordinates_from_linear(output.layout.shape(), linear);
-            write_at(output.storage, output.layout.offset_from_coordinates(coordinates)) = value;
-        }
+        const ElementwiseIterator iterator(output.layout, {});
+        iterator.for_each(
+            [&](const Index output_offset, const std::span<const Index>)
+            { write_at(output.storage, output_offset) = value; });
     }
 
     void copy(const ReadTensorArg input, const WriteTensorArg output)
     {
         require_same_shape(input.layout, output.layout, "copy");
-        for (Index linear = 0; linear < input.layout.numel(); ++linear)
-        {
-            const auto coordinates = coordinates_from_linear(input.layout.shape(), linear);
-            const auto input_offset = input.layout.offset_from_coordinates(coordinates);
-            const auto output_offset = output.layout.offset_from_coordinates(coordinates);
-            write_at(output.storage, output_offset) = read_at(input.storage, input_offset);
-        }
+        const ElementwiseIterator iterator(output.layout, {input.layout});
+        iterator.for_each(
+            [&](const Index output_offset, const std::span<const Index> input_offsets)
+            {
+                write_at(output.storage, output_offset) =
+                    read_at(input.storage, input_offsets[0]);
+            });
     }
 
     void binary(
         const ReadTensorArg lhs,
         const ReadTensorArg rhs,
         const WriteTensorArg output,
-        const BroadcastPlan &plan,
         const BinaryKernel operation)
     {
-        if (output.layout.shape() != plan.output_shape())
-        {
-            throw std::logic_error("binary kernel output shape does not match broadcast plan");
-        }
-
-        for (Index linear = 0; linear < output.layout.numel(); ++linear)
-        {
-            const auto coordinates = coordinates_from_linear(output.layout.shape(), linear);
-            const auto lhs_offset = plan.lhs_layout.offset_from_coordinates(coordinates);
-            const auto rhs_offset = plan.rhs_layout.offset_from_coordinates(coordinates);
-            const auto output_offset = output.layout.offset_from_coordinates(coordinates);
-            write_at(output.storage, output_offset) = apply_binary(
-                read_at(lhs.storage, lhs_offset), read_at(rhs.storage, rhs_offset), operation);
-        }
+        const ElementwiseIterator iterator(output.layout, {lhs.layout, rhs.layout});
+        iterator.for_each(
+            [&](const Index output_offset, const std::span<const Index> input_offsets)
+            {
+                write_at(output.storage, output_offset) = apply_binary(
+                    read_at(lhs.storage, input_offsets[0]),
+                    read_at(rhs.storage, input_offsets[1]),
+                    operation);
+            });
     }
 
     void unary(
@@ -152,14 +137,13 @@ namespace minitensor::detail
         const UnaryKernel operation)
     {
         require_same_shape(input.layout, output.layout, "unary kernel");
-        for (Index linear = 0; linear < input.layout.numel(); ++linear)
-        {
-            const auto coordinates = coordinates_from_linear(input.layout.shape(), linear);
-            const auto input_offset = input.layout.offset_from_coordinates(coordinates);
-            const auto output_offset = output.layout.offset_from_coordinates(coordinates);
-            write_at(output.storage, output_offset) = apply_unary(
-                read_at(input.storage, input_offset), operation);
-        }
+        const ElementwiseIterator iterator(output.layout, {input.layout});
+        iterator.for_each(
+            [&](const Index output_offset, const std::span<const Index> input_offsets)
+            {
+                write_at(output.storage, output_offset) = apply_unary(
+                    read_at(input.storage, input_offsets[0]), operation);
+            });
     }
 
     void matrix_multiply(
@@ -211,67 +195,24 @@ namespace minitensor::detail
         const std::optional<Index> dim,
         const bool keepdim)
     {
+        const ReductionIterator iterator(input.layout, output.layout, dim, keepdim);
         fill(output, 0.0F);
-        for (Index linear = 0; linear < input.layout.numel(); ++linear)
-        {
-            const auto input_coordinates = coordinates_from_linear(input.layout.shape(), linear);
-            Coordinates output_coordinates;
-            output_coordinates.reserve(as_size(output.layout.rank()));
-
-            if (!dim.has_value())
+        iterator.for_each(
+            [&](const Index output_offset, const Index input_offset)
             {
-                output_coordinates.assign(as_size(output.layout.rank()), 0);
-            }
-            else
-            {
-                for (Index input_dim = 0; input_dim < input.layout.rank(); ++input_dim)
-                {
-                    if (input_dim == *dim)
-                    {
-                        if (keepdim)
-                        {
-                            output_coordinates.push_back(0);
-                        }
-                    }
-                    else
-                    {
-                        output_coordinates.push_back(input_coordinates[as_size(input_dim)]);
-                    }
-                }
-            }
-
-            const auto input_offset = input.layout.offset_from_coordinates(input_coordinates);
-            const auto output_offset = output.layout.offset_from_coordinates(output_coordinates);
-            write_at(output.storage, output_offset) += read_at(input.storage, input_offset);
-        }
+                write_at(output.storage, output_offset) += read_at(input.storage, input_offset);
+            });
     }
 
     void sum_to_shape(const ReadTensorArg input, const WriteTensorArg output)
     {
-        if (!shape_is_broadcastable_to(output.layout.shape(), input.layout.shape()))
-
-        {
-            throw std::invalid_argument("gradient cannot be summed to requested shape");
-        }
-        const Index rank_difference = input.layout.rank() - output.layout.rank();
-
+        const auto iterator = ReductionIterator::to_shape(input.layout, output.layout);
         fill(output, 0.0F);
-        for (Index linear = 0; linear < input.layout.numel(); ++linear)
-        {
-            const auto input_coordinates = coordinates_from_linear(input.layout.shape(), linear);
-            Coordinates output_coordinates(as_size(output.layout.rank()), 0);
-            for (Index dim = 0; dim < output.layout.rank(); ++dim)
+        iterator.for_each(
+            [&](const Index output_offset, const Index input_offset)
             {
-                if (output.layout.shape()[as_size(dim)] != 1)
-                {
-                    output_coordinates[as_size(dim)] =
-                        input_coordinates[as_size(rank_difference + dim)];
-                }
-            }
-            const auto input_offset = input.layout.offset_from_coordinates(input_coordinates);
-            const auto output_offset = output.layout.offset_from_coordinates(output_coordinates);
-            write_at(output.storage, output_offset) += read_at(input.storage, input_offset);
-        }
+                write_at(output.storage, output_offset) += read_at(input.storage, input_offset);
+            });
     }
 
     void slice_scatter(
@@ -299,16 +240,15 @@ namespace minitensor::detail
     {
         require_same_shape(input.layout, gradient.layout, "relu backward");
         require_same_shape(input.layout, output.layout, "relu backward");
-        for (Index linear = 0; linear < input.layout.numel(); ++linear)
-        {
-            const auto coordinates = coordinates_from_linear(input.layout.shape(), linear);
-            const auto input_offset = input.layout.offset_from_coordinates(coordinates);
-            const auto gradient_offset = gradient.layout.offset_from_coordinates(coordinates);
-            const auto output_offset = output.layout.offset_from_coordinates(coordinates);
-            write_at(output.storage, output_offset) = read_at(input.storage, input_offset) > 0.0F
-                                                          ? read_at(gradient.storage, gradient_offset)
-                                                          : 0.0F;
-        }
+        const ElementwiseIterator iterator(output.layout, {input.layout, gradient.layout});
+        iterator.for_each(
+            [&](const Index output_offset, const std::span<const Index> input_offsets)
+            {
+                write_at(output.storage, output_offset) =
+                    read_at(input.storage, input_offsets[0]) > 0.0F
+                        ? read_at(gradient.storage, input_offsets[1])
+                        : 0.0F;
+            });
     }
 
 } // namespace minitensor::detail

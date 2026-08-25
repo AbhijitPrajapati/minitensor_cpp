@@ -26,28 +26,12 @@ namespace minitensor::detail
         tanh
     };
 
-    struct BroadcastPlan final
-    {
-        Layout lhs_layout;
-        Layout rhs_layout;
-
-        [[nodiscard]] const Shape &output_shape() const noexcept
-        {
-            return lhs_layout.shape();
-        }
-    };
-
-    [[nodiscard]] BroadcastPlan make_broadcast_plan(
-        const Layout &lhs,
-        const Layout &rhs);
-
     void fill(WriteTensorArg output, float value);
     void copy(ReadTensorArg input, WriteTensorArg output);
     void binary(
         ReadTensorArg lhs,
         ReadTensorArg rhs,
         WriteTensorArg output,
-        const BroadcastPlan &plan,
         BinaryKernel operation);
     void unary(ReadTensorArg input, WriteTensorArg output, UnaryKernel operation);
     void matrix_multiply(ReadTensorArg lhs, ReadTensorArg rhs, WriteTensorArg output);

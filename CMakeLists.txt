@@ -17,6 +17,7 @@ target_sources(
         src/core/storage.cpp
         src/core/tensor_access.cpp
         src/core/tensor_impl.cpp
+        src/kernels/iteration.cpp
         src/kernels/kernels.cpp
         src/ops/activations.cpp
         src/ops/elementwise.cpp
@@ -73,4 +74,14 @@ if(BUILD_TESTING)
             ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
     add_test(NAME minitensor_layout_tests COMMAND minitensor_layout_tests)
+
+    # Kernel iteration tests exercise coordinated elementwise and reduction traversal.
+    add_executable(minitensor_iteration_tests tests/iteration_test.cpp)
+    target_link_libraries(minitensor_iteration_tests PRIVATE minitensor)
+    target_include_directories(
+        minitensor_iteration_tests
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    add_test(NAME minitensor_iteration_tests COMMAND minitensor_iteration_tests)
 endif()
