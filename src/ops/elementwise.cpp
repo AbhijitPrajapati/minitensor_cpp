@@ -1,18 +1,112 @@
 #include "minitensor/ops.hpp"
 
-#include "autograd/node.hpp"
+#include "autograd/recording.hpp"
 #include "core/shape.hpp"
 #include "kernels/kernels.hpp"
-#include "ops/operation_utils.hpp"
 
 #include <optional>
-#include <utility>
 #include <vector>
 
 namespace minitensor
 {
     namespace
     {
+
+        Tensor reduce_gradient_to_shape(
+            const Tensor &gradient,
+            const Shape &target_shape)
+        {
+            if (gradient.shape() == target_shape)
+            {
+                return gradient;
+            }
+
+            auto result = Tensor::zeros(target_shape);
+            detail::kernel::sum_to_shape(
+                detail::kernel::TensorViewAccess::view(gradient),
+                detail::kernel::TensorViewAccess::mutable_view(result));
+            return result;
+        }
+
+        detail::autograd::GradList binary_backward(
+            const detail::kernel::BinaryKernel operation,
+            const Tensor &gradient,
+            const detail::autograd::TensorSpan parents)
+        {
+            const auto &lhs = parents[0];
+            const auto &rhs = parents[1];
+            detail::autograd::GradList gradients(2);
+
+            switch (operation)
+            {
+            case detail::kernel::BinaryKernel::add:
+                if (lhs.requires_grad())
+                {
+                    gradients[0] = reduce_gradient_to_shape(gradient, lhs.shape());
+                }
+                if (rhs.requires_grad())
+                {
+                    gradients[1] = reduce_gradient_to_shape(gradient, rhs.shape());
+                }
+                break;
+            case detail::kernel::BinaryKernel::subtract:
+                if (lhs.requires_grad())
+                {
+                    gradients[0] = reduce_gradient_to_shape(gradient, lhs.shape());
+                }
+                if (rhs.requires_grad())
+                {
+                    gradients[1] = reduce_gradient_to_shape(-gradient, rhs.shape());
+                }
+                break;
+            case detail::kernel::BinaryKernel::multiply:
+                if (lhs.requires_grad())
+                {
+                    gradients[0] = reduce_gradient_to_shape(
+                        gradient * rhs, lhs.shape());
+                }
+                if (rhs.requires_grad())
+                {
+                    gradients[1] = reduce_gradient_to_shape(
+                        gradient * lhs, rhs.shape());
+                }
+                break;
+            case detail::kernel::BinaryKernel::divide:
+                if (lhs.requires_grad())
+                {
+                    gradients[0] = reduce_gradient_to_shape(
+                        gradient / rhs, lhs.shape());
+                }
+                if (rhs.requires_grad())
+                {
+                    const auto local_gradient =
+                        -(gradient * lhs) / (rhs * rhs);
+                    gradients[1] = reduce_gradient_to_shape(
+                        local_gradient, rhs.shape());
+                }
+                break;
+            }
+            return gradients;
+        }
+
+        detail::autograd::BackwardFn make_binary_backward(
+            const detail::kernel::BinaryKernel operation)
+        {
+            return [operation](
+                       const Tensor &gradient,
+                       const detail::autograd::TensorSpan parents,
+                       detail::autograd::TensorSpan)
+            { return binary_backward(operation, gradient, parents); };
+        }
+
+        detail::autograd::GradList negate_backward(
+            const Tensor &gradient,
+            detail::autograd::TensorSpan,
+            detail::autograd::TensorSpan)
+        {
+            return detail::autograd::GradList{
+                std::optional<Tensor>{-gradient}};
+        }
 
         Tensor scalar_tensor(const float value)
         {
@@ -26,88 +120,15 @@ namespace minitensor
             const char *name)
         {
             const auto output_shape = detail::shape::broadcast(lhs.shape(), rhs.shape());
-            const bool needs_grad = lhs.requires_grad() || rhs.requires_grad();
-            auto result = detail::make_contiguous_tensor(output_shape, needs_grad);
+            detail::autograd::OperationContext context{lhs, rhs};
+            auto result = Tensor::zeros(output_shape, context.requires_grad());
             detail::kernel::binary(
                 detail::kernel::TensorViewAccess::view(lhs),
                 detail::kernel::TensorViewAccess::view(rhs),
                 detail::kernel::TensorViewAccess::mutable_view(result),
                 operation);
 
-            if (needs_grad)
-            {
-                const auto lhs_shape = lhs.shape();
-                const auto rhs_shape = rhs.shape();
-                const bool lhs_needs_grad = lhs.requires_grad();
-                const bool rhs_needs_grad = rhs.requires_grad();
-                const auto saved_lhs = lhs.detach();
-                const auto saved_rhs = rhs.detach();
-
-                detail::autograd::set_history(
-                    result,
-                    name,
-                    {lhs, rhs},
-                    [operation,
-                     lhs_shape,
-                     rhs_shape,
-                     lhs_needs_grad,
-                     rhs_needs_grad,
-                     saved_lhs,
-                     saved_rhs](const Tensor &gradient)
-                    {
-                        detail::autograd::GradList gradients(2);
-                        switch (operation)
-                        {
-                        case detail::kernel::BinaryKernel::add:
-                            if (lhs_needs_grad)
-                            {
-                                gradients[0] = detail::reduce_gradient_to_shape(gradient, lhs_shape);
-                            }
-                            if (rhs_needs_grad)
-                            {
-                                gradients[1] = detail::reduce_gradient_to_shape(gradient, rhs_shape);
-                            }
-                            break;
-                        case detail::kernel::BinaryKernel::subtract:
-                            if (lhs_needs_grad)
-                            {
-                                gradients[0] = detail::reduce_gradient_to_shape(gradient, lhs_shape);
-                            }
-                            if (rhs_needs_grad)
-                            {
-                                gradients[1] = detail::reduce_gradient_to_shape(-gradient, rhs_shape);
-                            }
-                            break;
-                        case detail::kernel::BinaryKernel::multiply:
-                            if (lhs_needs_grad)
-                            {
-                                gradients[0] = detail::reduce_gradient_to_shape(
-                                    gradient * saved_rhs, lhs_shape);
-                            }
-                            if (rhs_needs_grad)
-                            {
-                                gradients[1] = detail::reduce_gradient_to_shape(
-                                    gradient * saved_lhs, rhs_shape);
-                            }
-                            break;
-                        case detail::kernel::BinaryKernel::divide:
-                            if (lhs_needs_grad)
-                            {
-                                gradients[0] = detail::reduce_gradient_to_shape(
-                                    gradient / saved_rhs, lhs_shape);
-                            }
-                            if (rhs_needs_grad)
-                            {
-                                const auto local_gradient =
-                                    -(gradient * saved_lhs) / (saved_rhs * saved_rhs);
-                                gradients[1] = detail::reduce_gradient_to_shape(
-                                    local_gradient, rhs_shape);
-                            }
-                            break;
-                        }
-                        return gradients;
-                    });
-            }
+            context.record(result, name, make_binary_backward(operation));
             return result;
         }
 
@@ -137,23 +158,13 @@ namespace minitensor
 
     Tensor operator-(const Tensor &value)
     {
-        auto result = detail::make_contiguous_tensor(value.shape(), value.requires_grad());
+        detail::autograd::OperationContext context{value};
+        auto result = Tensor::zeros(value.shape(), context.requires_grad());
         detail::kernel::unary(
             detail::kernel::TensorViewAccess::view(value),
             detail::kernel::TensorViewAccess::mutable_view(result),
             detail::kernel::UnaryKernel::negate);
-        if (value.requires_grad())
-        {
-            detail::autograd::set_history(
-                result,
-                "negate",
-                {value},
-                [](const Tensor &gradient)
-                {
-                    return detail::autograd::GradList{
-                        std::optional<Tensor>{-gradient}};
-                });
-        }
+        context.record(result, "negate", negate_backward);
         return result;
     }
 

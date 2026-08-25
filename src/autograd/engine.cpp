@@ -1,6 +1,7 @@
 #include "autograd/engine.hpp"
 
 #include "autograd/node.hpp"
+#include "autograd/recording.hpp"
 #include "autograd/tensor_access.hpp"
 #include "minitensor/ops.hpp"
 
@@ -96,6 +97,8 @@ namespace minitensor::detail::autograd
         GradientMap pending;
         accumulate_pending(pending, root, gradient);
 
+        const NoGradGuard no_grad;
+
         for (auto current_iterator = postorder.rbegin();
              current_iterator != postorder.rend();
              ++current_iterator)
@@ -116,7 +119,10 @@ namespace minitensor::detail::autograd
                 continue;
             }
 
-            const auto parent_gradients = node->backward(current_gradient);
+            const auto parent_gradients = node->backward(
+                current_gradient,
+                TensorSpan{node->parents},
+                TensorSpan{node->saved_tensors});
             if (parent_gradients.size() != node->parents.size())
             {
                 throw std::logic_error(

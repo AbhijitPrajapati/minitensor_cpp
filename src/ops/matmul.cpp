@@ -1,14 +1,33 @@
 #include "minitensor/ops.hpp"
 
-#include "autograd/node.hpp"
+#include "autograd/recording.hpp"
 #include "kernels/kernels.hpp"
-#include "ops/operation_utils.hpp"
 
-#include <optional>
 #include <stdexcept>
 
 namespace minitensor
 {
+    namespace
+    {
+
+        detail::autograd::GradList matmul_backward(
+            const Tensor &gradient,
+            const detail::autograd::TensorSpan parents,
+            detail::autograd::TensorSpan)
+        {
+            detail::autograd::GradList gradients(2);
+            if (parents[0].requires_grad())
+            {
+                gradients[0] = matmul(gradient, parents[1].transpose(0, 1));
+            }
+            if (parents[1].requires_grad())
+            {
+                gradients[1] = matmul(parents[0].transpose(0, 1), gradient);
+            }
+            return gradients;
+        }
+
+    } // namespace
 
     Tensor matmul(const Tensor &lhs, const Tensor &rhs)
     {
@@ -21,38 +40,15 @@ namespace minitensor
             throw std::invalid_argument("matmul inner dimensions do not match");
         }
 
-        const bool needs_grad = lhs.requires_grad() || rhs.requires_grad();
-        auto result = detail::make_contiguous_tensor(
-            Shape{lhs.shape()[0], rhs.shape()[1]}, needs_grad);
+        detail::autograd::OperationContext context{lhs, rhs};
+        auto result = Tensor::zeros(
+            Shape{lhs.shape()[0], rhs.shape()[1]}, context.requires_grad());
         detail::kernel::matrix_multiply(
             detail::kernel::TensorViewAccess::view(lhs),
             detail::kernel::TensorViewAccess::view(rhs),
             detail::kernel::TensorViewAccess::mutable_view(result));
 
-        if (needs_grad)
-        {
-            const bool lhs_needs_grad = lhs.requires_grad();
-            const bool rhs_needs_grad = rhs.requires_grad();
-            const auto saved_lhs = lhs.detach();
-            const auto saved_rhs = rhs.detach();
-            detail::autograd::set_history(
-                result,
-                "matmul",
-                {lhs, rhs},
-                [lhs_needs_grad, rhs_needs_grad, saved_lhs, saved_rhs](const Tensor &gradient)
-                {
-                    detail::autograd::GradList gradients(2);
-                    if (lhs_needs_grad)
-                    {
-                        gradients[0] = matmul(gradient, saved_rhs.transpose(0, 1));
-                    }
-                    if (rhs_needs_grad)
-                    {
-                        gradients[1] = matmul(saved_lhs.transpose(0, 1), gradient);
-                    }
-                    return gradients;
-                });
-        }
+        context.record(result, "matmul", matmul_backward);
         return result;
     }
 

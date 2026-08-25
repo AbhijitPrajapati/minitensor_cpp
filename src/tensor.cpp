@@ -5,7 +5,6 @@
 #include "core/storage.hpp"
 #include "core/tensor_impl.hpp"
 #include "kernels/kernels.hpp"
-#include "ops/operation_utils.hpp"
 
 #include <memory>
 #include <stdexcept>
@@ -34,8 +33,9 @@ namespace minitensor
 
     Tensor Tensor::ones(Shape shape, const bool requires_grad)
     {
-        auto result = detail::make_contiguous_tensor(
-            std::move(shape), requires_grad, 1.0F);
+        auto result = Tensor::zeros(std::move(shape), requires_grad);
+        detail::kernel::fill(
+            detail::kernel::TensorViewAccess::mutable_view(result), 1.0F);
         return result;
     }
 

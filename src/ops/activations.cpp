@@ -1,82 +1,87 @@
 #include "minitensor/ops.hpp"
 
-#include "autograd/node.hpp"
+#include "autograd/recording.hpp"
 #include "kernels/kernels.hpp"
-#include "ops/operation_utils.hpp"
 
 #include <optional>
+#include <utility>
 
 namespace minitensor
 {
+    namespace
+    {
+
+        detail::autograd::GradList relu_backward(
+            const Tensor &gradient,
+            const detail::autograd::TensorSpan parents,
+            detail::autograd::TensorSpan)
+        {
+            auto input_gradient = Tensor::zeros(parents[0].shape());
+            detail::kernel::relu_backward(
+                detail::kernel::TensorViewAccess::view(parents[0]),
+                detail::kernel::TensorViewAccess::view(gradient),
+                detail::kernel::TensorViewAccess::mutable_view(input_gradient));
+            return detail::autograd::GradList{
+                std::optional<Tensor>{std::move(input_gradient)}};
+        }
+
+        detail::autograd::GradList sigmoid_backward(
+            const Tensor &gradient,
+            detail::autograd::TensorSpan,
+            const detail::autograd::TensorSpan saved_tensors)
+        {
+            const auto &output = saved_tensors[0];
+            auto input_gradient = gradient * output * (1.0F - output);
+            return detail::autograd::GradList{
+                std::optional<Tensor>{std::move(input_gradient)}};
+        }
+
+        detail::autograd::GradList tanh_backward(
+            const Tensor &gradient,
+            detail::autograd::TensorSpan,
+            const detail::autograd::TensorSpan saved_tensors)
+        {
+            const auto &output = saved_tensors[0];
+            auto input_gradient = gradient * (1.0F - output * output);
+            return detail::autograd::GradList{
+                std::optional<Tensor>{std::move(input_gradient)}};
+        }
+
+    } // namespace
 
     Tensor relu(const Tensor &input)
     {
-        auto result = detail::make_contiguous_tensor(input.shape(), input.requires_grad());
+        detail::autograd::OperationContext context{input};
+        auto result = Tensor::zeros(input.shape(), context.requires_grad());
         detail::kernel::unary(
             detail::kernel::TensorViewAccess::view(input),
             detail::kernel::TensorViewAccess::mutable_view(result),
             detail::kernel::UnaryKernel::relu);
-        if (input.requires_grad())
-        {
-            const auto saved_input = input.detach();
-            detail::autograd::set_history(
-                result,
-                "relu",
-                {input},
-                [saved_input](const Tensor &gradient)
-                {
-                    return detail::autograd::GradList{std::optional<Tensor>{
-                        detail::relu_gradient(saved_input, gradient)}};
-                });
-        }
+        context.record(result, "relu", relu_backward);
         return result;
     }
 
     Tensor sigmoid(const Tensor &input)
     {
-        auto result = detail::make_contiguous_tensor(input.shape(), input.requires_grad());
+        detail::autograd::OperationContext context{input};
+        auto result = Tensor::zeros(input.shape(), context.requires_grad());
         detail::kernel::unary(
             detail::kernel::TensorViewAccess::view(input),
             detail::kernel::TensorViewAccess::mutable_view(result),
             detail::kernel::UnaryKernel::sigmoid);
-        if (input.requires_grad())
-        {
-            const auto saved_output = result.detach();
-            detail::autograd::set_history(
-                result,
-                "sigmoid",
-                {input},
-                [saved_output](const Tensor &gradient)
-                {
-                    auto input_gradient = gradient * saved_output * (1.0F - saved_output);
-                    return detail::autograd::GradList{
-                        std::optional<Tensor>{std::move(input_gradient)}};
-                });
-        }
+        context.record(result, "sigmoid", sigmoid_backward, {result});
         return result;
     }
 
     Tensor tanh(const Tensor &input)
     {
-        auto result = detail::make_contiguous_tensor(input.shape(), input.requires_grad());
+        detail::autograd::OperationContext context{input};
+        auto result = Tensor::zeros(input.shape(), context.requires_grad());
         detail::kernel::unary(
             detail::kernel::TensorViewAccess::view(input),
             detail::kernel::TensorViewAccess::mutable_view(result),
             detail::kernel::UnaryKernel::tanh);
-        if (input.requires_grad())
-        {
-            const auto saved_output = result.detach();
-            detail::autograd::set_history(
-                result,
-                "tanh",
-                {input},
-                [saved_output](const Tensor &gradient)
-                {
-                    auto input_gradient = gradient * (1.0F - saved_output * saved_output);
-                    return detail::autograd::GradList{
-                        std::optional<Tensor>{std::move(input_gradient)}};
-                });
-        }
+        context.record(result, "tanh", tanh_backward, {result});
         return result;
     }
 

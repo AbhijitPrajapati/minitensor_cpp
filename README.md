@@ -37,7 +37,10 @@ Tensor
        -> Layout (shape, positive strides, element offset)
        -> AutogradMeta
             -> optional accumulated leaf gradient
-            -> optional backward Node -> parent Tensor handles
+            -> optional backward Node
+                 -> parent Tensor handles
+                 -> detached saved tensors
+                 -> backward rule
 ```
 
 Copying a `Tensor` copies its handle. Transpose and slice create a new tensor
@@ -57,8 +60,9 @@ The implementation is divided into four boundaries:
 - `src/core`: shape algebra, storage, layout invariants, and private tensor state.
 - `src/kernels`: non-owning read/write arguments, private iteration/execution
   plans, and scalar strided kernels.
-- `src/ops`: public orchestration, output construction, and gradient rules.
-- `src/autograd`: graph nodes, reverse-topological traversal, and accumulation.
+- `src/ops`: public orchestration and operation-local gradient rules.
+- `src/autograd`: the operation-recording contract, graph nodes,
+  reverse-topological traversal, and accumulation.
 
 Private subsystem namespaces mirror the important architectural boundaries:
 `detail::shape` owns shape algebra, `detail::kernel` owns kernels and their
@@ -69,8 +73,12 @@ separate, subsystem-specific access types.
 
 Kernels do not inspect autograd state. Autograd nodes point only toward parents,
 so temporary intermediates remain alive without parent-to-child reference cycles.
-Saved values are detached handles, and public data is immutable, so this baseline
-does not need mutation version counters.
+An operation recording context derives result gradient state from one authoritative
+parent list and supplies that same list to its backward rule. Saved tensors are
+detached centrally and represented explicitly by the node rather than hidden in
+rule captures. Backward rules run with graph recording disabled because this is a
+first-order engine. Public data is immutable, so this baseline does not need
+mutation version counters.
 
 ## Supported operations
 

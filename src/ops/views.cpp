@@ -1,18 +1,102 @@
 #include "minitensor/tensor.hpp"
 
-#include "autograd/node.hpp"
+#include "autograd/recording.hpp"
 #include "core/layout.hpp"
 #include "core/tensor_impl.hpp"
 #include "core/shape.hpp"
 #include "kernels/kernels.hpp"
-#include "ops/operation_utils.hpp"
 
-#include <optional>
 #include <memory>
+#include <optional>
 #include <utility>
 
 namespace minitensor
 {
+    namespace
+    {
+
+        detail::autograd::GradList transpose_backward(
+            const Tensor &gradient,
+            detail::autograd::TensorSpan,
+            detail::autograd::TensorSpan,
+            const Index dim0,
+            const Index dim1)
+        {
+            return detail::autograd::GradList{std::optional<Tensor>{
+                gradient.transpose(dim0, dim1)}};
+        }
+
+        detail::autograd::BackwardFn make_transpose_backward(
+            const Index dim0,
+            const Index dim1)
+        {
+            return [dim0, dim1](
+                       const Tensor &gradient,
+                       const detail::autograd::TensorSpan parents,
+                       const detail::autograd::TensorSpan saved_tensors)
+            {
+                return transpose_backward(
+                    gradient, parents, saved_tensors, dim0, dim1);
+            };
+        }
+
+        detail::autograd::GradList slice_backward(
+            const Tensor &gradient,
+            const detail::autograd::TensorSpan parents,
+            detail::autograd::TensorSpan,
+            const Index dim,
+            const Index start,
+            const Index stop,
+            const Index step)
+        {
+            auto input_gradient = Tensor::zeros(parents[0].shape());
+            const auto input_gradient_view =
+                detail::kernel::TensorViewAccess::mutable_view(input_gradient);
+            const auto destination_layout =
+                input_gradient_view.layout.sliced(dim, start, stop, step);
+            detail::kernel::copy(
+                detail::kernel::TensorViewAccess::view(gradient),
+                detail::kernel::MutableTensorView{
+                    input_gradient_view.storage, destination_layout});
+            return detail::autograd::GradList{
+                std::optional<Tensor>{std::move(input_gradient)}};
+        }
+
+        detail::autograd::BackwardFn make_slice_backward(
+            const Index dim,
+            const Index start,
+            const Index stop,
+            const Index step)
+        {
+            return [dim, start, stop, step](
+                       const Tensor &gradient,
+                       const detail::autograd::TensorSpan parents,
+                       const detail::autograd::TensorSpan saved_tensors)
+            {
+                return slice_backward(
+                    gradient, parents, saved_tensors, dim, start, stop, step);
+            };
+        }
+
+        detail::autograd::GradList contiguous_backward(
+            const Tensor &gradient,
+            detail::autograd::TensorSpan,
+            detail::autograd::TensorSpan)
+        {
+            return detail::autograd::GradList{
+                std::optional<Tensor>{gradient}};
+        }
+
+        detail::autograd::GradList reshape_backward(
+            const Tensor &gradient,
+            const detail::autograd::TensorSpan parents,
+            detail::autograd::TensorSpan)
+        {
+            return detail::autograd::GradList{std::optional<Tensor>{
+                gradient.reshape(parents[0].shape())}};
+        }
+
+    } // namespace
 
     Tensor Tensor::transpose(const Index dim0, const Index dim1) const
     {
@@ -22,23 +106,14 @@ namespace minitensor
             return *this;
         }
 
+        detail::autograd::OperationContext context{*this};
         auto result = Tensor(std::make_shared<detail::TensorImpl>(
             impl_->storage,
             std::move(transposed_layout),
-            requires_grad()));
+            context.requires_grad()));
 
-        if (requires_grad())
-        {
-            detail::autograd::set_history(
-                result,
-                "transpose",
-                {*this},
-                [dim0, dim1](const Tensor &gradient)
-                {
-                    return detail::autograd::GradList{
-                        std::optional<Tensor>{gradient.transpose(dim0, dim1)}};
-                });
-        }
+        context.record(
+            result, "transpose", make_transpose_backward(dim0, dim1));
         return result;
     }
 
@@ -48,24 +123,14 @@ namespace minitensor
         const Index stop,
         const Index step) const
     {
-        const auto input_shape = shape();
+        detail::autograd::OperationContext context{*this};
         auto result = Tensor(std::make_shared<detail::TensorImpl>(
             impl_->storage,
             impl_->layout.sliced(dim, start, stop, step),
-            requires_grad()));
+            context.requires_grad()));
 
-        if (requires_grad())
-        {
-            detail::autograd::set_history(
-                result,
-                "slice",
-                {*this},
-                [input_shape, dim, start, stop, step](const Tensor &gradient)
-                {
-                    return detail::autograd::GradList{std::optional<Tensor>{
-                        detail::slice_gradient(gradient, input_shape, dim, start, stop, step)}};
-                });
-        }
+        context.record(
+            result, "slice", make_slice_backward(dim, start, stop, step));
         return result;
     }
 
@@ -76,22 +141,12 @@ namespace minitensor
             return *this;
         }
 
-        auto result = detail::make_contiguous_tensor(shape(), requires_grad());
+        detail::autograd::OperationContext context{*this};
+        auto result = Tensor::zeros(shape(), context.requires_grad());
         detail::kernel::copy(
             detail::kernel::TensorViewAccess::view(*this),
             detail::kernel::TensorViewAccess::mutable_view(result));
-        if (requires_grad())
-        {
-            detail::autograd::set_history(
-                result,
-                "contiguous",
-                {*this},
-                [](const Tensor &gradient)
-                {
-                    return detail::autograd::GradList{
-                        std::optional<Tensor>{gradient.detach()}};
-                });
-        }
+        context.record(result, "contiguous", contiguous_backward);
         return result;
     }
 
@@ -107,23 +162,12 @@ namespace minitensor
             return *this;
         }
 
-        const auto input_shape = shape();
+        detail::autograd::OperationContext context{*this};
         auto result = Tensor(std::make_shared<detail::TensorImpl>(
             impl_->storage,
             impl_->layout.reshaped(std::move(new_shape)),
-            requires_grad()));
-        if (requires_grad())
-        {
-            detail::autograd::set_history(
-                result,
-                "reshape",
-                {*this},
-                [input_shape](const Tensor &gradient)
-                {
-                    return detail::autograd::GradList{
-                        std::optional<Tensor>{gradient.reshape(input_shape)}};
-                });
-        }
+            context.requires_grad()));
+        context.record(result, "reshape", reshape_backward);
         return result;
     }
 

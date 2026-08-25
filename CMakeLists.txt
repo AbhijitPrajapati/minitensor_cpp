@@ -11,7 +11,7 @@ target_sources(
     PRIVATE
         src/tensor.cpp
         src/autograd/engine.cpp
-        src/autograd/node.cpp
+        src/autograd/recording.cpp
         src/autograd/tensor_access.cpp
         src/core/layout.cpp
         src/core/shape.cpp
@@ -23,7 +23,6 @@ target_sources(
         src/ops/activations.cpp
         src/ops/elementwise.cpp
         src/ops/matmul.cpp
-        src/ops/operation_utils.cpp
         src/ops/reduction.cpp
         src/ops/views.cpp
 )
@@ -85,4 +84,14 @@ if(BUILD_TESTING)
             ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
     add_test(NAME minitensor_iteration_tests COMMAND minitensor_iteration_tests)
+
+    # Autograd contract tests verify recording, explicit saved state, and no-grad execution.
+    add_executable(minitensor_autograd_tests tests/autograd_test.cpp)
+    target_link_libraries(minitensor_autograd_tests PRIVATE minitensor)
+    target_include_directories(
+        minitensor_autograd_tests
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    add_test(NAME minitensor_autograd_tests COMMAND minitensor_autograd_tests)
 endif()
