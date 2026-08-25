@@ -4,6 +4,7 @@
 #include "core/layout.hpp"
 #include "core/tensor_impl.hpp"
 #include "core/shape.hpp"
+#include "kernels/kernels.hpp"
 #include "ops/operation_utils.hpp"
 
 #include <optional>
@@ -76,7 +77,9 @@ namespace minitensor
         }
 
         auto result = detail::make_contiguous_tensor(shape(), requires_grad());
-        detail::kernel::copy(detail::read_arg(*this), detail::write_arg(result));
+        detail::kernel::copy(
+            detail::kernel::TensorViewAccess::view(*this),
+            detail::kernel::TensorViewAccess::mutable_view(result));
         if (requires_grad())
         {
             detail::autograd::set_history(

@@ -1,8 +1,9 @@
 #include "minitensor/ops.hpp"
 
 #include "autograd/node.hpp"
-#include "ops/operation_utils.hpp"
 #include "core/shape.hpp"
+#include "kernels/kernels.hpp"
+#include "ops/operation_utils.hpp"
 
 #include <optional>
 #include <utility>
@@ -15,7 +16,10 @@ namespace minitensor
         const auto output_shape = detail::shape::reduce(tensor.shape(), dim, keepdim);
         auto result = detail::make_contiguous_tensor(output_shape, tensor.requires_grad());
         detail::kernel::reduce_sum(
-            detail::read_arg(tensor), detail::write_arg(result), dim, keepdim);
+            detail::kernel::TensorViewAccess::view(tensor),
+            detail::kernel::TensorViewAccess::mutable_view(result),
+            dim,
+            keepdim);
 
         if (tensor.requires_grad())
         {

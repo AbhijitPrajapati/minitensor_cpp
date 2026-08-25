@@ -12,13 +12,20 @@ namespace minitensor
     namespace detail
     {
 
-        // Friend struct used by operators to interface with TensorImpl
-        struct TensorAccess;
+        namespace autograd
+        {
+            struct TensorAutogradAccess;
+        } // namespace autograd
+
+        namespace kernel
+        {
+            struct TensorViewAccess;
+        } // namespace kernel
 
         // Internal tensor implementation
         struct TensorImpl;
 
-    } // namespace detail
+    } // namespace details
 
     class Tensor
     {
@@ -73,8 +80,10 @@ namespace minitensor
         // Shared pointer allows TensorImpl to be shared
         std::shared_ptr<detail::TensorImpl> impl_;
 
-        // Friend declared so TensorAccess can access private impl_ property
-        friend struct detail::TensorAccess;
+        // Separate friends grant kernel and autograd only the capabilities
+        // required by their respective subsystems.
+        friend struct detail::kernel::TensorViewAccess;
+        friend struct detail::autograd::TensorAutogradAccess;
     };
 
 } // namespace minitensor

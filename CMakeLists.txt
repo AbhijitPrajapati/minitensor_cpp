@@ -12,13 +12,14 @@ target_sources(
         src/tensor.cpp
         src/autograd/engine.cpp
         src/autograd/node.cpp
+        src/autograd/tensor_access.cpp
         src/core/layout.cpp
         src/core/shape.cpp
         src/core/storage.cpp
-        src/core/tensor_access.cpp
         src/core/tensor_impl.cpp
         src/kernels/iteration.cpp
         src/kernels/kernels.cpp
+        src/kernels/tensor_view.cpp
         src/ops/activations.cpp
         src/ops/elementwise.cpp
         src/ops/matmul.cpp

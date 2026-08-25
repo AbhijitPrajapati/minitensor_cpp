@@ -1,6 +1,7 @@
 #include "minitensor/ops.hpp"
 
 #include "autograd/node.hpp"
+#include "kernels/kernels.hpp"
 #include "ops/operation_utils.hpp"
 
 #include <optional>
@@ -24,7 +25,9 @@ namespace minitensor
         auto result = detail::make_contiguous_tensor(
             Shape{lhs.shape()[0], rhs.shape()[1]}, needs_grad);
         detail::kernel::matrix_multiply(
-            detail::read_arg(lhs), detail::read_arg(rhs), detail::write_arg(result));
+            detail::kernel::TensorViewAccess::view(lhs),
+            detail::kernel::TensorViewAccess::view(rhs),
+            detail::kernel::TensorViewAccess::mutable_view(result));
 
         if (needs_grad)
         {

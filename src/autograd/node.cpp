@@ -1,6 +1,6 @@
 #include "autograd/node.hpp"
 
-#include "core/tensor_access.hpp"
+#include "autograd/tensor_access.hpp"
 
 #include <memory>
 #include <stdexcept>
@@ -19,7 +19,7 @@ namespace minitensor::detail::autograd
         {
             throw std::logic_error("cannot attach autograd history to a tensor that does not require gradients");
         }
-        TensorAccess::set_grad_fn(
+        TensorAutogradAccess::set_grad_fn(
             result,
             std::make_unique<Node>(Node{
                 std::move(name), std::move(parents), std::move(backward)}));

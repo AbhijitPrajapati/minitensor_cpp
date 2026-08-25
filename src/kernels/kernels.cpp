@@ -91,7 +91,7 @@ namespace minitensor::detail::kernel
 
     } // namespace
 
-    void fill(const WriteTensorArg output, const float value)
+    void fill(const MutableTensorView output, const float value)
     {
         const ElementwiseIterator iterator(output.layout, {});
         iterator.for_each(
@@ -99,7 +99,7 @@ namespace minitensor::detail::kernel
             { write_at(output.storage, output_offset) = value; });
     }
 
-    void copy(const ReadTensorArg input, const WriteTensorArg output)
+    void copy(const ConstTensorView input, const MutableTensorView output)
     {
         require_same_shape(input.layout, output.layout, "copy");
         const ElementwiseIterator iterator(output.layout, {input.layout});
@@ -112,9 +112,9 @@ namespace minitensor::detail::kernel
     }
 
     void binary(
-        const ReadTensorArg lhs,
-        const ReadTensorArg rhs,
-        const WriteTensorArg output,
+        const ConstTensorView lhs,
+        const ConstTensorView rhs,
+        const MutableTensorView output,
         const BinaryKernel operation)
     {
         const ElementwiseIterator iterator(output.layout, {lhs.layout, rhs.layout});
@@ -129,8 +129,8 @@ namespace minitensor::detail::kernel
     }
 
     void unary(
-        const ReadTensorArg input,
-        const WriteTensorArg output,
+        const ConstTensorView input,
+        const MutableTensorView output,
         const UnaryKernel operation)
     {
         require_same_shape(input.layout, output.layout, "unary kernel");
@@ -144,9 +144,9 @@ namespace minitensor::detail::kernel
     }
 
     void matrix_multiply(
-        const ReadTensorArg lhs,
-        const ReadTensorArg rhs,
-        const WriteTensorArg output)
+        const ConstTensorView lhs,
+        const ConstTensorView rhs,
+        const MutableTensorView output)
     {
         const MatrixMultiplyPlan plan(lhs.layout, rhs.layout, output.layout);
         fill(output, 0.0F);
@@ -159,8 +159,8 @@ namespace minitensor::detail::kernel
     }
 
     void reduce_sum(
-        const ReadTensorArg input,
-        const WriteTensorArg output,
+        const ConstTensorView input,
+        const MutableTensorView output,
         const std::optional<Index> dim,
         const bool keepdim)
     {
@@ -173,7 +173,7 @@ namespace minitensor::detail::kernel
             });
     }
 
-    void sum_to_shape(const ReadTensorArg input, const WriteTensorArg output)
+    void sum_to_shape(const ConstTensorView input, const MutableTensorView output)
     {
         const auto iterator = ReductionIterator::to_shape(input.layout, output.layout);
         fill(output, 0.0F);
@@ -185,9 +185,9 @@ namespace minitensor::detail::kernel
     }
 
     void relu_backward(
-        const ReadTensorArg input,
-        const ReadTensorArg gradient,
-        const WriteTensorArg output)
+        const ConstTensorView input,
+        const ConstTensorView gradient,
+        const MutableTensorView output)
     {
         require_same_shape(input.layout, gradient.layout, "relu backward");
         require_same_shape(input.layout, output.layout, "relu backward");

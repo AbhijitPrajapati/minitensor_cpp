@@ -1,6 +1,7 @@
 #include "minitensor/ops.hpp"
 
 #include "autograd/node.hpp"
+#include "kernels/kernels.hpp"
 #include "ops/operation_utils.hpp"
 
 #include <optional>
@@ -12,8 +13,8 @@ namespace minitensor
     {
         auto result = detail::make_contiguous_tensor(input.shape(), input.requires_grad());
         detail::kernel::unary(
-            detail::read_arg(input),
-            detail::write_arg(result),
+            detail::kernel::TensorViewAccess::view(input),
+            detail::kernel::TensorViewAccess::mutable_view(result),
             detail::kernel::UnaryKernel::relu);
         if (input.requires_grad())
         {
@@ -35,8 +36,8 @@ namespace minitensor
     {
         auto result = detail::make_contiguous_tensor(input.shape(), input.requires_grad());
         detail::kernel::unary(
-            detail::read_arg(input),
-            detail::write_arg(result),
+            detail::kernel::TensorViewAccess::view(input),
+            detail::kernel::TensorViewAccess::mutable_view(result),
             detail::kernel::UnaryKernel::sigmoid);
         if (input.requires_grad())
         {
@@ -59,8 +60,8 @@ namespace minitensor
     {
         auto result = detail::make_contiguous_tensor(input.shape(), input.requires_grad());
         detail::kernel::unary(
-            detail::read_arg(input),
-            detail::write_arg(result),
+            detail::kernel::TensorViewAccess::view(input),
+            detail::kernel::TensorViewAccess::mutable_view(result),
             detail::kernel::UnaryKernel::tanh);
         if (input.requires_grad())
         {

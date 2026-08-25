@@ -1,7 +1,7 @@
 #include "autograd/engine.hpp"
 
 #include "autograd/node.hpp"
-#include "core/tensor_access.hpp"
+#include "autograd/tensor_access.hpp"
 #include "minitensor/ops.hpp"
 
 #include <stdexcept>
@@ -15,21 +15,20 @@ namespace minitensor::detail::autograd
     namespace
     {
 
-        using TensorKey = TensorAccess::Identity;
-        using GradientMap = std::unordered_map<TensorKey, Tensor>;
+        using GradientMap = std::unordered_map<TensorId, Tensor, TensorIdHash>;
 
         void visit(
             const Tensor &tensor,
-            std::unordered_set<TensorKey> &visited,
+            std::unordered_set<TensorId, TensorIdHash> &visited,
             std::vector<Tensor> &postorder)
         {
-            const auto key = TensorAccess::identity(tensor);
+            const auto key = TensorAutogradAccess::identity(tensor);
             if (!visited.insert(key).second)
             {
                 return;
             }
 
-            const auto *node = TensorAccess::grad_fn(tensor);
+            const auto *node = TensorAutogradAccess::grad_fn(tensor);
             if (node)
             {
                 for (const auto &parent : node->parents)
@@ -48,7 +47,7 @@ namespace minitensor::detail::autograd
             const Tensor &tensor,
             const Tensor &contribution)
         {
-            const auto key = TensorAccess::identity(tensor);
+            const auto key = TensorAutogradAccess::identity(tensor);
             const auto detached = contribution.detach();
             const auto found = pending.find(key);
             if (found == pending.end())
@@ -68,12 +67,13 @@ namespace minitensor::detail::autograd
             {
                 // Publicly visible gradients use a predictable dense layout even when
                 // a view backward function produced a strided gradient.
-                TensorAccess::set_grad(leaf, contribution.contiguous().detach());
+                TensorAutogradAccess::set_grad(
+                    leaf, contribution.contiguous().detach());
                 return;
             }
 
             const auto accumulated = *existing + contribution.detach();
-            TensorAccess::set_grad(leaf, accumulated);
+            TensorAutogradAccess::set_grad(leaf, accumulated);
         }
 
     } // namespace
@@ -89,7 +89,7 @@ namespace minitensor::detail::autograd
             throw std::invalid_argument("backward gradient shape must match the output shape");
         }
 
-        std::unordered_set<TensorKey> visited;
+        std::unordered_set<TensorId, TensorIdHash> visited;
         std::vector<Tensor> postorder;
         visit(root, visited, postorder);
 
@@ -101,7 +101,7 @@ namespace minitensor::detail::autograd
              ++current_iterator)
         {
             auto current = *current_iterator;
-            const auto key = TensorAccess::identity(current);
+            const auto key = TensorAutogradAccess::identity(current);
             const auto pending_gradient = pending.find(key);
             if (pending_gradient == pending.end())
             {
@@ -109,7 +109,7 @@ namespace minitensor::detail::autograd
             }
 
             const auto current_gradient = pending_gradient->second;
-            const auto *node = TensorAccess::grad_fn(current);
+            const auto *node = TensorAutogradAccess::grad_fn(current);
             if (!node)
             {
                 accumulate_leaf(current, current_gradient);

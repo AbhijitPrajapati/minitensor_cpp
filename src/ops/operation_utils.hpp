@@ -1,15 +1,12 @@
 #pragma once
 
-#include "kernels/kernels.hpp"
 #include "minitensor/tensor.hpp"
 
-// Shared orchestration helpers for public operations. Numerical work remains in
-// kernels, while tensor construction remains behind the private access bridge.
+// Shared orchestration helpers for public operations. Numerical work and tensor
+// view access remain in the kernel layer, while result construction stays here.
 namespace minitensor::detail
 {
 
-    [[nodiscard]] kernel::ReadTensorArg read_arg(const Tensor &tensor) noexcept;
-    [[nodiscard]] kernel::WriteTensorArg write_arg(Tensor &tensor) noexcept;
     [[nodiscard]] Tensor make_contiguous_tensor(
         Shape shape,
         bool requires_grad,

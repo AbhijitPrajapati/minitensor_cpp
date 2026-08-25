@@ -4,6 +4,7 @@
 #include "core/layout.hpp"
 #include "core/storage.hpp"
 #include "core/tensor_impl.hpp"
+#include "kernels/kernels.hpp"
 #include "ops/operation_utils.hpp"
 
 #include <memory>
@@ -65,8 +66,8 @@ namespace minitensor
     {
         std::vector<float> values(static_cast<std::size_t>(numel()));
         auto output_layout = detail::Layout::contiguous(shape());
-        const detail::kernel::WriteTensorArg output{values, output_layout};
-        detail::kernel::copy(detail::read_arg(*this), output);
+        const detail::kernel::MutableTensorView output{values, output_layout};
+        detail::kernel::copy(detail::kernel::TensorViewAccess::view(*this), output);
         return values;
     }
 

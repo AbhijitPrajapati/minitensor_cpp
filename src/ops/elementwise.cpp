@@ -2,6 +2,7 @@
 
 #include "autograd/node.hpp"
 #include "core/shape.hpp"
+#include "kernels/kernels.hpp"
 #include "ops/operation_utils.hpp"
 
 #include <optional>
@@ -28,9 +29,9 @@ namespace minitensor
             const bool needs_grad = lhs.requires_grad() || rhs.requires_grad();
             auto result = detail::make_contiguous_tensor(output_shape, needs_grad);
             detail::kernel::binary(
-                detail::read_arg(lhs),
-                detail::read_arg(rhs),
-                detail::write_arg(result),
+                detail::kernel::TensorViewAccess::view(lhs),
+                detail::kernel::TensorViewAccess::view(rhs),
+                detail::kernel::TensorViewAccess::mutable_view(result),
                 operation);
 
             if (needs_grad)
@@ -138,8 +139,8 @@ namespace minitensor
     {
         auto result = detail::make_contiguous_tensor(value.shape(), value.requires_grad());
         detail::kernel::unary(
-            detail::read_arg(value),
-            detail::write_arg(result),
+            detail::kernel::TensorViewAccess::view(value),
+            detail::kernel::TensorViewAccess::mutable_view(result),
             detail::kernel::UnaryKernel::negate);
         if (value.requires_grad())
         {

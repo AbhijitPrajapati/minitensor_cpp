@@ -63,8 +63,9 @@ The implementation is divided into four boundaries:
 Private subsystem namespaces mirror the important architectural boundaries:
 `detail::shape` owns shape algebra, `detail::kernel` owns kernels and their
 execution plans, and `detail::autograd` owns graph construction and backward
-execution. Shared tensor representation and access-bridge types remain directly
-in `detail`.
+execution. Shared tensor representation remains directly in `detail`. Kernel
+view construction and autograd state mutation cross that representation through
+separate, subsystem-specific access types.
 
 Kernels do not inspect autograd state. Autograd nodes point only toward parents,
 so temporary intermediates remain alive without parent-to-child reference cycles.
