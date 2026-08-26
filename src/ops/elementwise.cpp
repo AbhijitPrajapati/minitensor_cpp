@@ -28,76 +28,107 @@ namespace minitensor
             return result;
         }
 
-        detail::autograd::GradList binary_backward(
-            const detail::kernel::BinaryKernel operation,
+        detail::autograd::GradList add_backward(
             const Tensor &gradient,
-            const detail::autograd::TensorSpan parents)
+            const detail::autograd::TensorSpan parents,
+            detail::autograd::TensorSpan)
         {
             const auto &lhs = parents[0];
             const auto &rhs = parents[1];
             detail::autograd::GradList gradients(2);
-
-            switch (operation)
+            if (lhs.requires_grad())
             {
-            case detail::kernel::BinaryKernel::add:
-                if (lhs.requires_grad())
-                {
-                    gradients[0] = reduce_gradient_to_shape(gradient, lhs.shape());
-                }
-                if (rhs.requires_grad())
-                {
-                    gradients[1] = reduce_gradient_to_shape(gradient, rhs.shape());
-                }
-                break;
-            case detail::kernel::BinaryKernel::subtract:
-                if (lhs.requires_grad())
-                {
-                    gradients[0] = reduce_gradient_to_shape(gradient, lhs.shape());
-                }
-                if (rhs.requires_grad())
-                {
-                    gradients[1] = reduce_gradient_to_shape(-gradient, rhs.shape());
-                }
-                break;
-            case detail::kernel::BinaryKernel::multiply:
-                if (lhs.requires_grad())
-                {
-                    gradients[0] = reduce_gradient_to_shape(
-                        gradient * rhs, lhs.shape());
-                }
-                if (rhs.requires_grad())
-                {
-                    gradients[1] = reduce_gradient_to_shape(
-                        gradient * lhs, rhs.shape());
-                }
-                break;
-            case detail::kernel::BinaryKernel::divide:
-                if (lhs.requires_grad())
-                {
-                    gradients[0] = reduce_gradient_to_shape(
-                        gradient / rhs, lhs.shape());
-                }
-                if (rhs.requires_grad())
-                {
-                    const auto local_gradient =
-                        -(gradient * lhs) / (rhs * rhs);
-                    gradients[1] = reduce_gradient_to_shape(
-                        local_gradient, rhs.shape());
-                }
-                break;
+                gradients[0] = reduce_gradient_to_shape(gradient, lhs.shape());
+            }
+            if (rhs.requires_grad())
+            {
+                gradients[1] = reduce_gradient_to_shape(gradient, rhs.shape());
             }
             return gradients;
         }
 
-        detail::autograd::BackwardFn make_binary_backward(
-            const detail::kernel::BinaryKernel operation)
+        detail::autograd::GradList subtract_backward(
+            const Tensor &gradient,
+            const detail::autograd::TensorSpan parents,
+            detail::autograd::TensorSpan)
         {
-            return [operation](
-                       const Tensor &gradient,
-                       const detail::autograd::TensorSpan parents,
-                       detail::autograd::TensorSpan)
-            { return binary_backward(operation, gradient, parents); };
+            const auto &lhs = parents[0];
+            const auto &rhs = parents[1];
+            detail::autograd::GradList gradients(2);
+            if (lhs.requires_grad())
+            {
+                gradients[0] = reduce_gradient_to_shape(gradient, lhs.shape());
+            }
+            if (rhs.requires_grad())
+            {
+                gradients[1] = reduce_gradient_to_shape(-gradient, rhs.shape());
+            }
+            return gradients;
         }
+
+        detail::autograd::GradList multiply_backward(
+            const Tensor &gradient,
+            const detail::autograd::TensorSpan parents,
+            detail::autograd::TensorSpan)
+        {
+            const auto &lhs = parents[0];
+            const auto &rhs = parents[1];
+            detail::autograd::GradList gradients(2);
+            if (lhs.requires_grad())
+            {
+                gradients[0] = reduce_gradient_to_shape(
+                    gradient * rhs, lhs.shape());
+            }
+            if (rhs.requires_grad())
+            {
+                gradients[1] = reduce_gradient_to_shape(
+                    gradient * lhs, rhs.shape());
+            }
+            return gradients;
+        }
+
+        detail::autograd::GradList divide_backward(
+            const Tensor &gradient,
+            const detail::autograd::TensorSpan parents,
+            detail::autograd::TensorSpan)
+        {
+            const auto &lhs = parents[0];
+            const auto &rhs = parents[1];
+            detail::autograd::GradList gradients(2);
+            if (lhs.requires_grad())
+            {
+                gradients[0] = reduce_gradient_to_shape(
+                    gradient / rhs, lhs.shape());
+            }
+            if (rhs.requires_grad())
+            {
+                const auto local_gradient = -(gradient * lhs) / (rhs * rhs);
+                gradients[1] = reduce_gradient_to_shape(
+                    local_gradient, rhs.shape());
+            }
+            return gradients;
+        }
+
+        using BinaryBackward = detail::autograd::GradList (*)(
+            const Tensor &,
+            detail::autograd::TensorSpan,
+            detail::autograd::TensorSpan);
+
+        struct BinaryOperation final
+        {
+            detail::kernel::BinaryKernel kernel;
+            const char *name;
+            BinaryBackward backward;
+        };
+
+        constexpr BinaryOperation add_operation{
+            detail::kernel::BinaryKernel::add, "add", add_backward};
+        constexpr BinaryOperation subtract_operation{
+            detail::kernel::BinaryKernel::subtract, "subtract", subtract_backward};
+        constexpr BinaryOperation multiply_operation{
+            detail::kernel::BinaryKernel::multiply, "multiply", multiply_backward};
+        constexpr BinaryOperation divide_operation{
+            detail::kernel::BinaryKernel::divide, "divide", divide_backward};
 
         detail::autograd::GradList negate_backward(
             const Tensor &gradient,
@@ -116,8 +147,7 @@ namespace minitensor
         Tensor apply_binary_operation(
             const Tensor &lhs,
             const Tensor &rhs,
-            const detail::kernel::BinaryKernel operation,
-            const char *name)
+            const BinaryOperation operation)
         {
             const auto output_shape = detail::shape::broadcast(lhs.shape(), rhs.shape());
             detail::autograd::OperationContext context{lhs, rhs};
@@ -126,9 +156,9 @@ namespace minitensor
                 detail::kernel::TensorViewAccess::view(lhs),
                 detail::kernel::TensorViewAccess::view(rhs),
                 detail::kernel::TensorViewAccess::mutable_view(result),
-                operation);
+                operation.kernel);
 
-            context.record(result, name, make_binary_backward(operation));
+            context.record(result, operation.name, operation.backward);
             return result;
         }
 
@@ -136,24 +166,22 @@ namespace minitensor
 
     Tensor operator+(const Tensor &lhs, const Tensor &rhs)
     {
-        return apply_binary_operation(lhs, rhs, detail::kernel::BinaryKernel::add, "add");
+        return apply_binary_operation(lhs, rhs, add_operation);
     }
 
     Tensor operator-(const Tensor &lhs, const Tensor &rhs)
     {
-        return apply_binary_operation(
-            lhs, rhs, detail::kernel::BinaryKernel::subtract, "subtract");
+        return apply_binary_operation(lhs, rhs, subtract_operation);
     }
 
     Tensor operator*(const Tensor &lhs, const Tensor &rhs)
     {
-        return apply_binary_operation(
-            lhs, rhs, detail::kernel::BinaryKernel::multiply, "multiply");
+        return apply_binary_operation(lhs, rhs, multiply_operation);
     }
 
     Tensor operator/(const Tensor &lhs, const Tensor &rhs)
     {
-        return apply_binary_operation(lhs, rhs, detail::kernel::BinaryKernel::divide, "divide");
+        return apply_binary_operation(lhs, rhs, divide_operation);
     }
 
     Tensor operator-(const Tensor &value)

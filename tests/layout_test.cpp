@@ -17,9 +17,9 @@ namespace
     using minitensor::detail::shape::broadcast;
     using minitensor::detail::shape::coordinates_from_linear;
     using minitensor::detail::shape::is_broadcastable_to;
-    using minitensor::detail::shape::is_reshape_compatible;
     using minitensor::detail::shape::numel;
     using minitensor::detail::shape::reduce;
+    using minitensor::detail::shape::require_reshape_compatible;
 
     int failures = 0;
 
@@ -67,9 +67,10 @@ int main()
     expect(
         reduce(matrix_shape, 0, false) == Shape{3},
         "shape infers a removed reduction dimension");
-    expect(
-        is_reshape_compatible(matrix_shape, Shape{3, 2}),
-        "shape recognizes reshape compatibility");
+    expect_throws<std::invalid_argument>(
+        [&]
+        { require_reshape_compatible(matrix_shape, Shape{4, 2}); },
+        "shape rejects reshape with a different element count");
     expect_throws<std::invalid_argument>(
         []
         { static_cast<void>(numel(Shape{2, -1})); },

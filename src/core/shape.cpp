@@ -37,6 +37,24 @@ namespace minitensor::detail::shape
             }
         }
 
+        void validate_shape(const Shape &shape)
+        {
+            validate_rank(shape.size());
+            checked_numel(shape);
+        }
+
+        void require_axis_in_range(
+            const Index shape_rank,
+            const Index dimension,
+            const std::string_view operation)
+        {
+            if (dimension < 0 || dimension >= shape_rank)
+            {
+                throw std::out_of_range(
+                    std::string(operation) + " dimension is out of range");
+            }
+        }
+
         std::size_t as_size(const Index value)
         {
             return static_cast<std::size_t>(value);
@@ -60,30 +78,22 @@ namespace minitensor::detail::shape
         const Index dimension,
         const std::string_view operation)
     {
-        static_cast<void>(numel(shape));
-        if (dimension < 0 || dimension >= rank(shape))
-        {
-            throw std::out_of_range(std::string(operation) + " dimension is out of range");
-        }
+        validate_shape(shape);
+        require_axis_in_range(rank(shape), dimension, operation);
     }
 
     void require_reshape_compatible(const Shape &lhs, const Shape &rhs)
     {
-        if (!is_reshape_compatible(lhs, rhs))
+        if (numel(lhs) != numel(rhs))
         {
             throw std::invalid_argument("reshape must preserve the number of elements");
         }
     }
 
-    bool is_reshape_compatible(const Shape &lhs, const Shape &rhs)
-    {
-        return numel(lhs) == numel(rhs);
-    }
-
     Shape broadcast(const Shape &lhs, const Shape &rhs)
     {
-        static_cast<void>(numel(lhs));
-        static_cast<void>(numel(rhs));
+        validate_shape(lhs);
+        validate_shape(rhs);
         const auto output_rank = std::max(lhs.size(), rhs.size());
         std::vector<Index> output_extents(output_rank, 1);
         const auto lhs_padding = output_rank - lhs.size();
@@ -99,14 +109,14 @@ namespace minitensor::detail::shape
             }
             output_extents[dimension] = lhs_extent == 1 ? rhs_extent : lhs_extent;
         }
-        static_cast<void>(numel(output_extents));
+        validate_shape(output_extents);
         return output_extents;
     }
 
     bool is_broadcastable_to(const Shape &source, const Shape &target)
     {
-        static_cast<void>(numel(source));
-        static_cast<void>(numel(target));
+        validate_shape(source);
+        validate_shape(target);
         if (source.size() > target.size())
         {
             return false;
@@ -127,9 +137,9 @@ namespace minitensor::detail::shape
 
     Shape reduce(const Shape &shape, std::optional<Index> dimension, bool keepdim)
     {
-        static_cast<void>(numel(shape));
         if (!dimension.has_value())
         {
+            validate_shape(shape);
             return keepdim ? Shape(shape.size(), 1) : Shape{};
         }
 
@@ -149,32 +159,12 @@ namespace minitensor::detail::shape
 
     Shape transpose(const Shape &shape, Index dim0, Index dim1)
     {
-        require_axis(shape, dim0, "transpose");
-        require_axis(shape, dim1, "transpose");
+        validate_shape(shape);
+        const auto shape_rank = rank(shape);
+        require_axis_in_range(shape_rank, dim0, "transpose");
+        require_axis_in_range(shape_rank, dim1, "transpose");
         auto result = shape;
         std::swap(result[as_size(dim0)], result[as_size(dim1)]);
-        return result;
-    }
-
-    Shape replace_extent(const Shape &shape, Index dimension, Index extent)
-    {
-        require_axis(shape, dimension, "shape");
-        auto result = shape;
-        result[as_size(dimension)] = extent;
-        static_cast<void>(numel(result));
-        return result;
-    }
-
-    Shape insert_axis(const Shape &shape, const Index dimension, const Index extent)
-    {
-        static_cast<void>(numel(shape));
-        if (dimension < 0 || dimension > rank(shape))
-        {
-            throw std::out_of_range("inserted dimension is out of range");
-        }
-        auto result = shape;
-        result.insert(result.begin() + static_cast<std::ptrdiff_t>(dimension), extent);
-        static_cast<void>(numel(result));
         return result;
     }
 

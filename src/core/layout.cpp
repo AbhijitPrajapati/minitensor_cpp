@@ -44,7 +44,6 @@ namespace minitensor::detail
 
     Layout Layout::contiguous(Shape shape, const Index offset)
     {
-        static_cast<void>(shape::numel(shape));
         Strides strides(shape.size());
         std::exclusive_scan(
             shape.rbegin(), shape.rend(), strides.rbegin(), Index{1}, checked_multiply);
@@ -146,7 +145,8 @@ namespace minitensor::detail
 
         const auto span = stop - start;
         const auto slice_extent = span == 0 ? Index{0} : 1 + (span - 1) / step;
-        auto result_shape = shape::replace_extent(shape_, dim, slice_extent);
+        auto result_shape = shape_;
+        result_shape[dimension] = slice_extent;
         auto result_strides = strides_;
         result_strides[dimension] = checked_multiply(result_strides[dimension], step);
 

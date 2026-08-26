@@ -4,6 +4,7 @@
 #include "core/shape.hpp"
 #include "kernels/kernels.hpp"
 
+#include <cstddef>
 #include <optional>
 #include <utility>
 
@@ -22,7 +23,11 @@ namespace minitensor
             auto broadcastable = gradient;
             if (dim.has_value() && !keepdim)
             {
-                auto expanded_shape = detail::shape::insert_axis(gradient.shape(), *dim);
+                // Restore the singleton axis removed by the forward reduction.
+                auto expanded_shape = gradient.shape();
+                expanded_shape.insert(
+                    expanded_shape.begin() + static_cast<std::ptrdiff_t>(*dim),
+                    1);
                 broadcastable = gradient.reshape(std::move(expanded_shape));
             }
             auto expanded = Tensor::ones(parents[0].shape()) * broadcastable;
