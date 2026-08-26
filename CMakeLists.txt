@@ -11,16 +11,18 @@ target_sources(
     PRIVATE
         src/tensor.cpp
         src/autograd/engine.cpp
-        src/autograd/node.cpp
+        src/autograd/recording.cpp
+        src/autograd/tensor_access.cpp
         src/core/layout.cpp
+        src/core/shape.cpp
         src/core/storage.cpp
-        src/core/tensor_access.cpp
         src/core/tensor_impl.cpp
+        src/kernels/iteration.cpp
         src/kernels/kernels.cpp
+        src/kernels/tensor_view.cpp
         src/ops/activations.cpp
         src/ops/elementwise.cpp
         src/ops/matmul.cpp
-        src/ops/operation_utils.cpp
         src/ops/reduction.cpp
         src/ops/views.cpp
 )
@@ -63,7 +65,7 @@ if(BUILD_TESTING)
     # Add test w/ command to run
     add_test(NAME minitensor_tests COMMAND minitensor_tests)
 
-    # Internal unit tests exercise Layout's validated coordinate conversions.
+    # Internal geometry tests exercise shape validation and Layout transformations.
     add_executable(minitensor_layout_tests tests/layout_test.cpp)
     target_link_libraries(minitensor_layout_tests PRIVATE minitensor)
     target_include_directories(
@@ -72,4 +74,24 @@ if(BUILD_TESTING)
             ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
     add_test(NAME minitensor_layout_tests COMMAND minitensor_layout_tests)
+
+    # Kernel iteration tests exercise elementwise, reduction, and contraction traversal.
+    add_executable(minitensor_iteration_tests tests/iteration_test.cpp)
+    target_link_libraries(minitensor_iteration_tests PRIVATE minitensor)
+    target_include_directories(
+        minitensor_iteration_tests
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    add_test(NAME minitensor_iteration_tests COMMAND minitensor_iteration_tests)
+
+    # Autograd contract tests verify recording, explicit saved state, and no-grad execution.
+    add_executable(minitensor_autograd_tests tests/autograd_test.cpp)
+    target_link_libraries(minitensor_autograd_tests PRIVATE minitensor)
+    target_include_directories(
+        minitensor_autograd_tests
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    add_test(NAME minitensor_autograd_tests COMMAND minitensor_autograd_tests)
 endif()

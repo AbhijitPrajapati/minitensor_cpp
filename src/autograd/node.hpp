@@ -1,27 +1,18 @@
 #pragma once
 
-#include "minitensor/tensor.hpp"
+#include "autograd/recording.hpp"
 
-#include <functional>
-#include <optional>
 #include <string>
 #include <vector>
 
-namespace minitensor::detail {
+namespace minitensor::detail::autograd
+{
+    struct Node final
+    {
+        std::string name;
+        std::vector<Tensor> parents;
+        std::vector<Tensor> saved_tensors;
+        BackwardFn backward;
+    };
 
-using GradList = std::vector<std::optional<Tensor>>;
-using BackwardFn = std::function<GradList(const Tensor& grad_output)>;
-
-struct Node final {
-    std::string name;
-    std::vector<Tensor> parents;
-    BackwardFn backward;
-};
-
-void set_history(
-    Tensor& result,
-    std::string name,
-    std::vector<Tensor> parents,
-    BackwardFn backward);
-
-} // namespace minitensor::detail
+} // namespace minitensor::detail::autograd

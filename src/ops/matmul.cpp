@@ -1,48 +1,55 @@
 #include "minitensor/ops.hpp"
 
-#include "autograd/node.hpp"
-#include "ops/operation_utils.hpp"
+#include "autograd/recording.hpp"
+#include "kernels/kernels.hpp"
 
-#include <optional>
 #include <stdexcept>
 
-namespace minitensor {
+namespace minitensor
+{
+    namespace
+    {
 
-Tensor matmul(const Tensor& lhs, const Tensor& rhs) {
-    if (lhs.rank() != 2 || rhs.rank() != 2) {
-        throw std::invalid_argument("matmul requires rank-2 tensors");
-    }
-    if (lhs.shape()[1] != rhs.shape()[0]) {
-        throw std::invalid_argument("matmul inner dimensions do not match");
-    }
+        detail::autograd::GradList matmul_backward(
+            const Tensor &gradient,
+            const detail::autograd::TensorSpan parents,
+            detail::autograd::TensorSpan)
+        {
+            detail::autograd::GradList gradients(2);
+            if (parents[0].requires_grad())
+            {
+                gradients[0] = matmul(gradient, parents[1].transpose(0, 1));
+            }
+            if (parents[1].requires_grad())
+            {
+                gradients[1] = matmul(parents[0].transpose(0, 1), gradient);
+            }
+            return gradients;
+        }
 
-    const bool needs_grad = lhs.requires_grad() || rhs.requires_grad();
-    auto result = detail::make_contiguous_tensor(
-        Shape{lhs.shape()[0], rhs.shape()[1]}, needs_grad);
-    detail::matrix_multiply(
-        detail::read_arg(lhs), detail::read_arg(rhs), detail::write_arg(result));
+    } // namespace
 
-    if (needs_grad) {
-        const bool lhs_needs_grad = lhs.requires_grad();
-        const bool rhs_needs_grad = rhs.requires_grad();
-        const auto saved_lhs = lhs.detach();
-        const auto saved_rhs = rhs.detach();
-        detail::set_history(
-            result,
-            "matmul",
-            {lhs, rhs},
-            [lhs_needs_grad, rhs_needs_grad, saved_lhs, saved_rhs](const Tensor& gradient) {
-                detail::GradList gradients(2);
-                if (lhs_needs_grad) {
-                    gradients[0] = matmul(gradient, saved_rhs.transpose(0, 1));
-                }
-                if (rhs_needs_grad) {
-                    gradients[1] = matmul(saved_lhs.transpose(0, 1), gradient);
-                }
-                return gradients;
-            });
+    Tensor matmul(const Tensor &lhs, const Tensor &rhs)
+    {
+        if (lhs.rank() != 2 || rhs.rank() != 2)
+        {
+            throw std::invalid_argument("matmul requires rank-2 tensors");
+        }
+        if (lhs.shape()[1] != rhs.shape()[0])
+        {
+            throw std::invalid_argument("matmul inner dimensions do not match");
+        }
+
+        detail::autograd::OperationContext context{lhs, rhs};
+        auto result = Tensor::zeros(
+            Shape{lhs.shape()[0], rhs.shape()[1]}, context.requires_grad());
+        detail::kernel::matrix_multiply(
+            detail::kernel::TensorViewAccess::view(lhs),
+            detail::kernel::TensorViewAccess::view(rhs),
+            detail::kernel::TensorViewAccess::mutable_view(result));
+
+        context.record(result, "matmul", matmul_backward);
+        return result;
     }
-    return result;
-}
 
 } // namespace minitensor

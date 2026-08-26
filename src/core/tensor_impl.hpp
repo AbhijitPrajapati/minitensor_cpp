@@ -5,35 +5,42 @@
 
 #include <memory>
 
-namespace minitensor::detail {
+namespace minitensor::detail
+{
 
-struct Node;
-struct TensorImpl;
+    struct TensorImpl;
 
-struct AutogradMeta final {
-    bool requires_grad{false};
-    std::shared_ptr<TensorImpl> grad;
-    std::unique_ptr<Node> grad_fn;
+    namespace autograd
+    {
+        struct Node;
 
-    explicit AutogradMeta(bool requires_grad = false);
-    ~AutogradMeta();
+        struct Meta final
+        {
+            bool requires_grad{false};
+            std::shared_ptr<TensorImpl> grad;
+            std::unique_ptr<Node> grad_fn;
 
-    AutogradMeta(const AutogradMeta&) = delete;
-    AutogradMeta& operator=(const AutogradMeta&) = delete;
-};
+            explicit Meta(bool requires_grad = false);
+            ~Meta();
 
-struct TensorImpl final {
-    std::shared_ptr<Storage> storage;
-    Layout layout;
-    AutogradMeta autograd;
+            Meta(const Meta &) = delete;
+            Meta &operator=(const Meta &) = delete;
+        };
+    } // namespace autograd
 
-    TensorImpl(std::shared_ptr<Storage> storage, Layout layout, bool requires_grad);
-    ~TensorImpl();
+    struct TensorImpl final
+    {
+        std::shared_ptr<Storage> storage;
+        Layout layout;
+        autograd::Meta autograd;
 
-    // Prevent copy construction and copy assignment
-    // Cannot do TensorImpl t2 = t1;
-    TensorImpl(const TensorImpl&) = delete;
-    TensorImpl& operator=(const TensorImpl&) = delete;
-};
+        TensorImpl(std::shared_ptr<Storage> storage, Layout layout, bool requires_grad);
+        ~TensorImpl();
+
+        // Prevent copy construction and copy assignment
+        // Cannot do TensorImpl t2 = t1;
+        TensorImpl(const TensorImpl &) = delete;
+        TensorImpl &operator=(const TensorImpl &) = delete;
+    };
 
 } // namespace minitensor::detail

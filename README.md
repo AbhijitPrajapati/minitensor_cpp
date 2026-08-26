@@ -37,25 +37,16 @@ Tensor
        -> Layout (shape, positive strides, element offset)
        -> AutogradMeta
             -> optional accumulated leaf gradient
-            -> optional backward Node -> parent Tensor handles
+            -> optional backward Node
+                 -> parent Tensor handles
+                 -> detached saved tensors
+                 -> backward rule
 ```
 
 Copying a `Tensor` copies its handle. Transpose and slice create a new tensor
 identity and layout while sharing storage. Numerical operations allocate new,
 contiguous storage. `reshape` shares storage only when its input is contiguous;
 otherwise it materializes logical element order first.
-
-The implementation is divided into four boundaries:
-
-- `src/core`: storage, layout invariants, and private tensor state.
-- `src/kernels`: non-owning read/write arguments and scalar strided kernels.
-- `src/ops`: validation, output construction, view logic, and gradient rules.
-- `src/autograd`: graph nodes, reverse-topological traversal, and accumulation.
-
-Kernels do not inspect autograd state. Autograd nodes point only toward parents,
-so temporary intermediates remain alive without parent-to-child reference cycles.
-Saved values are detached handles, and public data is immutable, so this baseline
-does not need mutation version counters.
 
 ## Supported operations
 
@@ -73,16 +64,6 @@ Shapes, strides, offsets, and logical indices use signed 64-bit integers. Negati
 shapes and indices are rejected; negative indexing and negative strides are not
 implemented. Batched matmul, additional dtypes/devices, and public in-place
 operations are intentionally outside the current scope.
-
-## Build and test
-
-From a Visual Studio developer shell:
-
-```powershell
-cmake --preset x64-debug
-cmake --build --preset x64-debug
-ctest --preset x64-debug
-```
 
 The public API test uses only installed-style headers, which helps catch accidental
 leakage of internal interfaces. A separate internal layout test directly verifies
