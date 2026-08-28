@@ -9,22 +9,15 @@ add_library(minitensor STATIC)
 target_sources(
     minitensor
     PRIVATE
-        src/tensor.cpp
-        src/autograd/engine.cpp
-        src/autograd/recording.cpp
-        src/autograd/tensor_access.cpp
-        src/core/layout.cpp
-        src/core/shape.cpp
-        src/core/storage.cpp
-        src/core/tensor_impl.cpp
-        src/kernels/iteration.cpp
-        src/kernels/kernels.cpp
-        src/kernels/tensor_view.cpp
-        src/ops/activations.cpp
-        src/ops/elementwise.cpp
-        src/ops/matmul.cpp
-        src/ops/reduction.cpp
-        src/ops/views.cpp
+        src/tensor/tensor.cpp
+        src/tensor/types.cpp
+        src/tensor/core/broadcast_shape.cpp
+        src/tensor/graph/apply_operation.cpp
+        src/tensor/graph/ids.cpp
+        src/tensor/graph/node.cpp
+        src/tensor/graph/value.cpp
+        src/tensor/ops/add.cpp
+        src/tensor/ops/full.cpp
 )
 
 # Specify all header files the library needs
@@ -64,34 +57,4 @@ if(BUILD_TESTING)
     target_link_libraries(minitensor_tests PRIVATE minitensor)
     # Add test w/ command to run
     add_test(NAME minitensor_tests COMMAND minitensor_tests)
-
-    # Internal geometry tests exercise shape validation and Layout transformations.
-    add_executable(minitensor_layout_tests tests/layout_test.cpp)
-    target_link_libraries(minitensor_layout_tests PRIVATE minitensor)
-    target_include_directories(
-        minitensor_layout_tests
-        PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/src
-    )
-    add_test(NAME minitensor_layout_tests COMMAND minitensor_layout_tests)
-
-    # Kernel iteration tests exercise elementwise, reduction, and contraction traversal.
-    add_executable(minitensor_iteration_tests tests/iteration_test.cpp)
-    target_link_libraries(minitensor_iteration_tests PRIVATE minitensor)
-    target_include_directories(
-        minitensor_iteration_tests
-        PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/src
-    )
-    add_test(NAME minitensor_iteration_tests COMMAND minitensor_iteration_tests)
-
-    # Autograd contract tests verify recording, explicit saved state, and no-grad execution.
-    add_executable(minitensor_autograd_tests tests/autograd_test.cpp)
-    target_link_libraries(minitensor_autograd_tests PRIVATE minitensor)
-    target_include_directories(
-        minitensor_autograd_tests
-        PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/src
-    )
-    add_test(NAME minitensor_autograd_tests COMMAND minitensor_autograd_tests)
 endif()

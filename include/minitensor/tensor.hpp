@@ -1,6 +1,6 @@
 #pragma once
 
-#include "minitensor/types.hpp"
+#include "types.hpp"
 
 #include <memory>
 #include <optional>
@@ -8,82 +8,32 @@
 
 namespace minitensor
 {
-
     namespace detail
     {
-
-        namespace autograd
-        {
-            struct TensorAutogradAccess;
-        } // namespace autograd
-
-        namespace kernel
-        {
-            struct TensorViewAccess;
-        } // namespace kernel
-
-        // Internal tensor implementation
-        struct TensorImpl;
-
-    } // namespace details
+        class Value;
+        // friend struct allowing operators to access value
+        struct TensorAccess;
+    } // namespace detail
 
     class Tensor
     {
     public:
-        // Equivalent to zeros
-        // Named factories below are preferred for explicit initialization
-        explicit Tensor(Shape shape, bool requires_grad = false);
-
-        static Tensor zeros(Shape shape, bool requires_grad = false);
-        static Tensor ones(Shape shape, bool requires_grad = false);
-        static Tensor from_data(
-            std::vector<float> values,
-            Shape shape,
-            bool requires_grad = false);
-
         Tensor(const Tensor &) noexcept = default;
         Tensor(Tensor &&) noexcept = default;
         Tensor &operator=(const Tensor &) noexcept = default;
         Tensor &operator=(Tensor &&) noexcept = default;
-        ~Tensor();
 
         [[nodiscard]] const Shape &shape() const noexcept;
-        [[nodiscard]] const Strides &strides() const noexcept;
-        [[nodiscard]] Index storage_offset() const noexcept;
-        [[nodiscard]] Index rank() const noexcept;
-        [[nodiscard]] Index numel() const noexcept;
-        [[nodiscard]] bool is_contiguous() const noexcept;
-        [[nodiscard]] bool requires_grad() const noexcept;
-
-        // Returns row-major data
-        [[nodiscard]] std::vector<float> to_vector() const;
-        [[nodiscard]] float item() const;
-
-        [[nodiscard]] Tensor transpose(Index dim0, Index dim1) const;
-        [[nodiscard]] Tensor slice(
-            Index dim,
-            Index start,
-            Index stop,
-            Index step = 1) const;
-        [[nodiscard]] Tensor contiguous() const;
-        [[nodiscard]] Tensor reshape(Shape shape) const;
-        [[nodiscard]] Tensor detach() const;
-
-        [[nodiscard]] std::optional<Tensor> grad() const;
-        void backward() const;
-        void backward(const Tensor &gradient) const;
-        void clear_grad();
+        [[nodiscard]] std::size_t rank() const noexcept;
+        [[nodiscard]] std::size_t numel() const noexcept;
+        [[nodiscard]] DType dtype() const noexcept;
+        [[nodiscard]] Device device() const noexcept;
 
     private:
-        explicit Tensor(std::shared_ptr<detail::TensorImpl> impl) noexcept;
-
-        // Shared pointer allows TensorImpl to be shared
-        std::shared_ptr<detail::TensorImpl> impl_;
-
-        // Separate friends grant kernel and autograd only the capabilities
-        // required by their respective subsystems.
-        friend struct detail::kernel::TensorViewAccess;
-        friend struct detail::autograd::TensorAutogradAccess;
+        explicit Tensor(std::shared_ptr<detail::Value>);
+        std::shared_ptr<detail::Value> value_;
+        // friend struct allowing operators to access internals
+        friend struct detail::TensorAccess;
     };
 
 } // namespace minitensor

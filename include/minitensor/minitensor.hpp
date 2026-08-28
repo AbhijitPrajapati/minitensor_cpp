@@ -1,5 +1,5 @@
 #pragma once
 
-#include "minitensor/ops.hpp"
-#include "minitensor/tensor.hpp"
-#include "minitensor/types.hpp"
+#include "ops.hpp"
+#include "tensor.hpp"
+#include "types.hpp"
