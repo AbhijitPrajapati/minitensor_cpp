@@ -1,9 +1,13 @@
 #include "full.hpp"
+
+#include <memory>
+#include <stdexcept>
+#include <utility>
+
 #include <minitensor/ops.hpp>
+
 #include "tensor/graph/apply_operation.hpp"
 #include "tensor/tensor_access.hpp"
-#include <span>
-#include <stdexcept>
 
 namespace minitensor
 {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <span>
+
 #include "fwd.hpp"
 
 namespace minitensor::detail

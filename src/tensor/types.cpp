@@ -1,8 +1,8 @@
 #include <minitensor/types.hpp>
-#include <span>
-#include <algorithm>
+
+#include <limits>
 #include <stdexcept>
-#include <string_view>
+#include <utility>
 
 namespace minitensor
 {

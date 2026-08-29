@@ -1,14 +1,9 @@
-#include "minitensor/minitensor.hpp"
+#include <minitensor/minitensor.hpp>
 
 #include <cmath>
-#include <cstdint>
 #include <functional>
 #include <iostream>
-#include <limits>
-#include <stdexcept>
 #include <string>
-#include <type_traits>
-#include <vector>
 
 namespace
 {

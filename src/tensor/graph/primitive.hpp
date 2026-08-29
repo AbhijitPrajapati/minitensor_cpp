@@ -1,11 +1,12 @@
 #pragma once
-#include <string_view>
-#include <vector>
+
 #include <span>
-#include "tensor/core/tensor_spec.hpp"
+#include <string_view>
 
 namespace minitensor::detail
 {
+    struct TensorSpec;
+
     class Primitive
     {
     public:

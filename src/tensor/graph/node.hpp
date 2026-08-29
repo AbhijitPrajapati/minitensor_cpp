@@ -1,8 +1,10 @@
 #pragma once
-#include "ids.hpp"
-#include "fwd.hpp"
-#include <vector>
+
 #include <span>
+#include <vector>
+
+#include "fwd.hpp"
+#include "ids.hpp"
 
 namespace minitensor::detail
 {

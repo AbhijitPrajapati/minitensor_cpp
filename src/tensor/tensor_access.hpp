@@ -1,7 +1,9 @@
 #pragma once
 
-#include <minitensor/types.hpp>
+#include <utility>
+
 #include <minitensor/tensor.hpp>
+
 #include "graph/fwd.hpp"
 
 namespace minitensor::detail

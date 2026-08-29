@@ -1,7 +1,6 @@
 #include <minitensor/minitensor.hpp>
 
 #include <iostream>
-#include <vector>
 
 int main()
 {

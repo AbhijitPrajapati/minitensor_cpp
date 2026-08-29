@@ -1,11 +1,9 @@
 #pragma once
 
-#include "tensor/graph/primitive.hpp"
-#include "tensor/core/tensor_spec.hpp"
-
 #include <span>
 #include <string_view>
-#include <vector>
+
+#include "tensor/graph/primitive.hpp"
 
 namespace minitensor::detail
 {

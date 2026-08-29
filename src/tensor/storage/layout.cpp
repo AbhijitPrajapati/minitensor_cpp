@@ -1,13 +1,15 @@
 #include "layout.hpp"
-#include <cstdint>
-#include <vector>
-#include <span>
+
+#include <limits>
 #include <stdexcept>
+#include <utility>
+#include <vector>
+
 #include <minitensor/types.hpp>
 
 namespace minitensor::detail
 {
-    Layout::Layout(std::vector<stride_type> strides, offset_type offset = 0) : strides_(std::move(strides)), offset_(offset)
+    Layout::Layout(std::vector<stride_type> strides, offset_type offset) : strides_(std::move(strides)), offset_(offset)
     {
         if (offset_ < 0)
         {

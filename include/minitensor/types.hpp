@@ -1,10 +1,11 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
-#include <vector>
-#include <span>
 #include <initializer_list>
+#include <span>
 #include <string_view>
+#include <vector>
 
 namespace minitensor
 {

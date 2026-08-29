@@ -1,6 +1,12 @@
 #include "broadcast_shape.hpp"
-#include <cstdint>
+
+#include <algorithm>
+#include <cstddef>
 #include <stdexcept>
+#include <utility>
+#include <vector>
+
+#include <minitensor/types.hpp>
 
 namespace minitensor::detail
 {

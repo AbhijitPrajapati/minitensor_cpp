@@ -1,10 +1,9 @@
 #pragma once
 
-#include "types.hpp"
-
+#include <cstddef>
 #include <memory>
-#include <optional>
-#include <vector>
+
+#include "types.hpp"
 
 namespace minitensor
 {

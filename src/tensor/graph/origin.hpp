@@ -1,6 +1,7 @@
 #pragma once
-#include <cstdint>
+
 #include <variant>
+
 #include "fwd.hpp"
 
 namespace minitensor::detail

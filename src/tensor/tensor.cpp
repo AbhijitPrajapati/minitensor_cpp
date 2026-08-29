@@ -1,5 +1,7 @@
 #include <minitensor/tensor.hpp>
+
 #include <stdexcept>
+
 #include "graph/value.hpp"
 
 namespace minitensor

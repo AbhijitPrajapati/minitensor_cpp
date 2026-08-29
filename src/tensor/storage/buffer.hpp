@@ -1,8 +1,12 @@
 #pragma once
 
-#include <minitensor/types.hpp>
-#include "cstdint"
+#include <cstddef>
 #include <memory>
+
+namespace minitensor
+{
+    class Device;
+}
 
 namespace minitensor::detail
 {

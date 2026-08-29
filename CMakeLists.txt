@@ -18,6 +18,8 @@ target_sources(
         src/tensor/graph/value.cpp
         src/tensor/ops/add.cpp
         src/tensor/ops/full.cpp
+        src/tensor/storage/layout.cpp
+        src/tensor/storage/materialization.cpp
 )
 
 # Specify all header files the library needs
@@ -52,9 +54,9 @@ target_link_libraries(minitensor_demo PRIVATE minitensor)
 include(CTest)
 if(BUILD_TESTING)
     # Add test executable
-    add_executable(minitensor_tests tests/test_main.cpp)
+    add_executable(tensor_test tests/tensor_test.cpp)
     # Link test executable to library
-    target_link_libraries(minitensor_tests PRIVATE minitensor)
+    target_link_libraries(tensor_test PRIVATE minitensor)
     # Add test w/ command to run
-    add_test(NAME minitensor_tests COMMAND minitensor_tests)
+    add_test(NAME tensor_test COMMAND tensor_test)
 endif()

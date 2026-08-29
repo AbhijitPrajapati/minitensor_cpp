@@ -1,10 +1,16 @@
 #include "add.hpp"
+
+#include <array>
+#include <memory>
+#include <stdexcept>
+#include <utility>
+
 #include <minitensor/ops.hpp>
+
+#include "tensor/core/broadcast_shape.hpp"
+#include "tensor/core/tensor_spec.hpp"
 #include "tensor/graph/apply_operation.hpp"
 #include "tensor/tensor_access.hpp"
-#include "tensor/core/broadcast_shape.hpp"
-#include <stdexcept>
-#include <array>
 
 namespace minitensor
 {

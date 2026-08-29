@@ -1,6 +1,9 @@
 #pragma once
 
-#include <minitensor/types.hpp>
+namespace minitensor
+{
+    class Shape;
+}
 
 namespace minitensor::detail
 {

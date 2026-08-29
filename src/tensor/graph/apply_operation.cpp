@@ -1,14 +1,16 @@
-#include <vector>
-#include <span>
-#include <stdexcept>
-#include "fwd.hpp"
-#include "tensor/core/tensor_spec.hpp"
 #include "apply_operation.hpp"
+
+#include <memory>
+#include <stdexcept>
+#include <utility>
+#include <vector>
+
 #include "ids.hpp"
-#include "value.hpp"
+#include "node.hpp"
 #include "origin.hpp"
 #include "primitive.hpp"
-#include "node.hpp"
+#include "tensor/core/tensor_spec.hpp"
+#include "value.hpp"
 
 namespace minitensor::detail
 {
@@ -36,8 +38,6 @@ namespace minitensor::detail
         }
 
         TensorSpec output_spec = primitive->infer(input_specs);
-
-        
 
         const NodeRef node = std::make_shared<Node>(next_node_id(), std::move(primitive), std::move(owned_inputs));
         Origin origin{ProducedOrigin{node}};

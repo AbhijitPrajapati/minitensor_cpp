@@ -1,5 +1,7 @@
 #include "ids.hpp"
+
 #include <atomic>
+#include <cstdint>
 
 namespace minitensor::detail
 {

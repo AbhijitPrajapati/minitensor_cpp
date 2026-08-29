@@ -1,9 +1,7 @@
-#include "ids.hpp"
-#include "fwd.hpp"
 #include "node.hpp"
-#include <vector>
-#include <span>
+
 #include <stdexcept>
+#include <utility>
 
 namespace minitensor::detail
 {
