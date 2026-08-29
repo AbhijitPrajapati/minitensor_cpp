@@ -2,6 +2,7 @@
 #include "ids.hpp"
 #include "origin.hpp"
 #include "value.hpp"
+#include <stdexcept>
 
 namespace minitensor::detail
 {
@@ -20,5 +21,20 @@ namespace minitensor::detail
     const Origin &Value::origin() const noexcept
     {
         return origin_;
+    }
+
+    const Materialization *Value::materialization() const noexcept
+    {
+        return materialization_ ? (&*materialization_) : nullptr;
+    }
+
+    void Value::materialize(Materialization materialization) const
+    {
+        if (materialization_)
+        {
+            throw std::logic_error{"value has already been materialized"};
+        }
+        materialization.validate(spec_);
+        materialization_.emplace(std::move(materialization));
     }
 }
