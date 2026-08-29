@@ -1,8 +1,7 @@
 #pragma once
 
-#include <memory>
-#include "layout.hpp"
 #include "buffer.hpp"
+#include "layout.hpp"
 
 namespace minitensor::detail
 {

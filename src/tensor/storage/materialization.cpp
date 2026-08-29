@@ -1,9 +1,11 @@
 #include "materialization.hpp"
-#include "layout.hpp"
-#include "buffer.hpp"
-#include "tensor/core/tensor_spec.hpp"
-#include <stdexcept>
+
+#include <cstddef>
 #include <limits>
+#include <stdexcept>
+#include <utility>
+
+#include "tensor/core/tensor_spec.hpp"
 
 namespace minitensor::detail
 {

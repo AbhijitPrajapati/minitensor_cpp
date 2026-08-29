@@ -1,11 +1,11 @@
 #pragma once
 
-#include "tensor/core/tensor_spec.hpp"
-#include "tensor/storage/materialization.hpp"
+#include <optional>
+
 #include "ids.hpp"
 #include "origin.hpp"
-
-#include <optional>
+#include "tensor/core/tensor_spec.hpp"
+#include "tensor/storage/materialization.hpp"
 
 namespace minitensor::detail
 {

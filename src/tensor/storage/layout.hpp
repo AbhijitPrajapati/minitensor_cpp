@@ -1,10 +1,14 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
-#include <vector>
 #include <span>
+#include <vector>
 
-#include <minitensor/types.hpp>
+namespace minitensor
+{
+    class Shape;
+}
 
 namespace minitensor::detail
 {
