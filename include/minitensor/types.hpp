@@ -9,7 +9,6 @@
 
 namespace minitensor
 {
-    // Shape, DType, DeviceType, Device, etc.
     using Extent = std::int64_t;
     using Axis = std::int64_t;
 

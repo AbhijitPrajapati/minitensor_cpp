@@ -53,7 +53,7 @@ namespace minitensor::detail
 
     Materialization::Materialization(BufferRef buffer, Layout layout) : buffer_(std::move(buffer)), layout_(std::move(layout))
     {
-        if (!buffer)
+        if (!buffer_)
         {
             throw std::invalid_argument{"materialization requires a buffer"};
         }
@@ -111,7 +111,10 @@ namespace minitensor::detail
         const std::size_t element_size = dtype_size(spec.dtype);
         const std::size_t buffer_capacity = buffer_->size_bytes() / element_size;
 
-        if (max_offset >= buffer_capacity)
+        const auto u_max_offset = static_cast<std::uintmax_t>(max_offset);
+        const auto u_buffer_capacity = static_cast<std::uintmax_t>(buffer_capacity);
+
+        if (u_max_offset >= u_buffer_capacity)
         {
             throw std::invalid_argument{"materialization reaches beyond the end of its buffer"};
         }

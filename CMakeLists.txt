@@ -54,9 +54,21 @@ target_link_libraries(minitensor_demo PRIVATE minitensor)
 include(CTest)
 if(BUILD_TESTING)
     # Add test executable
-    add_executable(tensor_test tests/tensor_test.cpp)
+    add_executable(
+    tensor_tests 
+    tests/tensor/test_main.cpp
+    tests/tensor/public/operations_test.cpp
+    tests/tensor/public/types_test.cpp
+    tests/tensor/internal/apply_operation_test.cpp
+    tests/tensor/internal/graph_objects_test.cpp
+    tests/tensor/internal/layout_test.cpp
+    tests/tensor/internal/materialization_test.cpp
+    tests/tensor/internal/ownership_test.cpp
+    )
     # Link test executable to library
-    target_link_libraries(tensor_test PRIVATE minitensor)
+    target_link_libraries(tensor_tests PRIVATE minitensor)
+    # Allow the tests to access internal headers
+    target_include_directories(tensor_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     # Add test w/ command to run
-    add_test(NAME tensor_test COMMAND tensor_test)
+    add_test(NAME minitensor.tensor COMMAND tensor_tests)
 endif()
