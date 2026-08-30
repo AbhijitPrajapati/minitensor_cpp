@@ -2,15 +2,13 @@
 
 #include <cstddef>
 #include <memory>
-#include <utility>
 
 #include <minitensor/types.hpp>
 
-#include "storage/buffer.hpp"
+#include "tensor/storage/buffer.hpp"
 
 namespace minitensor::test
 {
-
     class TestBuffer final : public detail::Buffer
     {
     public:
@@ -35,5 +33,4 @@ namespace minitensor::test
     {
         return std::make_shared<TestBuffer>(device, size_bytes);
     }
-
 }

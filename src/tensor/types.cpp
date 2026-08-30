@@ -7,10 +7,10 @@
 namespace minitensor
 {
     Shape::Shape(std::initializer_list<value_type> dimensions)
-        : dimensions_{dimensions}, numel_(validate_and_count(dimensions)) {}
+        : dimensions_{dimensions}, numel_(validate_and_count(dimensions_)) {}
 
     Shape::Shape(std::vector<value_type> dimensions)
-        : dimensions_{std::move(dimensions)}, numel_(validate_and_count(dimensions)) {}
+        : dimensions_{std::move(dimensions)}, numel_(validate_and_count(dimensions_)) {}
 
     Shape::size_type Shape::rank() const noexcept
     {

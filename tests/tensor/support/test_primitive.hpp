@@ -1,27 +1,29 @@
-#include <string_view>
-#include <stdexcept>
-#include <span>
+#pragma once
 
-#include "tensor/graph/primitive.hpp"
+#include <span>
+#include <stdexcept>
+#include <string_view>
+
 #include "tensor/core/tensor_spec.hpp"
+#include "tensor/graph/primitive.hpp"
 
 namespace minitensor::test
 {
     class IdentitySpecPrimitive final : public detail::Primitive
     {
     public:
-        std::string_view name() const noexcept override
+        [[nodiscard]] std::string_view name() const noexcept override
         {
             return "test_identity";
         }
 
-        detail::TensorSpec infer(std::span<const TensorSpec> inputs) const override
+        [[nodiscard]] detail::TensorSpec infer(std::span<const detail::TensorSpec> inputs) const override
         {
             if (inputs.size() != 1)
             {
                 throw std::invalid_argument{"expected one input"};
             }
-            return inputs[0];
+            return inputs.front();
         }
     };
 }
