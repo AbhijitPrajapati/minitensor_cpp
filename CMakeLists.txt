@@ -20,6 +20,8 @@ target_sources(
         src/tensor/ops/full.cpp
         src/tensor/storage/layout.cpp
         src/tensor/storage/materialization.cpp
+        src/tensor/backend/cpu/cpu_buffer.cpp
+        src/tensor/backend/cpu/cpu_runtime.cpp
 )
 
 # Specify all header files the library needs
@@ -64,6 +66,7 @@ if(BUILD_TESTING)
     tests/tensor/internal/layout_test.cpp
     tests/tensor/internal/materialization_test.cpp
     tests/tensor/internal/ownership_test.cpp
+    tests/tensor/internal/cpu_runtime_test.cpp
     )
     # Link test executable to library
     target_link_libraries(tensor_tests PRIVATE minitensor)

@@ -13,6 +13,7 @@ namespace minitensor::test
     void run_graph_objects_test();
     void run_apply_operation_test();
     void run_ownership_test();
+    void run_cpu_runtime_test();
 }
 
 namespace
@@ -36,6 +37,7 @@ int main()
         {"graph objects", run_graph_objects_test},
         {"apply operation", run_apply_operation_test},
         {"ownership", run_ownership_test},
+        {"cpu runtime", run_cpu_runtime_test},
     };
 
     int failures = 0;
