@@ -47,9 +47,8 @@ namespace minitensor
 
     Tensor operator+(const Tensor &lhs, const Tensor &rhs)
     {
-        auto primitive = std::make_shared<detail::AddPrimitive>();
         std::array<detail::ValueRef, 2> inputs{detail::TensorAccess::value(lhs), detail::TensorAccess::value(rhs)};
-        detail::ValueRef output = detail::apply_operation(std::move(primitive), inputs);
+        detail::ValueRef output = detail::apply_operation(std::make_unique<detail::AddPrimitive>(), inputs);
         return detail::TensorAccess::make(std::move(output));
     }
 }

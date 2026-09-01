@@ -22,6 +22,11 @@ target_sources(
         src/tensor/storage/materialization.cpp
         src/tensor/backend/cpu/cpu_buffer.cpp
         src/tensor/backend/cpu/cpu_runtime.cpp
+        src/tensor/backend/cpu/register_kernels.cpp
+        # src/tensor/backend/cpu/kernels/add.cpp
+        src/tensor/backend/cpu/kernels/full.cpp
+        src/tensor/dispatch/kernel_registry.cpp
+        src/tensor/dispatch/tensor_view.cpp
 )
 
 # Specify all header files the library needs
