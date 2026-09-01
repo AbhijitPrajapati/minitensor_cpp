@@ -38,7 +38,7 @@ namespace minitensor
     Tensor full(Shape shape, float value, TensorOptions options)
     {
         detail::TensorSpec output_spec{std::move(shape), options.dtype, options.device};
-        auto primitive = std::make_shared<detail::FullPrimitive>(std::move(output_spec), value);
+        auto primitive = std::make_unique<detail::FullPrimitive>(std::move(output_spec), value);
         detail::ValueRef output = detail::apply_operation(std::move(primitive), {});
         return detail::TensorAccess::make(std::move(output));
     }

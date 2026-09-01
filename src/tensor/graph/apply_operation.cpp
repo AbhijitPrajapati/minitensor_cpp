@@ -7,14 +7,13 @@
 
 #include "ids.hpp"
 #include "node.hpp"
-#include "origin.hpp"
 #include "primitive.hpp"
 #include "tensor/core/tensor_spec.hpp"
 #include "value.hpp"
 
 namespace minitensor::detail
 {
-    ValueRef apply_operation(PrimitiveRef primitive, std::span<const ValueRef> inputs)
+    ValueRef apply_operation(std::unique_ptr<Primitive> primitive, std::span<const ValueRef> inputs)
     {
         if (!primitive)
         {
@@ -40,8 +39,7 @@ namespace minitensor::detail
         TensorSpec output_spec = primitive->infer(input_specs);
 
         const NodeRef node = std::make_shared<Node>(next_node_id(), std::move(primitive), std::move(owned_inputs));
-        Origin origin{ProducedOrigin{node}};
-        const ValueRef output = std::make_shared<Value>(next_value_id(), std::move(output_spec), std::move(origin));
+        const ValueRef output = std::make_shared<Value>(next_value_id(), std::move(output_spec), std::move(node));
         return output;
     }
 }

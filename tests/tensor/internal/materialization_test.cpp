@@ -4,7 +4,6 @@
 
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/graph/ids.hpp"
-#include "tensor/graph/origin.hpp"
 #include "tensor/graph/value.hpp"
 #include "tensor/storage/layout.hpp"
 #include "tensor/storage/materialization.hpp"
@@ -18,7 +17,6 @@ namespace minitensor::test
     {
         using detail::BufferRef;
         using detail::Layout;
-        using detail::LeafOrigin;
         using detail::Materialization;
         using detail::TensorSpec;
         using detail::Value;
@@ -81,7 +79,7 @@ namespace minitensor::test
             },
             "materialization validation rejects access before the buffer");
 
-        Value value{ValueId{300}, contiguous_spec, LeafOrigin{}};
+        Value value{ValueId{300}, contiguous_spec};
         expect(value.materialization() == nullptr, "a new value is not materialized");
         value.materialize(Materialization{buffer, contiguous_layout});
         expect(value.materialization() != nullptr, "materialize installs storage on a value");
@@ -94,7 +92,7 @@ namespace minitensor::test
             },
             "a value cannot be materialized twice");
 
-        Value rejected{ValueId{301}, TensorSpec{Shape{2}, DType::Float32, Device::cpu()}, LeafOrigin{}};
+        Value rejected{ValueId{301}, TensorSpec{Shape{2}, DType::Float32, Device::cpu()}};
         expect_throws<std::invalid_argument>(
             [&rejected]
             {
