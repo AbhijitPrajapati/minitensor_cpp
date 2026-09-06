@@ -18,10 +18,10 @@ namespace minitensor::detail
     {
     public:
         void register_kernel(KernelKey key, KernelFn kernel);
-        [[nodiscard]] const KernelFn &get(KernelKey &key) const;
-        [[nodiscard]] bool contains(KernelKey &key) const;
+        [[nodiscard]] const KernelFn &get(const KernelKey &key) const;
+        [[nodiscard]] bool contains(const KernelKey &key) const;
 
     private:
-        std::unordered_map<KernelKey, KernelFn> kernels_;
+        std::unordered_map<KernelKey, KernelFn, KernelKeyHash> kernels_;
     };
 }

@@ -51,6 +51,37 @@ namespace minitensor::test
         expect(Layout({123, -45}).is_contiguous(Shape{4, 0}),
                "any matching-rank layout of an empty tensor is contiguous");
 
+        const Layout broadcast_source{{3, 3, 1}, 5};
+        const Layout broadcasted = broadcast_source.broadcasted_to(Shape{2, 1, 3}, Shape{2, 4, 3});
+        expect(broadcasted == Layout({3, 0, 1}, 5),
+               "broadcasting a layout zeroes the stride of an expanded singleton dimension");
+
+        const Layout promoted = Layout({1}, 2).broadcasted_to(Shape{3}, Shape{4, 3});
+        expect(promoted == Layout({0, 1}, 2),
+               "broadcasting a layout adds zero strides for missing leading dimensions");
+
+        const Layout scalar_broadcast = Layout{}.broadcasted_to(Shape{}, Shape{2, 3});
+        expect(scalar_broadcast == Layout({0, 0}), "broadcasting a scalar produces all-zero strides");
+
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                (void)Layout({1}).broadcasted_to(Shape{2, 3}, Shape{2, 3});
+            },
+            "layout broadcasting rejects a source shape with a mismatched rank");
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                (void)Layout({3, 1}).broadcasted_to(Shape{2, 3}, Shape{3});
+            },
+            "layout broadcasting rejects a lower-rank target");
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                (void)Layout({3, 1}).broadcasted_to(Shape{2, 3}, Shape{2, 4});
+            },
+            "layout broadcasting rejects incompatible extents");
+
         expect_throws<std::overflow_error>(
             []
             {

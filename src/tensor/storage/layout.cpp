@@ -96,4 +96,40 @@ namespace minitensor::detail
     {
         return strides_;
     }
+
+    Layout Layout::broadcasted_to(const Shape &source_shape, const Shape &target_shape) const
+    {
+        if (source_shape.rank() != rank())
+        {
+            throw std::invalid_argument{"source shape and layout ranks do not match"};
+        }
+        if (source_shape.rank() > target_shape.rank())
+        {
+            throw std::invalid_argument{"source shape rank exceeds target shape rank"};
+        }
+
+        std::vector<stride_type> output_strides(target_shape.rank(), stride_type{0});
+        const std::size_t rank_diff = target_shape.rank() - source_shape.rank();
+
+        for (std::size_t source_axis = 0; source_axis < source_shape.rank(); ++source_axis)
+        {
+            const std::size_t target_axis = rank_diff + source_axis;
+            const Extent source_extent = source_shape[source_axis];
+            const Extent target_extent = target_shape[target_axis];
+            if (source_extent == target_extent)
+            {
+                output_strides[target_axis] = strides_[source_axis];
+            }
+            else if (source_extent == 1)
+            {
+                output_strides[target_axis] = 0;
+            }
+            else
+            {
+                throw std::invalid_argument{"cannot broadcast to target shape"};
+            }
+        }
+
+        return Layout(std::move(output_strides), offset_);
+    }
 }

@@ -16,7 +16,7 @@ namespace minitensor::detail
             throw std::logic_error{"a kernel is already registered for this key"};
         }
     }
-    const KernelFn &KernelRegistry::get(KernelKey &key) const
+    const KernelFn &KernelRegistry::get(const KernelKey &key) const
     {
         const auto iterator = kernels_.find(key);
         if (iterator == kernels_.end())
@@ -25,7 +25,7 @@ namespace minitensor::detail
         }
         return iterator->second;
     }
-    bool KernelRegistry::contains(KernelKey &key) const
+    bool KernelRegistry::contains(const KernelKey &key) const
     {
         return kernels_.contains(key);
     }

@@ -23,7 +23,7 @@ target_sources(
         src/tensor/backend/cpu/cpu_buffer.cpp
         src/tensor/backend/cpu/cpu_runtime.cpp
         src/tensor/backend/cpu/register_kernels.cpp
-        # src/tensor/backend/cpu/kernels/add.cpp
+        src/tensor/backend/cpu/kernels/add.cpp
         src/tensor/backend/cpu/kernels/full.cpp
         src/tensor/dispatch/kernel_registry.cpp
         src/tensor/dispatch/tensor_view.cpp
@@ -72,6 +72,9 @@ if(BUILD_TESTING)
     tests/tensor/internal/materialization_test.cpp
     tests/tensor/internal/ownership_test.cpp
     tests/tensor/internal/cpu_runtime_test.cpp
+    tests/tensor/internal/kernel_registry_test.cpp
+    tests/tensor/internal/tensor_view_test.cpp
+    tests/tensor/internal/cpu_kernels_test.cpp
     )
     # Link test executable to library
     target_link_libraries(tensor_tests PRIVATE minitensor)
