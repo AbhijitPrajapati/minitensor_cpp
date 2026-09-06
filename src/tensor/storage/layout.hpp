@@ -29,6 +29,7 @@ namespace minitensor::detail
         [[nodiscard]] std::span<const stride_type> strides() const noexcept;
         [[nodiscard]] offset_type offset() const noexcept;
         [[nodiscard]] bool is_contiguous(const Shape &shape) const noexcept;
+        [[nodiscard]] Layout broadcasted_to(const Shape &source_shape, const Shape &target_shape) const;
 
         friend bool operator==(const Layout &, const Layout &) = default;
 

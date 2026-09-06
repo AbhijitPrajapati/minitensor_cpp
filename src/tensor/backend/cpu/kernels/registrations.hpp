@@ -7,6 +7,6 @@ namespace minitensor::detail
     namespace cpu
     {
         void register_full(KernelRegistry &registry);
-        // void register_add(KernelRegistry &registry);
+        void register_add(KernelRegistry &registry);
     }
 }
