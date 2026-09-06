@@ -1,8 +1,8 @@
 #include "registrations.hpp"
 
 #include <span>
-#include <stdexcept>
 #include <cassert>
+#include <utility>
 
 #include <minitensor/types.hpp>
 

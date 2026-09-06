@@ -11,7 +11,9 @@ target_sources(
     PRIVATE
         src/tensor/tensor.cpp
         src/tensor/types.cpp
+        src/tensor/evaluation.cpp
         src/tensor/core/broadcast_shape.cpp
+        src/tensor/core/dense_size.cpp
         src/tensor/graph/apply_operation.cpp
         src/tensor/graph/ids.cpp
         src/tensor/graph/node.cpp
@@ -27,6 +29,9 @@ target_sources(
         src/tensor/backend/cpu/kernels/full.cpp
         src/tensor/dispatch/kernel_registry.cpp
         src/tensor/dispatch/tensor_view.cpp
+        src/tensor/execution/evaluator.cpp
+        src/tensor/execution/runtime_registry.cpp
+        src/tensor/execution/environment.cpp
 )
 
 # Specify all header files the library needs
@@ -66,6 +71,7 @@ if(BUILD_TESTING)
     tests/tensor/test_main.cpp
     tests/tensor/public/operations_test.cpp
     tests/tensor/public/types_test.cpp
+    tests/tensor/public/evaluation_test.cpp
     tests/tensor/internal/apply_operation_test.cpp
     tests/tensor/internal/graph_objects_test.cpp
     tests/tensor/internal/layout_test.cpp
@@ -75,6 +81,9 @@ if(BUILD_TESTING)
     tests/tensor/internal/kernel_registry_test.cpp
     tests/tensor/internal/tensor_view_test.cpp
     tests/tensor/internal/cpu_kernels_test.cpp
+    tests/tensor/internal/dense_size_test.cpp
+    tests/tensor/internal/evaluator_test.cpp
+    tests/tensor/internal/runtime_registry_test.cpp
     )
     # Link test executable to library
     target_link_libraries(tensor_tests PRIVATE minitensor)

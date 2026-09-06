@@ -3,10 +3,9 @@
 #include <span>
 #include <string_view>
 
+#include "tensor/core/tensor_spec.hpp"
 namespace minitensor::detail
 {
-    struct TensorSpec;
-
     class Primitive
     {
     public:

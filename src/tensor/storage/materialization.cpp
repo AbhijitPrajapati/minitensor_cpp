@@ -4,6 +4,7 @@
 #include <limits>
 #include <stdexcept>
 #include <utility>
+#include <cstdint>
 
 #include "tensor/core/tensor_spec.hpp"
 
