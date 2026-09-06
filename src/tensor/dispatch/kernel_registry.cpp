@@ -1,9 +1,12 @@
 #include <stdexcept>
+#include <utility>
 
 #include "kernel_registry.hpp"
 
 namespace minitensor::detail
 {
+    struct KernelKey;
+
     void KernelRegistry::register_kernel(KernelKey key, KernelFn kernel)
     {
         if (!kernel)

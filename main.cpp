@@ -14,4 +14,5 @@ int main()
     {
         std::cout << s[i] << " ";
     }
+    minitensor::eval(c);
 }

@@ -9,6 +9,7 @@
 #include <minitensor/types.hpp>
 
 #include "tensor/storage/layout.hpp"
+#include "tensor/dispatch/tensor_view.hpp"
 #include "../cpu_buffer.hpp"
 
 namespace minitensor::detail::cpu

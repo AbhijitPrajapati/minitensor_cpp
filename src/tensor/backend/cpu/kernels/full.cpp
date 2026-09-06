@@ -1,16 +1,17 @@
 #include "registrations.hpp"
 
 #include <span>
-#include <stdexcept>
 #include <cstdint>
 #include <algorithm>
 #include <cassert>
+#include <utility>
 
 #include <minitensor/types.hpp>
 
 #include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/ops/full.hpp"
+#include "tensor/storage/layout.hpp"
 #include "../cpu_buffer.hpp"
 
 namespace minitensor::detail::cpu

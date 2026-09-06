@@ -8,6 +8,7 @@ namespace minitensor::test
 {
     void run_types_test();
     void run_operations_test();
+    void run_evaluation_test();
     void run_layout_test();
     void run_materialization_test();
     void run_graph_objects_test();
@@ -17,6 +18,9 @@ namespace minitensor::test
     void run_tensor_view_test();
     void run_kernel_registry_test();
     void run_cpu_kernels_test();
+    void run_dense_size_test();
+    void run_runtime_registry_test();
+    void run_evaluator_test();
 }
 
 namespace
@@ -35,6 +39,7 @@ int main()
     const TestEntry tests[]{
         {"public types", run_types_test},
         {"public operations and tensor handles", run_operations_test},
+        {"public evaluation", run_evaluation_test},
         {"layout", run_layout_test},
         {"materialization", run_materialization_test},
         {"graph objects", run_graph_objects_test},
@@ -44,6 +49,9 @@ int main()
         {"tensor views", run_tensor_view_test},
         {"kernel registry", run_kernel_registry_test},
         {"cpu kernels", run_cpu_kernels_test},
+        {"dense storage size", run_dense_size_test},
+        {"runtime registry", run_runtime_registry_test},
+        {"evaluator", run_evaluator_test},
     };
 
     int failures = 0;

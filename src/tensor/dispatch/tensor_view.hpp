@@ -1,15 +1,13 @@
 #pragma once
 
 #include <minitensor/types.hpp>
-
-#include "tensor/core/tensor_spec.hpp"
-#include "tensor/storage/materialization.hpp"
-#include "tensor/storage/layout.hpp"
-#include "tensor/storage/buffer.hpp"
-
 namespace minitensor::detail
 {
 
+    struct TensorSpec;
+    class Materialization;
+    class Layout;
+    class Buffer;
     class TensorView final
     {
     public:
