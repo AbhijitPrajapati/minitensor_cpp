@@ -1,7 +1,5 @@
 #include "tensor_view.hpp"
 
-#include <minitensor/types.hpp>
-
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/storage/materialization.hpp"
 

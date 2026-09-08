@@ -74,6 +74,8 @@ if(BUILD_TESTING)
     tests/tensor/public/operations_test.cpp
     tests/tensor/public/types_test.cpp
     tests/tensor/public/evaluation_test.cpp
+    tests/tensor/public/data_test.cpp
+    tests/tensor/internal/core_test.cpp
     tests/tensor/internal/apply_operation_test.cpp
     tests/tensor/internal/graph_objects_test.cpp
     tests/tensor/internal/layout_test.cpp
@@ -83,9 +85,9 @@ if(BUILD_TESTING)
     tests/tensor/internal/kernel_registry_test.cpp
     tests/tensor/internal/tensor_view_test.cpp
     tests/tensor/internal/cpu_kernels_test.cpp
-    tests/tensor/internal/dense_size_test.cpp
     tests/tensor/internal/evaluator_test.cpp
     tests/tensor/internal/runtime_registry_test.cpp
+    tests/tensor/internal/elementwise_test.cpp
     )
     # Link test executable to library
     target_link_libraries(tensor_tests PRIVATE minitensor)

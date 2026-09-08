@@ -9,7 +9,6 @@
 #include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/ops/add.hpp"
-#include "../cpu_buffer.hpp"
 #include "binary_elementwise.hpp"
 
 namespace minitensor::detail::cpu

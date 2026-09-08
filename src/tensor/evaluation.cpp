@@ -3,8 +3,6 @@
 #include <vector>
 #include <array>
 
-#include <minitensor/tensor.hpp>
-
 #include "tensor_access.hpp"
 #include "tensor/execution/environment.hpp"
 #include "tensor/graph/fwd.hpp"

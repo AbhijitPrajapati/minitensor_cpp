@@ -1,12 +1,10 @@
 #pragma once
 
 #include <cassert>
-#include <cstddef>
-#include <cstdint>
-#include <functional>
-#include <vector>
-#include <concepts>
 #include <array>
+#include <cstddef>
+#include <concepts>
+#include <functional>
 #include <span>
 
 #include <minitensor/types.hpp>

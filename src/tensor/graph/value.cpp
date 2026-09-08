@@ -1,5 +1,4 @@
 #include "value.hpp"
-#include "fwd.hpp"
 
 #include <stdexcept>
 #include <utility>
