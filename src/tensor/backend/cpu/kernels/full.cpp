@@ -18,10 +18,8 @@ namespace minitensor::detail::cpu
 {
     namespace
     {
-        void run_full(DeviceRuntime &device_runtime, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
+        void run_full(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
         {
-            (void)device_runtime;
-
             assert(inputs.empty());
             assert(output.dtype() == DType::Float32);
             assert(output.layout().is_contiguous(output.shape()));
