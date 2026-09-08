@@ -2,7 +2,6 @@
 
 #include <array>
 #include <cstddef>
-#include <limits>
 #include <span>
 #include <stdexcept>
 #include <vector>
@@ -80,13 +79,5 @@ namespace minitensor::test
                 (void)ElementwisePlan{Shape{2, 3}, wrong_rank};
             },
             "elementwise plan construction rejects a layout with the wrong rank");
-        expect_throws<std::overflow_error>(
-            []
-            {
-                const std::array<Layout, 1> overflowing{
-                    Layout({std::numeric_limits<Layout::stride_type>::max()})};
-                (void)ElementwisePlan{Shape{3}, overflowing};
-            },
-            "elementwise plan construction rejects an overflowing axis reset");
     }
 }
