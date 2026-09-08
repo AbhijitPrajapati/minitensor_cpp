@@ -16,10 +16,8 @@ namespace minitensor::detail::cpu
 {
     namespace
     {
-        void run_add(DeviceRuntime &device_runtime, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
+        void run_add(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
         {
-            (void)device_runtime;
-
             assert(inputs.size() == 2);
 
             (void)dynamic_cast<const AddPrimitive &>(primitive);

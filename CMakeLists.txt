@@ -11,6 +11,7 @@ target_sources(
     PRIVATE
         src/tensor/tensor.cpp
         src/tensor/types.cpp
+        src/tensor/data.cpp
         src/tensor/evaluation.cpp
         src/tensor/core/broadcast_shape.cpp
         src/tensor/core/dense_size.cpp
@@ -32,6 +33,7 @@ target_sources(
         src/tensor/execution/evaluator.cpp
         src/tensor/execution/runtime_registry.cpp
         src/tensor/execution/environment.cpp
+        src/tensor/iteration/elementwise.cpp
 )
 
 # Specify all header files the library needs

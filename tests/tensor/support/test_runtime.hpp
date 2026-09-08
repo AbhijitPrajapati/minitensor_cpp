@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <span>
+#include <stdexcept>
 #include <vector>
 
 #include <minitensor/types.hpp>
@@ -41,6 +42,22 @@ namespace minitensor::test
         {
             allocation_sizes_.push_back(size_bytes);
             return make_test_buffer(size_bytes, device_);
+        }
+
+        void copy_from_host(
+            detail::Buffer &,
+            std::size_t,
+            std::span<const std::byte>) override
+        {
+            throw std::logic_error{"TestRuntime does not provide byte-addressable storage"};
+        }
+
+        void copy_to_host(
+            std::span<std::byte>,
+            const detail::Buffer &,
+            std::size_t) override
+        {
+            throw std::logic_error{"TestRuntime does not provide byte-addressable storage"};
         }
 
         [[nodiscard]] std::span<const std::size_t> allocation_sizes() const noexcept
