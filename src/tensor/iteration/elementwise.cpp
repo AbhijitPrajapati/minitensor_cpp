@@ -8,7 +8,6 @@
 #include <minitensor/types.hpp>
 
 #include "tensor/storage/layout.hpp"
-#include "tensor/core/checked_arithmetic.hpp"
 
 namespace minitensor::detail
 {
@@ -16,7 +15,7 @@ namespace minitensor::detail
 	{
 		if (layouts.size() == 0)
 		{
-			throw std::invalid_argument{"must provide atleast one layout"};
+			throw std::invalid_argument{"must provide at least one layout"};
 		}
 
 		initial_offsets_.reserve(layouts.size());
@@ -53,8 +52,8 @@ namespace minitensor::detail
 			{
 				const offset_type step = layout.stride(axis_idx);
 				axis.steps.push_back(step);
-				const auto checked_reset = checked_multiply(step, static_cast<offset_type>(extent - 1));
-				axis.resets.push_back(checked_reset);
+				const auto reset = step * static_cast<offset_type>(extent - 1);
+				axis.resets.push_back(reset);
 			}
 
 			axes_.push_back(std::move(axis));
