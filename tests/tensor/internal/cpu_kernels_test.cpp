@@ -118,37 +118,6 @@ namespace minitensor::test
         expect(std::equal(expected_sum.begin(), expected_sum.end(), sum_data),
                "the add kernel performs trailing-dimension broadcasting");
 
-        const TensorSpec vector_spec{Shape{2}, DType::Float32, Device::cpu()};
-        const BufferRef strided_lhs_buffer = runtime.allocate(4 * sizeof(float));
-        const BufferRef reversed_rhs_buffer = runtime.allocate(2 * sizeof(float));
-        const BufferRef strided_sum_buffer = runtime.allocate(2 * sizeof(float));
-        auto &strided_lhs_cpu_buffer = as_cpu_buffer(strided_lhs_buffer);
-        auto &reversed_rhs_cpu_buffer = as_cpu_buffer(reversed_rhs_buffer);
-        auto &strided_sum_cpu_buffer = as_cpu_buffer(strided_sum_buffer);
-
-        const std::array<float, 4> strided_lhs_storage{-1.0F, 1.0F, -1.0F, 2.0F};
-        const std::array<float, 2> reversed_rhs_storage{20.0F, 10.0F};
-        std::copy(strided_lhs_storage.begin(), strided_lhs_storage.end(),
-                  reinterpret_cast<float *>(strided_lhs_cpu_buffer.data()));
-        std::copy(reversed_rhs_storage.begin(), reversed_rhs_storage.end(),
-                  reinterpret_cast<float *>(reversed_rhs_cpu_buffer.data()));
-
-        const Materialization strided_lhs_materialization{strided_lhs_buffer, Layout({2}, 1)};
-        const Materialization reversed_rhs_materialization{reversed_rhs_buffer, Layout({-1}, 1)};
-        const Materialization strided_sum_materialization{
-            strided_sum_buffer,
-            Layout::contiguous(vector_spec.shape)};
-        const std::array<TensorView, 2> strided_inputs{
-            TensorView{vector_spec, strided_lhs_materialization},
-            TensorView{vector_spec, reversed_rhs_materialization}};
-        const MutableTensorView strided_output{vector_spec, strided_sum_materialization};
-        add_kernel(runtime, add_primitive, strided_inputs, strided_output);
-
-        const std::array<float, 2> expected_strided_sum{11.0F, 22.0F};
-        const auto *strided_sum_data = reinterpret_cast<const float *>(strided_sum_cpu_buffer.data());
-        expect(std::equal(expected_strided_sum.begin(), expected_strided_sum.end(), strided_sum_data),
-               "the add kernel follows nonzero offsets and signed input strides");
-
         const BufferRef empty_add_buffer = runtime.allocate(0);
         auto &empty_add_cpu_buffer = as_cpu_buffer(empty_add_buffer);
         const Materialization empty_add_materialization{

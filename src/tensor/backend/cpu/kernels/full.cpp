@@ -1,9 +1,9 @@
 #include "registrations.hpp"
 
-#include <span>
-#include <cstdint>
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
+#include <span>
 #include <utility>
 
 #include <minitensor/types.hpp>

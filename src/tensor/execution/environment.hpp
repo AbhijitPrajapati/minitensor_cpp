@@ -7,10 +7,11 @@
 #include "tensor/graph/fwd.hpp"
 #include "runtime_registry.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
-#include "tensor/backend/device_runtime.hpp"
 
 namespace minitensor::detail
 {
+    class DeviceRuntime;
+
     class ExecutionEnvironment final
     {
     public:

@@ -1,7 +1,10 @@
 #pragma once
 
-#include <span>
+#include <cstddef>
 #include <concepts>
+#include <functional>
+#include <span>
+#include <vector>
 
 #include <minitensor/types.hpp>
 

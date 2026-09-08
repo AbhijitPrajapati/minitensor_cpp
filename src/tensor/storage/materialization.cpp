@@ -1,57 +1,15 @@
 #include "materialization.hpp"
 
 #include <cstddef>
-#include <limits>
 #include <stdexcept>
 #include <utility>
 #include <cstdint>
 
 #include "tensor/core/tensor_spec.hpp"
+#include "tensor/core/checked_arithmetic.hpp"
 
 namespace minitensor::detail
 {
-
-    namespace
-    {
-        using offset_type = Layout::offset_type;
-        using stride_type = Layout::stride_type;
-
-        constexpr auto min = std::numeric_limits<offset_type>::min();
-        constexpr auto max = std::numeric_limits<offset_type>::max();
-
-        offset_type checked_add(offset_type lhs, offset_type rhs)
-        {
-
-            if (rhs > 0 && lhs > max - rhs)
-            {
-                throw std::overflow_error{"layout offset overflow"};
-            }
-            if (rhs < 0 && lhs < min - rhs)
-            {
-                throw std::overflow_error{"layout offset underflow"};
-            }
-            return lhs + rhs;
-        }
-
-        offset_type checked_contribution(stride_type stride, Extent dist)
-        {
-            if (stride == 0 || dist == 0)
-            {
-                return 0;
-            }
-
-            if (stride > 0 && stride > max / dist)
-            {
-                throw std::overflow_error{"layout stride contribution overflow"};
-            }
-            if (stride < 0 && stride < min / dist)
-            {
-                throw std::overflow_error{"layout stride contribution underflow"};
-            }
-            return stride * dist;
-        }
-    }
-
     Materialization::Materialization(BufferRef buffer, Layout layout) : buffer_(std::move(buffer)), layout_(std::move(layout))
     {
         if (!buffer_)
@@ -87,13 +45,14 @@ namespace minitensor::detail
             return;
         }
 
-        offset_type min_offset = layout_.offset();
-        offset_type max_offset = layout_.offset();
+        Layout::offset_type min_offset = layout_.offset();
+        Layout::offset_type max_offset = layout_.offset();
 
         for (std::size_t axis = 0; axis < spec.shape.rank(); ++axis)
         {
-            const Extent dist = spec.shape[axis] - 1;
-            const offset_type contribution = checked_contribution(layout_.stride(axis), dist);
+            const auto dist = static_cast<Layout::offset_type>(spec.shape[axis] - 1);
+            const Layout::offset_type contribution = checked_multiply(layout_.stride(axis), dist);
+
             if (contribution < 0)
             {
                 min_offset = checked_add(min_offset, contribution);

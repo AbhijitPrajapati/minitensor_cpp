@@ -9,7 +9,6 @@
 
 namespace minitensor::detail
 {
-    class Node;
     class Value final
     {
     public:
