@@ -5,10 +5,12 @@
 #include <stdexcept>
 #include <span>
 #include <utility>
+#include <optional>
 
 #include "tensor/graph/fwd.hpp"
 #include "tensor/graph/value.hpp"
 #include "tensor/graph/node.hpp"
+#include "tensor/graph/view_primitive.hpp"
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/core/dense_size.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
@@ -24,12 +26,16 @@ namespace minitensor::detail
 {
     namespace
     {
+        struct PlannedKernel
+        {
+            DeviceRuntime *runtime;
+            KernelFn function;
+        };
         struct PlannedStep final
         {
             ValueRef output;
             NodeRef node;
-            DeviceRuntime *runtime;
-            KernelFn kernel;
+            std::optional<PlannedKernel> kernel;
         };
 
         using EvaluationPlan = std::vector<PlannedStep>;
@@ -94,12 +100,22 @@ namespace minitensor::detail
                 }
 
                 // add execution details to the plan
-                const TensorSpec &output_spec = value->spec();
-                DeviceRuntime &runtime = runtimes_.get(output_spec.device);
-                const KernelKey key{typeid(node->primitive()), output_spec.device.type(), output_spec.dtype};
-                const KernelFn &kernel = kernels_.get(key);
-                plan_.push_back(PlannedStep{value, node, &runtime, kernel});
+                const Primitive &primitive = node->primitive();
 
+                // detect view operation
+                if (dynamic_cast<const ViewPrimitive *>(&primitive) != nullptr)
+                {
+                    plan_.push_back(PlannedStep{value, node, std::nullopt});
+                }
+                // kernel operations
+                else
+                {
+                    const TensorSpec &output_spec = value->spec();
+                    DeviceRuntime &runtime = runtimes_.get(output_spec.device);
+                    const KernelKey key{typeid(node->primitive()), output_spec.device.type(), output_spec.dtype};
+                    const KernelFn &kernel = kernels_.get(key);
+                    plan_.push_back(PlannedStep{value, node, PlannedKernel{&runtime, kernel}});
+                }
                 states_.at(value.get()) = VisitState::Finished;
             }
 
@@ -111,33 +127,60 @@ namespace minitensor::detail
 
         void execute_step(const PlannedStep &step)
         {
-            // construct input view
-            std::vector<TensorView> input_views;
-            input_views.reserve(step.node->inputs().size());
-
-            for (const ValueRef &input : step.node->inputs())
+            // kernel operation
+            if (step.kernel.has_value())
             {
-                const Materialization *materialization = input->materialization();
+                const PlannedKernel &planned_kernel = step.kernel.value();
+
+                // construct input view
+                std::vector<TensorView> input_views;
+                input_views.reserve(step.node->inputs().size());
+
+                for (const ValueRef &input : step.node->inputs())
+                {
+                    const Materialization *materialization = input->materialization();
+                    if (materialization == nullptr)
+                    {
+                        throw std::logic_error{"planned operation has unmaterialized input"};
+                    }
+                    input_views.emplace_back(input->spec(), *materialization);
+                }
+
+                // allocate output storage
+                const TensorSpec &output_spec = step.output->spec();
+                BufferRef output_buffer = planned_kernel.runtime->allocate(dense_size_bytes(output_spec));
+                Materialization output_materialization(std::move(output_buffer), Layout::contiguous(output_spec.shape));
+
+                // perform operation
+                {
+                    MutableTensorView output_view(output_spec, output_materialization);
+                    planned_kernel.function(*planned_kernel.runtime, step.node->primitive(), input_views, output_view);
+                }
+
+                // only materialize once operation succeeds
+                step.output->materialize(std::move(output_materialization));
+            }
+            // view operation
+            else
+            {
+                const auto *primitive = dynamic_cast<const ViewPrimitive *>(&step.node->primitive());
+                if (!primitive)
+                {
+                    throw std::logic_error{"planned view step has non-view primitive"};
+                }
+
+                // only one input for view operations
+                const ValueRef &input_value = step.node->inputs().front();
+                const Materialization *materialization = input_value->materialization();
                 if (materialization == nullptr)
                 {
                     throw std::logic_error{"planned operation has unmaterialized input"};
                 }
-                input_views.emplace_back(input->spec(), *materialization);
+
+                Layout output_layout = primitive->derive_layout(input_value->spec(), materialization->layout(), step.output->spec());
+                Materialization output_materialization = Materialization(materialization->buffer_ref(), std::move(output_layout));
+                step.output->materialize(output_materialization);
             }
-
-            // allocate output storage
-            const TensorSpec &output_spec = step.output->spec();
-            BufferRef output_buffer = step.runtime->allocate(dense_size_bytes(output_spec));
-            Materialization output_materialization(std::move(output_buffer), Layout::contiguous(output_spec.shape));
-
-            // perform operation
-            {
-                MutableTensorView output_view(output_spec, output_materialization);
-                step.kernel(*step.runtime, step.node->primitive(), input_views, output_view);
-            }
-
-            // only materialize once operation succeeds
-            step.output->materialize(std::move(output_materialization));
         }
 
     }

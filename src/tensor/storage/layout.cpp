@@ -17,7 +17,7 @@ namespace minitensor::detail
         }
     }
 
-    Layout Layout::contiguous(const Shape &shape)
+    Layout Layout::contiguous(const Shape &shape, offset_type offset)
     {
         std::vector<stride_type> strides(shape.rank(), stride_type{1});
 
@@ -41,7 +41,7 @@ namespace minitensor::detail
             }
             running_stride *= extent;
         }
-        return Layout{std::move(strides), offset_type{0}};
+        return Layout{std::move(strides), offset};
     }
 
     Layout::size_type Layout::rank() const noexcept
@@ -131,5 +131,17 @@ namespace minitensor::detail
         }
 
         return Layout(std::move(output_strides), offset_);
+    }
+
+    Layout Layout::permuted(std::span<const size_type> permutation) const
+    {
+        std::vector<stride_type> permuted_strides;
+        permuted_strides.reserve(permutation.size());
+        for (std::size_t output_stride_idx = 0; output_stride_idx < permutation.size(); ++output_stride_idx)
+        {
+            const Shape::size_type input_stride_idx = permutation[output_stride_idx];
+            permuted_strides.push_back(strides_[input_stride_idx]);
+        }
+        return Layout(std::move(permuted_strides), offset_);
     }
 }
