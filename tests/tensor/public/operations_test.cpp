@@ -1,5 +1,7 @@
 #include <minitensor/ops.hpp>
 
+#include <array>
+#include <span>
 #include <stdexcept>
 #include <utility>
 
@@ -53,6 +55,20 @@ namespace minitensor::test
         expect(empty_sum.shape() == Shape{2, 0, 3}, "addition broadcasts compatible empty shapes");
         expect(empty_sum.numel() == 0, "a broadcasted empty result remains empty");
 
+        constexpr std::array<Axis, 2> swapped_axes{1, 0};
+        const Tensor permuted_matrix = permute(matrix, swapped_axes);
+        expect(permuted_matrix.shape() == Shape{3, 2},
+               "permutation reorders tensor dimensions");
+        expect(permuted_matrix.dtype() == matrix.dtype() &&
+                   permuted_matrix.device() == matrix.device(),
+               "permutation preserves tensor dtype and device");
+
+        constexpr std::array<Axis, 2> negative_swapped_axes{-1, -2};
+        expect(permute(matrix, negative_swapped_axes).shape() == Shape{3, 2},
+               "permutation accepts normalized negative axes");
+        expect(permute(scalar, std::span<const Axis>{}).shape().is_scalar(),
+               "an empty permutation preserves a scalar tensor");
+
         expect_throws<std::invalid_argument>(
             []
             {
@@ -67,5 +83,26 @@ namespace minitensor::test
                 (void)(lhs + rhs);
             },
             "addition rejects tensors on different devices");
+        expect_throws<std::invalid_argument>(
+            [&matrix]
+            {
+                constexpr std::array<Axis, 1> wrong_size{0};
+                (void)permute(matrix, wrong_size);
+            },
+            "permutation rejects an axis count that differs from the input rank");
+        expect_throws<std::invalid_argument>(
+            [&matrix]
+            {
+                constexpr std::array<Axis, 2> duplicate_axes{0, 0};
+                (void)permute(matrix, duplicate_axes);
+            },
+            "permutation rejects duplicate axes");
+        expect_throws<std::out_of_range>(
+            [&matrix]
+            {
+                constexpr std::array<Axis, 2> out_of_range_axes{0, 2};
+                (void)permute(matrix, out_of_range_axes);
+            },
+            "permutation rejects an axis outside the input rank");
     }
 }

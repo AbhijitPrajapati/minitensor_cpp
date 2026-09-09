@@ -139,7 +139,7 @@ namespace minitensor::detail
         permuted_strides.reserve(permutation.size());
         for (std::size_t output_stride_idx = 0; output_stride_idx < permutation.size(); ++output_stride_idx)
         {
-            const Shape::size_type input_stride_idx = permutation[output_stride_idx];
+            const size_type input_stride_idx = permutation[output_stride_idx];
             permuted_strides.push_back(strides_[input_stride_idx]);
         }
         return Layout(std::move(permuted_strides), offset_);

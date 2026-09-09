@@ -4,6 +4,7 @@
 #include <limits>
 #include <stdexcept>
 
+#include "tensor/core/axis.hpp"
 #include "tensor/core/broadcast_shape.hpp"
 #include "tensor/core/dense_size.hpp"
 #include "tensor/core/tensor_spec.hpp"
@@ -15,6 +16,23 @@ namespace minitensor::test
     void run_core_test()
     {
         using detail::TensorSpec;
+
+        expect(detail::normalize_axis(Axis{1}, 3) == 1,
+               "axis normalization preserves a nonnegative axis");
+        expect(detail::normalize_axis(Axis{-1}, 3) == 2,
+               "axis normalization resolves a negative axis from the end");
+        expect_throws<std::out_of_range>(
+            []
+            {
+                (void)detail::normalize_axis(Axis{3}, 3);
+            },
+            "axis normalization rejects an axis at the positive rank boundary");
+        expect_throws<std::out_of_range>(
+            []
+            {
+                (void)detail::normalize_axis(Axis{-4}, 3);
+            },
+            "axis normalization rejects an axis before the negative rank boundary");
 
         expect(detail::broadcast_shape(Shape{2, 3}, Shape{2, 3}) == Shape{2, 3},
                "broadcasting preserves equal shapes");

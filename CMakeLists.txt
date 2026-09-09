@@ -15,12 +15,14 @@ target_sources(
         src/tensor/evaluation.cpp
         src/tensor/core/broadcast_shape.cpp
         src/tensor/core/dense_size.cpp
+        src/tensor/core/axis.cpp
         src/tensor/graph/apply_operation.cpp
         src/tensor/graph/ids.cpp
         src/tensor/graph/node.cpp
         src/tensor/graph/value.cpp
         src/tensor/ops/add.cpp
         src/tensor/ops/full.cpp
+        src/tensor/ops/permute.cpp
         src/tensor/storage/layout.cpp
         src/tensor/storage/materialization.cpp
         src/tensor/backend/cpu/cpu_buffer.cpp
