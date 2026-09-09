@@ -25,6 +25,11 @@ namespace minitensor::test
         expect(std::ranges::equal(matrix_values, expected_source),
                "from_data copies its input and to_vector preserves logical element order");
 
+        constexpr std::array<Axis, 2> swapped_axes{1, 0};
+        const std::array<float, 6> expected_permuted{1.0F, 4.0F, 2.0F, 5.0F, 3.0F, 6.0F};
+        expect(std::ranges::equal(to_vector(permute(matrix, swapped_axes)), expected_permuted),
+               "to_vector reads a permuted view in its logical element order");
+
         const std::array<float, 1> scalar_source{-3.25F};
         const Tensor scalar = from_data(scalar_source, Shape{});
         expect(item(scalar) == -3.25F, "item returns the value of a scalar tensor");
