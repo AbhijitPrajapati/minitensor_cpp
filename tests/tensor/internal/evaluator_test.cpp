@@ -144,6 +144,32 @@ namespace minitensor::test
         expect(calls.size() == 2 && runtime_address->allocation_sizes().size() == 2,
                "evaluating an already materialized value reuses its cached result");
 
+        {
+            const ValueRef view_input = std::make_shared<Value>(ValueId{502}, spec);
+            view_input->materialize(detail::Materialization{
+                make_test_buffer(6 * sizeof(float)),
+                Layout({1, 2})});
+
+            const std::array<ValueRef, 1> view_inputs{view_input};
+            const ValueRef view_output = detail::apply_operation(
+                std::make_unique<IdentityViewPrimitive>(), view_inputs);
+            expect(view_output->spec() == spec,
+                   "an identity view preserves its input tensor specification during graph construction");
+
+            RuntimeRegistry empty_runtimes;
+            KernelRegistry empty_kernels;
+            Evaluator view_evaluator{empty_runtimes, empty_kernels};
+            view_evaluator.evaluate(std::array<ValueRef, 1>{view_output});
+
+            const detail::Materialization *view_materialization = view_output->materialization();
+            expect(view_materialization != nullptr,
+                   "evaluation materializes a view operation without a registered kernel or runtime");
+            expect(view_materialization->buffer_ref().get() == view_input->materialization()->buffer_ref().get(),
+                   "an evaluated view shares its input's storage");
+            expect(view_materialization->layout() == Layout({1, 2}),
+                   "an evaluated view installs the layout derived by its primitive");
+        }
+
         const std::array<ValueRef, 1> null_roots{ValueRef{}};
         expect_throws<std::invalid_argument>(
             [&evaluator, &null_roots]

@@ -41,6 +41,12 @@ namespace minitensor::test
         const Layout contiguous = Layout::contiguous(Shape{2, 3, 4});
         expect(contiguous == Layout({12, 4, 1}), "contiguous constructs row-major strides");
         expect(contiguous.is_contiguous(Shape{2, 3, 4}), "generated row-major strides are contiguous");
+        expect(Layout::contiguous(Shape{2, 3, 4}, 6) == Layout({12, 4, 1}, 6),
+               "contiguous layout construction preserves an explicit offset");
+
+        constexpr std::array<Shape::size_type, 3> permutation{2, 0, 1};
+        expect(custom.permuted(permutation) == Layout({1, 12, 4}, 5),
+               "layout permutation reorders strides and preserves the offset");
 
         const Layout singleton_strides{{3, 99, 1}, 7};
         expect(singleton_strides.is_contiguous(Shape{2, 1, 3}),

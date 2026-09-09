@@ -6,6 +6,8 @@
 
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/graph/primitive.hpp"
+#include "tensor/graph/view_primitive.hpp"
+#include "tensor/storage/layout.hpp"
 
 namespace minitensor::test
 {
@@ -56,5 +58,32 @@ namespace minitensor::test
 
     private:
         bool &destroyed_;
+    };
+
+    class IdentityViewPrimitive final : public detail::ViewPrimitive
+    {
+    public:
+        [[nodiscard]] std::string_view name() const noexcept override
+        {
+            return "test_identity_view";
+        }
+
+        [[nodiscard]] detail::TensorSpec infer(std::span<const detail::TensorSpec> inputs) const override
+        {
+            if (inputs.size() != 1)
+            {
+                throw std::invalid_argument{"expected one input"};
+            }
+
+            return inputs.front();
+        }
+
+        [[nodiscard]] detail::Layout derive_layout(
+            const detail::TensorSpec &,
+            const detail::Layout &input_layout,
+            const detail::TensorSpec &) const override
+        {
+            return input_layout;
+        }
     };
 }
