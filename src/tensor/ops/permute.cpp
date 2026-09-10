@@ -7,6 +7,7 @@
 #include <memory>
 #include <array>
 #include <string_view>
+#include <optional>
 
 #include <minitensor/types.hpp>
 #include <minitensor/ops.hpp>
@@ -69,9 +70,14 @@ namespace minitensor
             return TensorSpec{Shape{std::move(output_extents)}, input.dtype, input.device};
         }
 
-        Layout PermutePrimitive::derive_layout(const TensorSpec &, const Layout &input_layout, const TensorSpec &) const
+        std::optional<Layout> PermutePrimitive::try_derive_shared_layout(const TensorSpec &, const Layout &input_layout, const TensorSpec &) const
         {
             return input_layout.permuted(permutation_);
+        }
+
+        bool PermutePrimitive::requires_kernel_support() const noexcept
+        {
+            return false;
         }
 
         const std::vector<Shape::size_type> &PermutePrimitive::permutation() const noexcept
