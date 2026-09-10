@@ -12,6 +12,7 @@
 #include "tensor/graph/node.hpp"
 #include "tensor/graph/primitive.hpp"
 #include "tensor/graph/value.hpp"
+#include "tensor/storage/layout.hpp"
 #include "tensor/tensor_access.hpp"
 
 #include "../support/test.hpp"
@@ -21,6 +22,7 @@ namespace minitensor::test
 {
     void run_graph_objects_test()
     {
+        using detail::Layout;
         using detail::Node;
         using detail::NodeId;
         using detail::NodeRef;
@@ -52,9 +54,14 @@ namespace minitensor::test
         auto primitive = std::make_unique<IdentitySpecPrimitive>();
         const Primitive *primitive_address = primitive.get();
         const Node node{NodeId{50}, std::move(primitive), {first, second}};
+        const Layout input_layout = Layout::contiguous(spec.shape);
 
         expect(node.id() == NodeId{50}, "a node preserves its id");
         expect(node.primitive().name() == "test_identity", "a node exposes its primitive");
+        expect(node.primitive().requires_kernel_support(),
+               "a primitive requires kernel support by default");
+        expect(!node.primitive().try_derive_shared_layout(spec, input_layout, spec).has_value(),
+               "a primitive does not derive shared storage by default");
         expect(primitive == nullptr, "node construction takes ownership of its primitive");
         expect(&node.primitive() == primitive_address, "a node retains the supplied primitive object");
         expect(node.inputs().size() == 2, "a node preserves its input count");

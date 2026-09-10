@@ -1,12 +1,12 @@
 #pragma once
 
+#include <optional>
 #include <span>
 #include <stdexcept>
 #include <string_view>
 
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/graph/primitive.hpp"
-#include "tensor/graph/view_primitive.hpp"
 #include "tensor/storage/layout.hpp"
 
 namespace minitensor::test
@@ -60,12 +60,12 @@ namespace minitensor::test
         bool &destroyed_;
     };
 
-    class IdentityViewPrimitive final : public detail::ViewPrimitive
+    class IdentityStorageSharingPrimitive final : public detail::Primitive
     {
     public:
         [[nodiscard]] std::string_view name() const noexcept override
         {
-            return "test_identity_view";
+            return "test_identity_storage_sharing";
         }
 
         [[nodiscard]] detail::TensorSpec infer(std::span<const detail::TensorSpec> inputs) const override
@@ -78,12 +78,17 @@ namespace minitensor::test
             return inputs.front();
         }
 
-        [[nodiscard]] detail::Layout derive_layout(
+        [[nodiscard]] std::optional<detail::Layout> try_derive_shared_layout(
             const detail::TensorSpec &,
             const detail::Layout &input_layout,
             const detail::TensorSpec &) const override
         {
             return input_layout;
+        }
+
+        [[nodiscard]] bool requires_kernel_support() const noexcept override
+        {
+            return false;
         }
     };
 }

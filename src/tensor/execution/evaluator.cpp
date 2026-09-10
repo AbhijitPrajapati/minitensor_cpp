@@ -6,11 +6,11 @@
 #include <span>
 #include <utility>
 #include <optional>
+#include <typeinfo>
 
 #include "tensor/graph/fwd.hpp"
 #include "tensor/graph/value.hpp"
 #include "tensor/graph/node.hpp"
-#include "tensor/graph/view_primitive.hpp"
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/core/dense_size.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
@@ -102,20 +102,18 @@ namespace minitensor::detail
                 // add execution details to the plan
                 const Primitive &primitive = node->primitive();
 
-                // detect view operation
-                if (dynamic_cast<const ViewPrimitive *>(&primitive) != nullptr)
-                {
-                    plan_.push_back(PlannedStep{value, node, std::nullopt});
-                }
-                // kernel operations
-                else
+                std::optional<PlannedKernel> kernel;
+
+                // detect kernel requirement
+                if (primitive.requires_kernel_support())
                 {
                     const TensorSpec &output_spec = value->spec();
                     DeviceRuntime &runtime = runtimes_.get(output_spec.device);
                     const KernelKey key{typeid(node->primitive()), output_spec.device.type(), output_spec.dtype};
-                    const KernelFn &kernel = kernels_.get(key);
-                    plan_.push_back(PlannedStep{value, node, PlannedKernel{&runtime, kernel}});
+                    kernel = PlannedKernel{&runtime, kernels_.get(key)};
                 }
+
+                plan_.push_back(PlannedStep{value, node, std::move(kernel)});
                 states_.at(value.get()) = VisitState::Finished;
             }
 
@@ -127,60 +125,60 @@ namespace minitensor::detail
 
         void execute_step(const PlannedStep &step)
         {
-            // kernel operation
-            if (step.kernel.has_value())
+            Value &output = *step.output;
+            const Node &node = *step.node;
+            const Primitive &primitive = node.primitive();
+            const auto &inputs = node.inputs();
+
+            // construct input view
+            std::vector<TensorView> input_views;
+            input_views.reserve(inputs.size());
+
+            for (const ValueRef &input : inputs)
             {
-                const PlannedKernel &planned_kernel = step.kernel.value();
-
-                // construct input view
-                std::vector<TensorView> input_views;
-                input_views.reserve(step.node->inputs().size());
-
-                for (const ValueRef &input : step.node->inputs())
-                {
-                    const Materialization *materialization = input->materialization();
-                    if (materialization == nullptr)
-                    {
-                        throw std::logic_error{"planned operation has unmaterialized input"};
-                    }
-                    input_views.emplace_back(input->spec(), *materialization);
-                }
-
-                // allocate output storage
-                const TensorSpec &output_spec = step.output->spec();
-                BufferRef output_buffer = planned_kernel.runtime->allocate(dense_size_bytes(output_spec));
-                Materialization output_materialization(std::move(output_buffer), Layout::contiguous(output_spec.shape));
-
-                // perform operation
-                {
-                    MutableTensorView output_view(output_spec, output_materialization);
-                    planned_kernel.function(*planned_kernel.runtime, step.node->primitive(), input_views, output_view);
-                }
-
-                // only materialize once operation succeeds
-                step.output->materialize(std::move(output_materialization));
-            }
-            // view operation
-            else
-            {
-                const auto *primitive = dynamic_cast<const ViewPrimitive *>(&step.node->primitive());
-                if (!primitive)
-                {
-                    throw std::logic_error{"planned view step has non-view primitive"};
-                }
-
-                // only one input for view operations
-                const ValueRef &input_value = step.node->inputs().front();
-                const Materialization *materialization = input_value->materialization();
+                const Materialization *materialization = input->materialization();
                 if (materialization == nullptr)
                 {
                     throw std::logic_error{"planned operation has unmaterialized input"};
                 }
 
-                Layout output_layout = primitive->derive_layout(input_value->spec(), materialization->layout(), step.output->spec());
-                Materialization output_materialization = Materialization(materialization->buffer_ref(), std::move(output_layout));
-                step.output->materialize(output_materialization);
+                // storage-sharing operations handled once here
+                if (inputs.size() == 1)
+                {
+                    // only check for storage sharing from single-input operations
+                    // all storage-sharing operations must have a singular input
+                    auto shared_layout = primitive.try_derive_shared_layout(input->spec(), materialization->layout(), output.spec());
+                    if (shared_layout)
+                    {
+                        Materialization output_materialization = Materialization(materialization->buffer_ref(), std::move(shared_layout.value()));
+                        output.materialize(std::move(output_materialization));
+                        return;
+                    }
+                }
+
+                input_views.emplace_back(input->spec(), *materialization);
             }
+
+            // storage-sharing operations should have already been handled by now
+            // all non-storage-sharing operations should provide kernels
+            if (!step.kernel)
+            {
+                throw std::logic_error{"primitive must either share storage or plan a kernel"};
+            }
+
+            const PlannedKernel &planned_kernel = step.kernel.value();
+            const TensorSpec &output_spec = output.spec();
+            BufferRef output_buffer = planned_kernel.runtime->allocate(dense_size_bytes(output_spec));
+            Materialization output_materialization(std::move(output_buffer), Layout::contiguous(output_spec.shape));
+
+            // perform operation
+            {
+                MutableTensorView output_view(output_spec, output_materialization);
+                planned_kernel.function(*planned_kernel.runtime, primitive, input_views, output_view);
+            }
+
+            // only materialize once operation succeeds
+            output.materialize(std::move(output_materialization));
         }
 
     }
