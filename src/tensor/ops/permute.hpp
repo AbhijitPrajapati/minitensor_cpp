@@ -23,5 +23,6 @@ namespace minitensor::detail
 
     private:
         std::vector<Shape::size_type> permutation_;
+        Shape::size_type input_rank_;
     };
 }

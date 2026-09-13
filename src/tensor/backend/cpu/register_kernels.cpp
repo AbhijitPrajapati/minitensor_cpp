@@ -9,5 +9,6 @@ namespace minitensor::detail::cpu
         register_full(registry);
         register_add(registry);
         register_reshape(registry);
+        register_sum(registry);
     }
 }

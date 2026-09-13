@@ -31,8 +31,7 @@ namespace minitensor::detail::cpu
         const Shape output_shape = output.shape();
         assert(output.layout().is_contiguous(output_shape));
 
-        const std::size_t numel = output_shape.numel();
-        if (numel == 0)
+        if (output_shape.numel() == 0)
         {
             return;
         }

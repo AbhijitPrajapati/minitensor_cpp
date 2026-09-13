@@ -25,6 +25,7 @@ target_sources(
         src/tensor/ops/permute.cpp
         src/tensor/ops/reshape.cpp
         src/tensor/ops/broadcast_to.cpp
+        src/tensor/ops/sum.cpp
         src/tensor/storage/layout.cpp
         src/tensor/storage/materialization.cpp
         src/tensor/backend/cpu/cpu_buffer.cpp
@@ -33,12 +34,14 @@ target_sources(
         src/tensor/backend/cpu/kernels/add.cpp
         src/tensor/backend/cpu/kernels/full.cpp
         src/tensor/backend/cpu/kernels/reshape.cpp
+        src/tensor/backend/cpu/kernels/sum.cpp
         src/tensor/dispatch/kernel_registry.cpp
         src/tensor/dispatch/tensor_view.cpp
         src/tensor/execution/evaluator.cpp
         src/tensor/execution/runtime_registry.cpp
         src/tensor/execution/environment.cpp
         src/tensor/iteration/elementwise.cpp
+        src/tensor/iteration/reduction.cpp
 )
 
 # Specify all header files the library needs
@@ -93,6 +96,7 @@ if(BUILD_TESTING)
     tests/tensor/internal/evaluator_test.cpp
     tests/tensor/internal/runtime_registry_test.cpp
     tests/tensor/internal/elementwise_test.cpp
+    tests/tensor/internal/reduction_test.cpp
     )
     # Link test executable to library
     target_link_libraries(tensor_tests PRIVATE minitensor)
