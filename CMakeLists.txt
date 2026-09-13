@@ -23,6 +23,7 @@ target_sources(
         src/tensor/ops/add.cpp
         src/tensor/ops/full.cpp
         src/tensor/ops/permute.cpp
+        src/tensor/ops/reshape.cpp
         src/tensor/storage/layout.cpp
         src/tensor/storage/materialization.cpp
         src/tensor/backend/cpu/cpu_buffer.cpp
@@ -30,6 +31,7 @@ target_sources(
         src/tensor/backend/cpu/register_kernels.cpp
         src/tensor/backend/cpu/kernels/add.cpp
         src/tensor/backend/cpu/kernels/full.cpp
+        src/tensor/backend/cpu/kernels/reshape.cpp
         src/tensor/dispatch/kernel_registry.cpp
         src/tensor/dispatch/tensor_view.cpp
         src/tensor/execution/evaluator.cpp

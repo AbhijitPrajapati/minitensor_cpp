@@ -7,9 +7,8 @@
 
 namespace minitensor
 {
-    // Minimal initial set of operations
-
     [[nodiscard]] Tensor operator+(const Tensor &lhs, const Tensor &rhs);
     [[nodiscard]] Tensor full(Shape shape, float value, TensorOptions options = {});
     [[nodiscard]] Tensor permute(const Tensor& input, std::span<const Axis> permutation);
+    [[nodiscard]] Tensor reshape(const Tensor& input, Shape shape);
 } // namespace minitensor

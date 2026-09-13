@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <utility>
 #include <vector>
+#include <optional>
 
 #include <minitensor/types.hpp>
 
@@ -143,5 +144,26 @@ namespace minitensor::detail
             permuted_strides.push_back(strides_[input_stride_idx]);
         }
         return Layout(std::move(permuted_strides), offset_);
+    }
+
+    std::optional<Layout> Layout::try_reshape(const Shape& source_shape, const Shape& target_shape) const
+    {
+        if (source_shape.numel() != target_shape.numel())
+        {
+            return std::nullopt;
+        }
+        if (source_shape == target_shape)
+        {
+            return *this;
+        }
+        if (source_shape.numel() <= 1)
+        {
+            return contiguous(target_shape, offset_);
+        }
+        if (!is_contiguous(source_shape))
+        {
+            return std::nullopt;
+        }
+        return contiguous(target_shape, offset_);
     }
 }

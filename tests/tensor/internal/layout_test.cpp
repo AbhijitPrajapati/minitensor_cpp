@@ -4,6 +4,7 @@
 #include <array>
 #include <limits>
 #include <stdexcept>
+#include <vector>
 
 #include "tensor/storage/layout.hpp"
 
@@ -47,6 +48,25 @@ namespace minitensor::test
         constexpr std::array<Shape::size_type, 3> permutation{2, 0, 1};
         expect(custom.permuted(permutation) == Layout({1, 12, 4}, 5),
                "layout permutation reorders strides and preserves the offset");
+
+        const auto contiguous_reshape = custom.try_reshape(Shape{2, 3, 4}, Shape{4, 6});
+        expect(contiguous_reshape.has_value() && contiguous_reshape.value() == Layout({6, 1}, 5),
+               "a contiguous layout can be reshaped while preserving its offset");
+
+        const Layout noncontiguous{{1, 2}, 4};
+        const auto unchanged_reshape = noncontiguous.try_reshape(Shape{2, 3}, Shape{2, 3});
+        expect(unchanged_reshape.has_value() && unchanged_reshape.value() == noncontiguous,
+               "reshaping to the same shape preserves any valid layout");
+        expect(!noncontiguous.try_reshape(Shape{2, 3}, Shape{3, 2}).has_value(),
+               "a noncontiguous layout cannot share storage across a shape change");
+        expect(!contiguous.try_reshape(Shape{2, 3, 4}, Shape{5, 5}).has_value(),
+               "layout reshaping rejects shapes with different element counts");
+
+        const Layout offset_scalar{std::vector<Layout::stride_type>{}, 7};
+        const auto ranked_singleton_reshape = offset_scalar.try_reshape(Shape{}, Shape{1, 1});
+        expect(ranked_singleton_reshape.has_value() &&
+                   ranked_singleton_reshape.value() == Layout({1, 1}, 7),
+               "a single-element reshape creates the target's contiguous layout and preserves its offset");
 
         const Layout singleton_strides{{3, 99, 1}, 7};
         expect(singleton_strides.is_contiguous(Shape{2, 1, 3}),
