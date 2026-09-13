@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <span>
 #include <vector>
+#include <optional>
 
 namespace minitensor
 {
@@ -31,6 +32,7 @@ namespace minitensor::detail
         [[nodiscard]] bool is_contiguous(const Shape &shape) const noexcept;
         [[nodiscard]] Layout broadcasted_to(const Shape &source_shape, const Shape &target_shape) const;
         [[nodiscard]] Layout permuted(std::span<const size_type> permutation) const;
+        [[nodiscard]] std::optional<Layout> try_reshape(const Shape& source_shape, const Shape& target_shape) const;
 
         friend bool operator==(const Layout &, const Layout &) = default;
 

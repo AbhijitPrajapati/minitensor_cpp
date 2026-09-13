@@ -69,6 +69,17 @@ namespace minitensor::test
         expect(permute(scalar, std::span<const Axis>{}).shape().is_scalar(),
                "an empty permutation preserves a scalar tensor");
 
+        const Tensor reshaped_matrix = reshape(matrix, Shape{3, 2});
+        expect(reshaped_matrix.shape() == Shape{3, 2},
+               "reshape replaces the tensor shape while preserving its element count");
+        expect(reshaped_matrix.dtype() == matrix.dtype() &&
+                   reshaped_matrix.device() == matrix.device(),
+               "reshape preserves tensor dtype and device");
+        expect(reshape(scalar, Shape{1}).shape() == Shape{1},
+               "reshape can convert a scalar into a ranked singleton tensor");
+        expect(reshape(empty, Shape{0, 6}).shape() == Shape{0, 6},
+               "reshape accepts a different empty shape");
+
         expect_throws<std::invalid_argument>(
             []
             {
@@ -104,5 +115,11 @@ namespace minitensor::test
                 (void)permute(matrix, out_of_range_axes);
             },
             "permutation rejects an axis outside the input rank");
+        expect_throws<std::invalid_argument>(
+            [&matrix]
+            {
+                (void)reshape(matrix, Shape{5});
+            },
+            "reshape rejects a shape with a different element count");
     }
 }

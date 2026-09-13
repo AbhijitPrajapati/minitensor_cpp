@@ -15,6 +15,7 @@
 #include "tensor/dispatch/tensor_view.hpp"
 #include "tensor/ops/add.hpp"
 #include "tensor/ops/full.hpp"
+#include "tensor/ops/reshape.hpp"
 #include "tensor/storage/layout.hpp"
 #include "tensor/storage/materialization.hpp"
 
@@ -44,6 +45,7 @@ namespace minitensor::test
         using detail::Layout;
         using detail::Materialization;
         using detail::MutableTensorView;
+        using detail::ReshapePrimitive;
         using detail::TensorSpec;
         using detail::TensorView;
         using detail::cpu::CpuRuntime;
@@ -53,8 +55,10 @@ namespace minitensor::test
 
         KernelKey full_key{typeid(FullPrimitive), DeviceType::Cpu, DType::Float32};
         KernelKey add_key{typeid(AddPrimitive), DeviceType::Cpu, DType::Float32};
+        KernelKey reshape_key{typeid(ReshapePrimitive), DeviceType::Cpu, DType::Float32};
         expect(registry.contains(full_key), "cpu kernel registration installs the Float32 full kernel");
         expect(registry.contains(add_key), "cpu kernel registration installs the Float32 add kernel");
+        expect(registry.contains(reshape_key), "cpu kernel registration installs the Float32 reshape kernel");
 
         CpuRuntime runtime;
         const KernelFn &full_kernel = registry.get(full_key);
