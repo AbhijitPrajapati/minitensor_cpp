@@ -12,4 +12,6 @@ namespace minitensor
     [[nodiscard]] Tensor permute(const Tensor &input, std::span<const Axis> permutation);
     [[nodiscard]] Tensor reshape(const Tensor &input, Shape shape);
     [[nodiscard]] Tensor broadcast_to(const Tensor &input, Shape shape);
+    [[nodiscard]] Tensor sum(const Tensor& input, std::span<const Axis> axes);
+    [[nodiscard]] Tensor sum(const Tensor& input);
 } // namespace minitensor

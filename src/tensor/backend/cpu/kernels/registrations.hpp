@@ -9,5 +9,6 @@ namespace minitensor::detail
         void register_full(KernelRegistry &registry);
         void register_add(KernelRegistry &registry);
         void register_reshape(KernelRegistry &registry);
+        void register_sum(KernelRegistry& registry);
     }
 }

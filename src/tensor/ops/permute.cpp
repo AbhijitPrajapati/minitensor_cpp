@@ -22,18 +22,18 @@ namespace minitensor
 
     namespace detail
     {
-        PermutePrimitive::PermutePrimitive(std::span<const Axis> permutation, Shape::size_type input_rank)
+        PermutePrimitive::PermutePrimitive(std::span<const Axis> permutation, Shape::size_type input_rank): input_rank_(input_rank)
         {
-            if (permutation.size() != input_rank)
+            if (permutation.size() != input_rank_)
             {
                 throw std::invalid_argument{"permutation size does not match input rank"};
             }
 
-            permutation_.reserve(input_rank);
-            std::vector<bool> seen(input_rank, false);
+            permutation_.reserve(input_rank_);
+            std::vector<bool> seen(input_rank_, false);
             for (const Axis axis : permutation)
             {
-                const Shape::size_type normalized = normalize_axis(axis, input_rank);
+                const Shape::size_type normalized = normalize_axis(axis, input_rank_);
                 if (seen[normalized])
                 {
                     throw std::invalid_argument{"permutation must not contain duplicate axes"};
@@ -56,13 +56,13 @@ namespace minitensor
             }
 
             const TensorSpec &input = inputs.front();
-            if (input.shape.rank() != permutation_.size())
+            if (input.shape.rank() != input_rank_)
             {
                 throw std::invalid_argument{"permutation size does not match input rank"};
             }
 
             std::vector<Extent> output_extents;
-            output_extents.reserve(permutation_.size());
+            output_extents.reserve(input_rank_);
             for (const auto input_axis_idx : permutation_)
             {
                 output_extents.push_back(input.shape[input_axis_idx]);

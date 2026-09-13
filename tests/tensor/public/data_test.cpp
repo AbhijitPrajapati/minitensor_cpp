@@ -56,11 +56,23 @@ namespace minitensor::test
 
         const std::array<float, 2> lhs_values{1.0F, 2.0F};
         const std::array<float, 3> rhs_values{10.0F, 20.0F, 30.0F};
-        const Tensor sum = from_data(lhs_values, Shape{2, 1}) +
-                           from_data(rhs_values, Shape{1, 3});
+        const Tensor added = from_data(lhs_values, Shape{2, 1}) +
+                             from_data(rhs_values, Shape{1, 3});
         const std::array<float, 6> expected_sum{11.0F, 21.0F, 31.0F, 12.0F, 22.0F, 32.0F};
-        expect(std::ranges::equal(to_vector(sum), expected_sum),
+        expect(std::ranges::equal(to_vector(added), expected_sum),
                "to_vector evaluates a graph whose materialized leaves came from host data");
+
+        constexpr std::array<Axis, 1> last_axis{-1};
+        const std::array<float, 2> expected_row_sums{6.0F, 15.0F};
+        expect(std::ranges::equal(to_vector(sum(matrix, last_axis)), expected_row_sums),
+               "sum reduces a selected axis and accepts its negative spelling");
+        expect(item(sum(matrix)) == 21.0F,
+               "sum without explicit axes reduces all input elements");
+
+        constexpr std::array<Axis, 1> zero_length_axis{1};
+        const std::array<float, 6> expected_empty_sums{};
+        expect(std::ranges::equal(to_vector(sum(empty, zero_length_axis)), expected_empty_sums),
+               "sum produces the additive identity when a reduction axis is empty");
 
         expect_throws<std::invalid_argument>(
             []
