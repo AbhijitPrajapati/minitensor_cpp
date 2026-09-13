@@ -24,6 +24,7 @@ target_sources(
         src/tensor/ops/full.cpp
         src/tensor/ops/permute.cpp
         src/tensor/ops/reshape.cpp
+        src/tensor/ops/broadcast_to.cpp
         src/tensor/storage/layout.cpp
         src/tensor/storage/materialization.cpp
         src/tensor/backend/cpu/cpu_buffer.cpp
