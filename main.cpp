@@ -9,8 +9,9 @@
 int main()
 {
     const auto f = std::array<float, 4>{ 1.0F, 5.0F, 2.0F, 3.0F };
-    const minitensor::Tensor a = minitensor::from_data(f, minitensor::Shape{ 4 });
-    const minitensor::Tensor b = minitensor::reshape(a, minitensor::Shape{ 2, 2 });
+    const minitensor::Tensor a = minitensor::from_data(f, minitensor::Shape{ 2, 2 });
+    //const minitensor::Tensor b = minitensor::reshape(a, minitensor::Shape{ 2, 2 });
+    const auto b = minitensor::broadcast_to(a, minitensor::Shape{ 5, 2, 2, 1});
     //const auto g = std::array<float, 2>{ 10.0F, -3.0F };
     //const minitensor::Tensor b = minitensor::from_data(g, minitensor::Shape{ 2 });
     //const minitensor::Tensor c = a + b;

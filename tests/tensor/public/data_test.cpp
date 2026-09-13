@@ -37,6 +37,12 @@ namespace minitensor::test
                    to_vector(reshape(permuted_matrix, Shape{2, 3})), expected_permuted),
                "reshape preserves logical element order for a noncontiguous input");
 
+        const std::array<float, 3> row_values{7.0F, 8.0F, 9.0F};
+        const std::array<float, 6> expected_broadcast{7.0F, 8.0F, 9.0F, 7.0F, 8.0F, 9.0F};
+        const Tensor broadcasted_row = broadcast_to(from_data(row_values, Shape{1, 3}), Shape{2, 3});
+        expect(std::ranges::equal(to_vector(broadcasted_row), expected_broadcast),
+               "to_vector reads broadcasted storage in logical element order");
+
         const std::array<float, 1> scalar_source{-3.25F};
         const Tensor scalar = from_data(scalar_source, Shape{});
         expect(item(scalar) == -3.25F, "item returns the value of a scalar tensor");

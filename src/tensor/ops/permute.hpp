@@ -14,7 +14,7 @@ namespace minitensor::detail
     class PermutePrimitive final : public Primitive
     {
     public:
-        PermutePrimitive(std::span<const Axis> permutation, Shape::size_type input_rank);
+        explicit PermutePrimitive(std::span<const Axis> permutation, Shape::size_type input_rank);
         [[nodiscard]] std::string_view name() const noexcept override;
         [[nodiscard]] bool requires_kernel_support() const noexcept override;
         [[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;

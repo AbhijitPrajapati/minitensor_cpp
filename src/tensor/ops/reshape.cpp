@@ -52,7 +52,7 @@ namespace minitensor
 
     Tensor reshape(const Tensor &input, Shape shape)
     {
-        auto primitive = std::make_unique<detail::ReshapePrimitive>(shape);
+        auto primitive = std::make_unique<detail::ReshapePrimitive>(std::move(shape));
         std::array<detail::ValueRef, 1> inputs{detail::TensorAccess::value(input)};
         detail::ValueRef output = detail::apply_operation(std::move(primitive), inputs);
         return detail::TensorAccess::make(std::move(output));

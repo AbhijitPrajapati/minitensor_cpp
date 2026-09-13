@@ -88,7 +88,7 @@ namespace minitensor
 
     Tensor permute(const Tensor &input, std::span<const Axis> permutation)
     {
-        auto primitive = std::make_unique<detail::PermutePrimitive>(permutation, input.rank());
+        auto primitive = std::make_unique<detail::PermutePrimitive>(std::move(permutation), input.rank());
         std::array<detail::ValueRef, 1> inputs{detail::TensorAccess::value(input)};
         detail::ValueRef output = detail::apply_operation(std::move(primitive), inputs);
         return detail::TensorAccess::make(std::move(output));

@@ -80,6 +80,18 @@ namespace minitensor::test
         expect(reshape(empty, Shape{0, 6}).shape() == Shape{0, 6},
                "reshape accepts a different empty shape");
 
+        const Tensor broadcast_source = full(Shape{2, 1}, 3.0F);
+        const Tensor broadcasted_tensor = broadcast_to(broadcast_source, Shape{2, 3});
+        expect(broadcasted_tensor.shape() == Shape{2, 3},
+               "broadcast_to expands singleton dimensions to the requested shape");
+        expect(broadcasted_tensor.dtype() == broadcast_source.dtype() &&
+                   broadcasted_tensor.device() == broadcast_source.device(),
+               "broadcast_to preserves tensor dtype and device");
+        expect(broadcast_to(scalar, Shape{2, 3}).shape() == Shape{2, 3},
+               "broadcast_to expands a scalar to a ranked shape");
+        expect(broadcast_to(empty, Shape{4, 2, 0, 3}).shape() == Shape{4, 2, 0, 3},
+               "broadcast_to supports compatible empty shapes and leading dimensions");
+
         expect_throws<std::invalid_argument>(
             []
             {
@@ -121,5 +133,17 @@ namespace minitensor::test
                 (void)reshape(matrix, Shape{5});
             },
             "reshape rejects a shape with a different element count");
+        expect_throws<std::invalid_argument>(
+            [&matrix]
+            {
+                (void)broadcast_to(matrix, Shape{2, 2});
+            },
+            "broadcast_to rejects incompatible dimensions");
+        expect_throws<std::invalid_argument>(
+            [&matrix]
+            {
+                (void)broadcast_to(matrix, Shape{3});
+            },
+            "broadcast_to rejects a target with fewer dimensions");
     }
 }
