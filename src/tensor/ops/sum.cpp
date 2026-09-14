@@ -24,7 +24,7 @@ namespace minitensor
 
     namespace detail
     {
-        SumPrimitive::SumPrimitive(std::span<const Axis> axes, Shape::size_type input_rank): input_rank_(input_rank)
+        SumPrimitive::SumPrimitive(std::span<const Axis> axes, Shape::size_type input_rank, bool keep_dim): input_rank_(input_rank), keep_dim_(keep_dim)
         {
             if (axes.size() > input_rank_)
             {
@@ -62,18 +62,34 @@ namespace minitensor
             }
 
             std::vector<Extent> output_extents;
-            output_extents.reserve(input.shape.rank() - axes_.size());
 
-            auto reduced_axes_iter = axes_.begin();
-
-            for (Shape::size_type axis = 0; axis < input.shape.rank(); ++axis)
+            if (keep_dim_)
             {
-                if (reduced_axes_iter != axes_.end() && *reduced_axes_iter == axis)
+                // keep the same rank, but set reduced dimensions to 1
+                const auto input_dimensions = input.shape.dimensions();
+                output_extents.assign(input_dimensions.begin(), input_dimensions.end());
+                for (const Shape::size_type axis : axes_)
                 {
-                    ++reduced_axes_iter;
-                    continue;
+                    output_extents[axis] = Extent{ 1 };
                 }
-                output_extents.push_back(input.shape[axis]);
+            }
+            else
+            {
+                // remove reduced dimensions
+                output_extents.reserve(input.shape.rank() - axes_.size());
+
+                auto reduced_axes_iter = axes_.begin();
+
+                // since axes_ is sorted, we do not need a double loop
+                for (Shape::size_type axis = 0; axis < input.shape.rank(); ++axis)
+                {
+                    if (reduced_axes_iter != axes_.end() && *reduced_axes_iter == axis)
+                    {
+                        ++reduced_axes_iter;
+                        continue;
+                    }
+                    output_extents.push_back(input.shape[axis]);
+                }
             }
             return TensorSpec{ Shape{std::move(output_extents)}, input.dtype, input.device };
         }
@@ -82,21 +98,26 @@ namespace minitensor
         {
             return axes_;
         }
+
+        bool SumPrimitive::keep_dim() const noexcept
+        {
+            return keep_dim_;
+        }
     }
 
-    Tensor sum(const Tensor& input, std::span<const Axis> axes)
+    Tensor sum(const Tensor& input, std::span<const Axis> axes, bool keep_dim)
     {
-        auto primitive = std::make_unique<detail::SumPrimitive>(std::move(axes), input.rank());
+        auto primitive = std::make_unique<detail::SumPrimitive>(std::move(axes), input.rank(), keep_dim);
         std::array<detail::ValueRef, 1> inputs{ detail::TensorAccess::value(input) };
         detail::ValueRef output = detail::apply_operation(std::move(primitive), inputs);
         return detail::TensorAccess::make(std::move(output));
     }
 
-    Tensor sum(const Tensor& input)
+    Tensor sum(const Tensor& input, bool keep_dim)
     {
         std::vector<Axis> axes(input.rank());
         std::iota(axes.begin(), axes.end(), Axis{ 0 });
-        return sum(input, axes);
+        return sum(input, axes, keep_dim);
     }
 
 }

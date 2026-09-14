@@ -12,7 +12,7 @@ int main()
     const minitensor::Tensor a = minitensor::from_data(f, minitensor::Shape{ 2, 2 });
     //const minitensor::Tensor b = minitensor::reshape(a, minitensor::Shape{ 2, 2 });
     const auto hg = std::array<minitensor::Axis, 1>{ -1 };
-    const auto b = minitensor::sum(a, hg);
+    const auto b = minitensor::sum(a, hg, true);
     //const auto g = std::array<float, 2>{ 10.0F, -3.0F };
     //const minitensor::Tensor b = minitensor::from_data(g, minitensor::Shape{ 2 });
     //const minitensor::Tensor c = a + b;
