@@ -98,6 +98,8 @@ namespace minitensor::test
                "sum removes a reduced axis from the output shape");
         expect(row_sums.dtype() == matrix.dtype() && row_sums.device() == matrix.device(),
                "sum preserves tensor dtype and device");
+        expect(sum(matrix, last_axis, true).shape() == Shape{2, 1},
+               "sum with keep_dim retains a reduced axis as a singleton dimension");
 
         constexpr std::array<Axis, 2> unsorted_axes{-1, 0};
         expect(sum(full(Shape{2, 3, 4}, 1.0F), unsorted_axes).shape() == Shape{3},
@@ -106,6 +108,8 @@ namespace minitensor::test
                "sum over no axes preserves the input shape");
         expect(sum(matrix).shape().is_scalar(),
                "sum without explicit axes reduces every matrix axis");
+        expect(sum(matrix, true).shape() == Shape{1, 1},
+               "sum with keep_dim retains every implicitly reduced axis");
         expect(sum(scalar).shape().is_scalar(),
                "sum without explicit axes preserves a scalar shape");
 

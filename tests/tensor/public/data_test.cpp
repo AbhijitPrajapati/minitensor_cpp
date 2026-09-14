@@ -66,6 +66,8 @@ namespace minitensor::test
         const std::array<float, 2> expected_row_sums{6.0F, 15.0F};
         expect(std::ranges::equal(to_vector(sum(matrix, last_axis)), expected_row_sums),
                "sum reduces a selected axis and accepts its negative spelling");
+        expect(std::ranges::equal(to_vector(sum(matrix, last_axis, true)), expected_row_sums),
+               "sum with keep_dim preserves reduction results while retaining the axis");
         expect(item(sum(matrix)) == 21.0F,
                "sum without explicit axes reduces all input elements");
 
