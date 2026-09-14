@@ -21,6 +21,7 @@ target_sources(
         src/tensor/graph/node.cpp
         src/tensor/graph/value.cpp
         src/tensor/ops/add.cpp
+        src/tensor/ops/multiply.cpp
         src/tensor/ops/full.cpp
         src/tensor/ops/permute.cpp
         src/tensor/ops/reshape.cpp
@@ -32,6 +33,7 @@ target_sources(
         src/tensor/backend/cpu/cpu_runtime.cpp
         src/tensor/backend/cpu/register_kernels.cpp
         src/tensor/backend/cpu/kernels/add.cpp
+        src/tensor/backend/cpu/kernels/multiply.cpp
         src/tensor/backend/cpu/kernels/full.cpp
         src/tensor/backend/cpu/kernels/reshape.cpp
         src/tensor/backend/cpu/kernels/sum.cpp
