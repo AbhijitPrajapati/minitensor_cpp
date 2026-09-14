@@ -55,6 +55,13 @@ namespace minitensor::test
         expect(empty_sum.shape() == Shape{2, 0, 3}, "addition broadcasts compatible empty shapes");
         expect(empty_sum.numel() == 0, "a broadcasted empty result remains empty");
 
+        const Tensor broadcast_product = full(Shape{2, 1}, 2.0F) * full(Shape{1, 3}, 3.0F);
+        expect(broadcast_product.shape() == Shape{2, 3},
+               "multiplication broadcasts compatible input shapes");
+        expect(broadcast_product.dtype() == DType::Float32 &&
+                   broadcast_product.device() == Device::cpu(),
+               "multiplication preserves the input dtype and device");
+
         constexpr std::array<Axis, 2> swapped_axes{1, 0};
         const Tensor permuted_matrix = permute(matrix, swapped_axes);
         expect(permuted_matrix.shape() == Shape{3, 2},
@@ -131,6 +138,20 @@ namespace minitensor::test
                 (void)(lhs + rhs);
             },
             "addition rejects tensors on different devices");
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                (void)(full(Shape{2, 3}, 1.0F) * full(Shape{2, 2}, 1.0F));
+            },
+            "multiplication rejects incompatible shapes");
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                const Tensor lhs = full(Shape{2}, 1.0F, TensorOptions{DType::Float32, Device::cpu(0)});
+                const Tensor rhs = full(Shape{2}, 1.0F, TensorOptions{DType::Float32, Device::cpu(1)});
+                (void)(lhs * rhs);
+            },
+            "multiplication rejects tensors on different devices");
         expect_throws<std::invalid_argument>(
             [&matrix]
             {

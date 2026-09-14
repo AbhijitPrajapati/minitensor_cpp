@@ -62,6 +62,12 @@ namespace minitensor::test
         expect(std::ranges::equal(to_vector(added), expected_sum),
                "to_vector evaluates a graph whose materialized leaves came from host data");
 
+        const Tensor multiplied = from_data(lhs_values, Shape{2, 1}) *
+                                  from_data(rhs_values, Shape{1, 3});
+        const std::array<float, 6> expected_product{10.0F, 20.0F, 30.0F, 20.0F, 40.0F, 60.0F};
+        expect(std::ranges::equal(to_vector(multiplied), expected_product),
+               "elementwise multiplication computes broadcasted products");
+
         constexpr std::array<Axis, 1> last_axis{-1};
         const std::array<float, 2> expected_row_sums{6.0F, 15.0F};
         expect(std::ranges::equal(to_vector(sum(matrix, last_axis)), expected_row_sums),
