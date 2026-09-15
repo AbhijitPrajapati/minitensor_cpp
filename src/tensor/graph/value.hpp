@@ -2,7 +2,6 @@
 
 #include <optional>
 
-#include "ids.hpp"
 #include "fwd.hpp"
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/storage/materialization.hpp"
@@ -12,9 +11,8 @@ namespace minitensor::detail
     class Value final
     {
     public:
-        Value(ValueId id, TensorSpec spec);
-        Value(ValueId id, TensorSpec spec, NodeRef producer);
-        [[nodiscard]] ValueId id() const noexcept;
+        Value(TensorSpec spec);
+        Value(TensorSpec spec, NodeRef producer);
         [[nodiscard]] const TensorSpec &spec() const noexcept;
         [[nodiscard]] const Materialization *materialization() const noexcept;
         void materialize(Materialization materialization) const;
@@ -23,7 +21,6 @@ namespace minitensor::detail
         [[nodiscard]] const NodeRef &producer_ref() const noexcept;
 
     private:
-        ValueId id_;
         TensorSpec spec_;
         NodeRef producer_;
         mutable std::optional<Materialization> materialization_;

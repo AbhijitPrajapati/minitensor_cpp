@@ -3,7 +3,6 @@
 #include <stdexcept>
 
 #include "tensor/core/tensor_spec.hpp"
-#include "tensor/graph/ids.hpp"
 #include "tensor/graph/value.hpp"
 #include "tensor/storage/layout.hpp"
 #include "tensor/storage/materialization.hpp"
@@ -20,7 +19,6 @@ namespace minitensor::test
         using detail::Materialization;
         using detail::TensorSpec;
         using detail::Value;
-        using detail::ValueId;
 
         const BufferRef buffer = make_test_buffer(6 * sizeof(float), Device::cpu(2));
         expect(buffer->device() == Device::cpu(2), "a buffer reports its device");
@@ -79,7 +77,7 @@ namespace minitensor::test
             },
             "materialization validation rejects access before the buffer");
 
-        Value value{ValueId{300}, contiguous_spec};
+        Value value{contiguous_spec};
         expect(value.materialization() == nullptr, "a new value is not materialized");
         value.materialize(Materialization{buffer, contiguous_layout});
         expect(value.materialization() != nullptr, "materialize installs storage on a value");
@@ -92,7 +90,7 @@ namespace minitensor::test
             },
             "a value cannot be materialized twice");
 
-        Value rejected{ValueId{301}, TensorSpec{Shape{2}, DType::Float32, Device::cpu()}};
+        Value rejected{TensorSpec{Shape{2}, DType::Float32, Device::cpu()}};
         expect_throws<std::invalid_argument>(
             [&rejected]
             {

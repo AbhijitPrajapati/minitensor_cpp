@@ -10,7 +10,6 @@
 #include "tensor/graph/primitive.hpp"
 #include "tensor/graph/apply_operation.hpp"
 #include "tensor/graph/fwd.hpp"
-#include "tensor/graph/ids.hpp"
 #include "tensor/graph/node.hpp"
 #include "tensor/graph/value.hpp"
 #include "tensor/ops/full.hpp"
@@ -29,7 +28,7 @@ namespace minitensor::test
         using detail::ValueRef;
 
         const TensorSpec input_spec{Shape{2, 3}, DType::Float32, Device::cpu(2)};
-        const ValueRef input = std::make_shared<Value>(detail::next_value_id(), input_spec);
+        const ValueRef input = std::make_shared<Value>(input_spec);
         auto primitive = std::make_unique<IdentitySpecPrimitive>();
         const Primitive *primitive_address = primitive.get();
         const std::array<ValueRef, 1> inputs{input};
@@ -38,7 +37,6 @@ namespace minitensor::test
         expect(output != nullptr, "apply_operation returns an output value");
         expect(primitive == nullptr, "apply_operation takes ownership of its primitive");
         expect(output.get() != input.get(), "apply_operation creates a distinct output value");
-        expect(output->id() != input->id(), "apply_operation assigns a new value id");
         expect(output->spec() == input_spec, "apply_operation uses the primitive's inferred tensor specification");
         expect(output->materialization() == nullptr, "apply_operation constructs a lazy, unmaterialized output");
 

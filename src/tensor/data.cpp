@@ -23,7 +23,6 @@
 #include "tensor/tensor_access.hpp"
 #include "tensor/graph/fwd.hpp"
 #include "tensor/iteration/elementwise.hpp"
-#include "tensor/graph/ids.hpp"
 
 namespace minitensor
 {
@@ -43,7 +42,7 @@ namespace minitensor
         }
         runtime.copy_from_host(*buffer, 0, std::as_bytes(data));
         detail::Materialization materialization(std::move(buffer), detail::Layout::contiguous(spec.shape));
-        auto value = std::make_shared<detail::Value>(detail::next_value_id(), std::move(spec));
+        auto value = std::make_shared<detail::Value>(std::move(spec));
         value->materialize(std::move(materialization));
         return detail::TensorAccess::make(std::move(value));
     }
