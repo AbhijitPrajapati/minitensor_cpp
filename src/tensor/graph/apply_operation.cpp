@@ -5,7 +5,6 @@
 #include <utility>
 #include <vector>
 
-#include "ids.hpp"
 #include "node.hpp"
 #include "primitive.hpp"
 #include "tensor/core/tensor_spec.hpp"
@@ -38,8 +37,8 @@ namespace minitensor::detail
 
         TensorSpec output_spec = primitive->infer(input_specs);
 
-        const NodeRef node = std::make_shared<Node>(next_node_id(), std::move(primitive), std::move(owned_inputs));
-        const ValueRef output = std::make_shared<Value>(next_value_id(), std::move(output_spec), std::move(node));
+        const NodeRef node = std::make_shared<Node>(std::move(primitive), std::move(owned_inputs));
+        const ValueRef output = std::make_shared<Value>(std::move(output_spec), std::move(node));
         return output;
     }
 }

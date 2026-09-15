@@ -16,7 +16,6 @@
 #include "tensor/execution/evaluator.hpp"
 #include "tensor/execution/runtime_registry.hpp"
 #include "tensor/graph/apply_operation.hpp"
-#include "tensor/graph/ids.hpp"
 #include "tensor/graph/node.hpp"
 #include "tensor/graph/value.hpp"
 #include "tensor/storage/buffer.hpp"
@@ -32,10 +31,10 @@ namespace minitensor::test
 {
     namespace
     {
-        detail::ValueRef make_materialized_leaf(detail::ValueId id, const detail::TensorSpec &spec)
+        detail::ValueRef make_materialized_leaf(const detail::TensorSpec &spec)
         {
             const auto size_bytes = spec.shape.numel() * dtype_size(spec.dtype);
-            detail::ValueRef value = std::make_shared<detail::Value>(id, spec);
+            detail::ValueRef value = std::make_shared<detail::Value>(spec);
             value->materialize(detail::Materialization{
                 make_test_buffer(size_bytes, spec.device),
                 detail::Layout::contiguous(spec.shape)});
@@ -62,7 +61,6 @@ namespace minitensor::test
         using detail::TensorSpec;
         using detail::TensorView;
         using detail::Value;
-        using detail::ValueId;
         using detail::ValueRef;
 
         struct KernelCall final
@@ -76,7 +74,7 @@ namespace minitensor::test
         };
 
         const TensorSpec spec{Shape{2, 3}, DType::Float32, Device::cpu()};
-        const ValueRef leaf = make_materialized_leaf(ValueId{500}, spec);
+        const ValueRef leaf = make_materialized_leaf(spec);
         const ValueRef intermediate = apply_identity(leaf);
         const ValueRef output = apply_identity(intermediate);
 
@@ -145,7 +143,7 @@ namespace minitensor::test
                "evaluating an already materialized value reuses its cached result");
 
         {
-            const ValueRef sharing_input = std::make_shared<Value>(ValueId{502}, spec);
+            const ValueRef sharing_input = std::make_shared<Value>(spec);
             sharing_input->materialize(detail::Materialization{
                 make_test_buffer(6 * sizeof(float)),
                 Layout({1, 2})});
@@ -179,7 +177,7 @@ namespace minitensor::test
             },
             "evaluation rejects a null root value");
 
-        const ValueRef unmaterialized_leaf = std::make_shared<Value>(ValueId{501}, spec);
+        const ValueRef unmaterialized_leaf = std::make_shared<Value>(spec);
         expect_throws<std::runtime_error>(
             [&evaluator, &unmaterialized_leaf]
             {

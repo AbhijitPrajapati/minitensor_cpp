@@ -17,7 +17,6 @@ target_sources(
         src/tensor/core/dense_size.cpp
         src/tensor/core/axis.cpp
         src/tensor/graph/apply_operation.cpp
-        src/tensor/graph/ids.cpp
         src/tensor/graph/node.cpp
         src/tensor/graph/value.cpp
         src/tensor/ops/add.cpp

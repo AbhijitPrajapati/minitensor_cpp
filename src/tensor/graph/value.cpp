@@ -5,19 +5,14 @@
 
 namespace minitensor::detail
 {
-    Value::Value(ValueId id, TensorSpec spec) : id_(id), spec_(std::move(spec)) {}
+    Value::Value(TensorSpec spec) : spec_(std::move(spec)) {}
 
-    Value::Value(ValueId id, TensorSpec spec, NodeRef producer) : id_(id), spec_(std::move(spec)), producer_(std::move(producer))
+    Value::Value(TensorSpec spec, NodeRef producer) : spec_(std::move(spec)), producer_(std::move(producer))
     {
         if (!producer_)
         {
             throw std::invalid_argument{"a produced value require a producer node"};
         }
-    }
-
-    ValueId Value::id() const noexcept
-    {
-        return id_;
     }
 
     const TensorSpec &Value::spec() const noexcept
