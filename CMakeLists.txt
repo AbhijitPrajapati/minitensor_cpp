@@ -44,6 +44,7 @@ target_sources(
         src/tensor/execution/environment.cpp
         src/tensor/iteration/elementwise.cpp
         src/tensor/iteration/reduction.cpp
+        src/tensor/autograd/reduce_to_shape.cpp
 )
 
 # Specify all header files the library needs

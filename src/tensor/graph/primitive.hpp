@@ -3,6 +3,10 @@
 #include <span>
 #include <string_view>
 #include <optional>
+#include <vector>
+#include <stdexcept>
+
+#include <minitensor/tensor.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/storage/layout.hpp"
@@ -22,6 +26,10 @@ namespace minitensor::detail
         [[nodiscard]] virtual bool requires_kernel_support() const noexcept
         {
             return true;
+        }
+        [[nodiscard]] virtual std::vector<std::optional<Tensor>> vjp(std::span<const Tensor> inputs, const Tensor& output, const Tensor& output_cotangent) const
+        {
+            throw std::logic_error{"VJP not implemented for this primitive"};
         }
     };
 }
