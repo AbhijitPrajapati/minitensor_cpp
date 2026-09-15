@@ -14,6 +14,7 @@ namespace minitensor::test
     void run_layout_test();
     void run_elementwise_test();
     void run_reduction_test();
+    void run_reduce_to_shape_test();
     void run_materialization_test();
     void run_graph_objects_test();
     void run_apply_operation_test();
@@ -48,6 +49,7 @@ int main()
         {"layout", run_layout_test},
         {"elementwise iteration", run_elementwise_test},
         {"reduction iteration", run_reduction_test},
+        {"autograd reduce to shape", run_reduce_to_shape_test},
         {"materialization", run_materialization_test},
         {"graph objects", run_graph_objects_test},
         {"apply operation", run_apply_operation_test},

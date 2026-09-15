@@ -99,6 +99,7 @@ if(BUILD_TESTING)
     tests/tensor/internal/runtime_registry_test.cpp
     tests/tensor/internal/elementwise_test.cpp
     tests/tensor/internal/reduction_test.cpp
+    tests/tensor/internal/reduce_to_shape_test.cpp
     )
     # Link test executable to library
     target_link_libraries(tensor_tests PRIVATE minitensor)

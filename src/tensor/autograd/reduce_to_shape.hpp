@@ -1,7 +1,7 @@
 #pragma once
 
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
+#include <minitensor/tensor.hpp>
 
 namespace minitensor::detail
 {
