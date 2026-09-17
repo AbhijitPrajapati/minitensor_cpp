@@ -43,7 +43,9 @@ target_sources(
         src/tensor/execution/environment.cpp
         src/tensor/iteration/elementwise.cpp
         src/tensor/iteration/reduction.cpp
+        src/tensor/autograd/engine.cpp
         src/tensor/autograd/reduce_to_shape.cpp
+        src/tensor/autograd.cpp
 )
 
 # Specify all header files the library needs
@@ -85,6 +87,7 @@ if(BUILD_TESTING)
     tests/tensor/public/types_test.cpp
     tests/tensor/public/evaluation_test.cpp
     tests/tensor/public/data_test.cpp
+    tests/tensor/public/autograd_test.cpp
     tests/tensor/internal/core_test.cpp
     tests/tensor/internal/apply_operation_test.cpp
     tests/tensor/internal/graph_objects_test.cpp
@@ -100,6 +103,7 @@ if(BUILD_TESTING)
     tests/tensor/internal/elementwise_test.cpp
     tests/tensor/internal/reduction_test.cpp
     tests/tensor/internal/reduce_to_shape_test.cpp
+    tests/tensor/internal/autograd_engine_test.cpp
     )
     # Link test executable to library
     target_link_libraries(tensor_tests PRIVATE minitensor)

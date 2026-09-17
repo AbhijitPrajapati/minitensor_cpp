@@ -10,6 +10,7 @@ namespace minitensor::test
     void run_operations_test();
     void run_evaluation_test();
     void run_data_test();
+    void run_autograd_test();
     void run_core_test();
     void run_layout_test();
     void run_elementwise_test();
@@ -25,6 +26,7 @@ namespace minitensor::test
     void run_cpu_kernels_test();
     void run_runtime_registry_test();
     void run_evaluator_test();
+    void run_autograd_engine_test();
 }
 
 namespace
@@ -45,6 +47,7 @@ int main()
         {"public operations and tensor handles", run_operations_test},
         {"public evaluation", run_evaluation_test},
         {"public data access", run_data_test},
+        {"public autograd", run_autograd_test},
         {"core utilities", run_core_test},
         {"layout", run_layout_test},
         {"elementwise iteration", run_elementwise_test},
@@ -60,6 +63,7 @@ int main()
         {"cpu kernels", run_cpu_kernels_test},
         {"runtime registry", run_runtime_registry_test},
         {"evaluator", run_evaluator_test},
+        {"autograd engine", run_autograd_engine_test},
     };
 
     int failures = 0;

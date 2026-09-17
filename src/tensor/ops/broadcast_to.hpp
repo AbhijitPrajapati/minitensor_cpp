@@ -3,6 +3,7 @@
 #include <optional>
 #include <string_view>
 #include <span>
+#include <vector>
 
 #include <minitensor/types.hpp>
 
@@ -19,6 +20,7 @@ namespace minitensor::detail
         [[nodiscard]] std::optional<Layout> try_derive_shared_layout(const TensorSpec &input_spec, const Layout &input_layout, const TensorSpec &output_spec) const override;
         [[nodiscard]] const Shape &shape() const noexcept;
         [[nodiscard]] bool requires_kernel_support() const noexcept override;
+        [[nodiscard]] std::vector<std::optional<Tensor>> vjp(std::span<const Tensor> inputs, const Tensor &, const Tensor &output_cotangent) const override;
 
     private:
         Shape shape_;

@@ -6,6 +6,7 @@
 #include <array>
 #include <utility>
 #include <memory>
+#include <vector>
 
 #include <minitensor/types.hpp>
 #include <minitensor/ops.hpp>
@@ -14,6 +15,7 @@
 #include "tensor/tensor_access.hpp"
 #include "tensor/graph/apply_operation.hpp"
 #include "tensor/core/broadcast_shape.hpp"
+#include "tensor/autograd/reduce_to_shape.hpp"
 
 namespace minitensor
 {
@@ -53,6 +55,15 @@ namespace minitensor
         bool BroadcastToPrimitive::requires_kernel_support() const noexcept
         {
             return false;
+        }
+
+        std::vector<std::optional<Tensor>> BroadcastToPrimitive::vjp(std::span<const Tensor> inputs, const Tensor &, const Tensor &output_cotangent) const
+        {
+            if (inputs.size() != 1)
+            {
+                throw std::logic_error{"broadcast_to VJP expects 1 input"};
+            }
+            return {reduce_to_shape(output_cotangent, inputs.front().shape())};
         }
     }
 

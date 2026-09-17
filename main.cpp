@@ -23,7 +23,10 @@ int main()
     //{
     //    std::cout << s[i] << " ";
     //}
-    const auto v = minitensor::to_vector(b);
+    const auto c = minitensor::sum(b);
+    std::vector<minitensor::Tensor> tr{ a };
+    const auto d = minitensor::grad(c, tr).front();
+    const auto v = minitensor::to_vector(d);
     for (auto el : v)
     {
         std::cout << el << " ";

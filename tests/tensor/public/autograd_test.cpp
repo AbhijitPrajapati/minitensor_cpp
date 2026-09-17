@@ -1,0 +1,95 @@
+#include <minitensor/autograd.hpp>
+#include <minitensor/data.hpp>
+#include <minitensor/ops.hpp>
+
+#include <algorithm>
+#include <array>
+#include <stdexcept>
+#include <vector>
+
+#include "../support/test.hpp"
+
+namespace minitensor::test
+{
+    void run_autograd_test()
+    {
+        const std::array<float, 2> lhs_values{1.0F, 2.0F};
+        const std::array<float, 3> rhs_values{10.0F, 20.0F, 30.0F};
+        const Tensor lhs = from_data(lhs_values, Shape{2, 1});
+        const Tensor rhs = from_data(rhs_values, Shape{1, 3});
+        const Tensor loss = sum(lhs * rhs + lhs);
+        const std::array<Tensor, 2> loss_inputs{lhs, rhs};
+        const std::vector<Tensor> loss_gradients = grad(loss, loss_inputs);
+
+        expect(loss_gradients.size() == 2,
+               "grad returns one gradient for each requested input");
+        const std::array<float, 2> expected_lhs_gradient{63.0F, 63.0F};
+        const std::array<float, 3> expected_rhs_gradient{3.0F, 3.0F, 3.0F};
+        expect(loss_gradients[0].shape() == lhs.shape() &&
+                   std::ranges::equal(to_vector(loss_gradients[0]), expected_lhs_gradient),
+               "grad accumulates broadcasted add and multiply contributions");
+        expect(loss_gradients[1].shape() == rhs.shape() &&
+                   std::ranges::equal(to_vector(loss_gradients[1]), expected_rhs_gradient),
+               "grad reduces a broadcasted multiply contribution to its input shape");
+
+        const std::array<float, 6> matrix_values{1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F};
+        const Tensor matrix = from_data(matrix_values, Shape{2, 3});
+        constexpr std::array<Axis, 2> swapped_axes{1, 0};
+        const Tensor transformed = permute(reshape(matrix, Shape{3, 2}), swapped_axes);
+        const Tensor transform_seed = from_data(matrix_values, Shape{2, 3});
+        const std::array<Tensor, 1> matrix_target{matrix};
+        const std::vector<Tensor> transformed_vjp = vjp(
+            transformed, matrix_target, transform_seed);
+        const std::array<float, 6> expected_transformed_vjp{1.0F, 4.0F, 2.0F, 5.0F, 3.0F, 6.0F};
+        expect(transformed_vjp.size() == 1 &&
+                   transformed_vjp.front().shape() == matrix.shape() &&
+                   std::ranges::equal(to_vector(transformed_vjp.front()), expected_transformed_vjp),
+               "vjp applies inverse permutation and reshape rules to a supplied cotangent");
+
+        const Tensor row = from_data(rhs_values, Shape{1, 3});
+        const Tensor broadcasted = broadcast_to(row, Shape{2, 3});
+        const Tensor broadcast_seed = from_data(matrix_values, Shape{2, 3});
+        const std::array<Tensor, 1> row_target{row};
+        const std::vector<Tensor> broadcast_vjp = vjp(
+            broadcasted, row_target, broadcast_seed);
+        const std::array<float, 3> expected_broadcast_vjp{5.0F, 7.0F, 9.0F};
+        expect(broadcast_vjp.size() == 1 &&
+                   broadcast_vjp.front().shape() == row.shape() &&
+                   std::ranges::equal(to_vector(broadcast_vjp.front()), expected_broadcast_vjp),
+               "broadcast_to VJP sums cotangents along expanded dimensions");
+
+        constexpr std::array<Axis, 1> last_axis{1};
+        const Tensor kept_sum = sum(matrix, last_axis, true);
+        const std::array<float, 2> kept_sum_seed_values{2.0F, 4.0F};
+        const Tensor kept_sum_seed = from_data(kept_sum_seed_values, Shape{2, 1});
+        const std::vector<Tensor> kept_sum_vjp = vjp(
+            kept_sum, matrix_target, kept_sum_seed);
+        const std::array<float, 6> expected_kept_sum_vjp{2.0F, 2.0F, 2.0F, 4.0F, 4.0F, 4.0F};
+        expect(kept_sum_vjp.size() == 1 &&
+                   kept_sum_vjp.front().shape() == matrix.shape() &&
+                   std::ranges::equal(to_vector(kept_sum_vjp.front()), expected_kept_sum_vjp),
+               "sum VJP broadcasts a kept-dimension cotangent over the reduced axis");
+
+        expect_throws<std::invalid_argument>(
+            [&transformed, &matrix_target]
+            {
+                (void)vjp(transformed, matrix_target, full(Shape{1}, 1.0F));
+            },
+            "public vjp rejects a cotangent with the wrong shape");
+        expect_throws<std::invalid_argument>(
+            [&transformed, &matrix_target]
+            {
+                const Tensor wrong_device = full(
+                    Shape{2, 3}, 1.0F,
+                    TensorOptions{DType::Float32, Device::cpu(1)});
+                (void)vjp(transformed, matrix_target, wrong_device);
+            },
+            "public vjp rejects a cotangent on the wrong device");
+        expect_throws<std::invalid_argument>(
+            [&transformed, &matrix_target]
+            {
+                (void)grad(transformed, matrix_target);
+            },
+            "grad rejects a non-scalar output");
+    }
+}
