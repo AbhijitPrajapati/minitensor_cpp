@@ -20,6 +20,7 @@ namespace minitensor::detail
         [[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;
         [[nodiscard]] std::optional<Layout> try_derive_shared_layout(const TensorSpec &input_spec, const Layout &input_layout, const TensorSpec &output_spec) const override;
         [[nodiscard]] const std::vector<Shape::size_type> &permutation() const noexcept;
+        [[nodiscard]] std::vector<std::optional<Tensor>> vjp(std::span<const Tensor> inputs, const Tensor &, const Tensor &output_cotangent) const override;
 
     private:
         std::vector<Shape::size_type> permutation_;

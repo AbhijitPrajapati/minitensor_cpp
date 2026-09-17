@@ -1,9 +1,15 @@
 #pragma once
 
+#include <cstddef>
+#include <functional>
 #include <optional>
 #include <span>
 #include <stdexcept>
 #include <string_view>
+#include <utility>
+#include <vector>
+
+#include <minitensor/tensor.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/graph/primitive.hpp"
@@ -90,5 +96,54 @@ namespace minitensor::test
         {
             return false;
         }
+    };
+
+    class RuleBasedVjpPrimitive final : public detail::Primitive
+    {
+    public:
+        using Rule = std::function<std::vector<std::optional<Tensor>>(
+            std::span<const Tensor>, const Tensor &, const Tensor &)>;
+
+        RuleBasedVjpPrimitive(
+            std::size_t input_count,
+            detail::TensorSpec output_spec,
+            Rule rule)
+            : input_count_{input_count},
+              output_spec_{std::move(output_spec)},
+              rule_{std::move(rule)}
+        {
+            if (!rule_)
+            {
+                throw std::invalid_argument{"test VJP rule cannot be empty"};
+            }
+        }
+
+        [[nodiscard]] std::string_view name() const noexcept override
+        {
+            return "test_rule_based_vjp";
+        }
+
+        [[nodiscard]] detail::TensorSpec infer(
+            std::span<const detail::TensorSpec> inputs) const override
+        {
+            if (inputs.size() != input_count_)
+            {
+                throw std::invalid_argument{"unexpected test VJP input count"};
+            }
+            return output_spec_;
+        }
+
+        [[nodiscard]] std::vector<std::optional<Tensor>> vjp(
+            std::span<const Tensor> inputs,
+            const Tensor &output,
+            const Tensor &output_cotangent) const override
+        {
+            return rule_(inputs, output, output_cotangent);
+        }
+
+    private:
+        std::size_t input_count_;
+        detail::TensorSpec output_spec_;
+        Rule rule_;
     };
 }

@@ -33,6 +33,16 @@ namespace minitensor
         {
             return fill_value_;
         }
+
+        std::vector<std::optional<Tensor>> FullPrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor&) const
+        {
+            if (!inputs.empty())
+            {
+                throw std::logic_error{"full VJP expects no inputs"};
+            }
+            return {};
+        }
+
     }
 
     Tensor full(Shape shape, float value, TensorOptions options)

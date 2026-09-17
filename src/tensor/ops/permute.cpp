@@ -16,13 +16,14 @@
 #include "tensor/core/axis.hpp"
 #include "tensor/graph/apply_operation.hpp"
 #include "tensor/tensor_access.hpp"
+#include "tensor/autograd/reduce_to_shape.hpp"
 
 namespace minitensor
 {
 
     namespace detail
     {
-        PermutePrimitive::PermutePrimitive(std::span<const Axis> permutation, Shape::size_type input_rank): input_rank_(input_rank)
+        PermutePrimitive::PermutePrimitive(std::span<const Axis> permutation, Shape::size_type input_rank) : input_rank_(input_rank)
         {
             if (permutation.size() != input_rank_)
             {
@@ -83,6 +84,22 @@ namespace minitensor
         const std::vector<Shape::size_type> &PermutePrimitive::permutation() const noexcept
         {
             return permutation_;
+        }
+
+        std::vector<std::optional<Tensor>> PermutePrimitive::vjp(std::span<const Tensor> inputs, const Tensor &, const Tensor &output_cotangent) const
+        {
+            if (inputs.size() != 1)
+            {
+                throw std::logic_error{"permute VJP expects 1 input"};
+            }
+
+            std::vector<Axis> inverse_permutation(permutation_.size());
+            for (Shape::size_type output_axis = 0; output_axis < permutation_.size(); ++output_axis)
+            {
+                const Shape::size_type input_axis = permutation_[output_axis];
+                inverse_permutation[input_axis] = static_cast<Axis>(output_axis);
+            }
+            return {permute(output_cotangent, inverse_permutation)};
         }
     }
 

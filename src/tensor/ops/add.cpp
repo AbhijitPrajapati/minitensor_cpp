@@ -4,6 +4,7 @@
 #include <memory>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 #include <minitensor/ops.hpp>
 
@@ -11,6 +12,7 @@
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/graph/apply_operation.hpp"
 #include "tensor/tensor_access.hpp"
+#include "tensor/autograd/reduce_to_shape.hpp"
 
 namespace minitensor
 {
@@ -42,6 +44,17 @@ namespace minitensor
 
             Shape output_shape = broadcast_shape(inputs[0].shape, inputs[1].shape);
             return TensorSpec{std::move(output_shape), lhs.dtype, lhs.device};
+        }
+
+        std::vector<std::optional<Tensor>> AddPrimitive::vjp(std::span<const Tensor> inputs, const Tensor &, const Tensor &output_cotangent) const
+        {
+            if (inputs.size() != 2)
+            {
+                throw std::logic_error{"add VJP expects 2 inputs"};
+            }
+            return {
+                reduce_to_shape(output_cotangent, inputs[0].shape()),
+                reduce_to_shape(output_cotangent, inputs[1].shape())};
         }
     }
 
