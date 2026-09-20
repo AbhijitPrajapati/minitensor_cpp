@@ -32,6 +32,22 @@ namespace minitensor::test
                    std::ranges::equal(to_vector(loss_gradients[1]), expected_rhs_gradient),
                "grad reduces a broadcasted multiply contribution to its input shape");
 
+        const std::array<float, 2> dividend_values{2.0F, 4.0F};
+        const std::array<float, 3> divisor_values{1.0F, 2.0F, 4.0F};
+        const Tensor dividend = from_data(dividend_values, Shape{2, 1});
+        const Tensor divisor = from_data(divisor_values, Shape{1, 3});
+        const Tensor quotient_loss = sum(dividend / divisor - dividend);
+        const std::array<Tensor, 2> quotient_inputs{dividend, divisor};
+        const std::vector<Tensor> quotient_gradients = grad(quotient_loss, quotient_inputs);
+        const std::array<float, 2> expected_dividend_gradient{-1.25F, -1.25F};
+        const std::array<float, 3> expected_divisor_gradient{-6.0F, -1.5F, -0.375F};
+        expect(quotient_gradients[0].shape() == dividend.shape() &&
+                   std::ranges::equal(to_vector(quotient_gradients[0]), expected_dividend_gradient),
+               "division and subtraction VJPs reduce the dividend cotangent after broadcasting");
+        expect(quotient_gradients[1].shape() == divisor.shape() &&
+                   std::ranges::equal(to_vector(quotient_gradients[1]), expected_divisor_gradient),
+               "division VJP negates and reduces the divisor cotangent after broadcasting");
+
         const std::array<float, 6> matrix_values{1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F};
         const Tensor matrix = from_data(matrix_values, Shape{2, 3});
         constexpr std::array<Axis, 2> swapped_axes{1, 0};

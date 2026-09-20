@@ -19,6 +19,48 @@
 namespace minitensor::detail::cpu
 {
     template <CpuElement T, typename Operation>
+        requires std::invocable<Operation &, T> && std::convertible_to<std::invoke_result_t<Operation &, T>, T>
+    void unary_elementwise(const TensorView &input, MutableTensorView output, Operation &&operation)
+    {
+        assert(input.dtype() == ElementDType<T>::value);
+        assert(output.dtype() == ElementDType<T>::value);
+
+        const Shape &output_shape = output.shape();
+        assert(input.shape() == output_shape);
+        assert(output.layout().is_contiguous(output_shape));
+
+        if (output_shape.numel() == 0)
+        {
+            return;
+        }
+
+        const T *input_data = data<T>(input);
+        T *output_data = data<T>(output);
+        const auto output_offset = static_cast<std::size_t>(output.layout().offset());
+
+        const std::array<Layout, 1> layouts{input.layout()};
+        const ElementwisePlan plan(output_shape, layouts);
+        plan.for_each_run(
+            [&](Shape::size_type linear, std::span<const Layout::offset_type> offsets, std::span<const Layout::stride_type> strides, Shape::size_type run_size)
+            {
+                assert(offsets.size() == 1);
+                assert(strides.size() == 1);
+
+                Layout::offset_type input_offset = offsets[0];
+                const Layout::stride_type input_stride = strides[0];
+
+                for (Shape::size_type i = 0; i < run_size; ++i)
+                {
+                    assert(input_offset >= 0);
+                    output_data[output_offset + linear + i] = static_cast<T>(std::invoke(
+                        operation,
+                        input_data[static_cast<std::size_t>(input_offset)]));
+                    input_offset += input_stride;
+                }
+            });
+    }
+
+    template <CpuElement T, typename Operation>
         requires std::invocable<Operation &, T, T> && std::convertible_to<std::invoke_result_t<Operation &, T, T>, T>
     void binary_elementwise(const TensorView &lhs, const TensorView &rhs, MutableTensorView output, Operation &&operation)
     {
