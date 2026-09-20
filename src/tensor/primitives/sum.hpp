@@ -1,12 +1,10 @@
 #pragma once
 
-#include <span>
 #include <string_view>
 #include <vector>
 
-#include <minitensor/types.hpp>
-
 #include "tensor/graph/primitive.hpp"
+#include "reduction_attributes.hpp"
 
 namespace minitensor::detail
 {
@@ -21,8 +19,6 @@ namespace minitensor::detail
         [[nodiscard]] std::vector<std::optional<Tensor>> vjp(std::span<const Tensor> inputs, const Tensor &, const Tensor &output_cotangent) const override;
 
     private:
-        std::vector<Shape::size_type> axes_;
-        Shape::size_type input_rank_;
-        bool keep_dim_;
+        ReductionAttributes reduction_;
     };
 }

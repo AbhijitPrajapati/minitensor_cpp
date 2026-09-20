@@ -1,6 +1,7 @@
 #include "tensor/backend/cpu/kernels/registrations.hpp"
 
 #include <cassert>
+#include <cmath>
 #include <span>
 #include <type_traits>
 #include <utility>
@@ -13,8 +14,12 @@
 #include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/primitives/add.hpp"
 #include "tensor/primitives/divide.hpp"
+#include "tensor/primitives/exponential.hpp"
+#include "tensor/primitives/hyperbolic_tangent.hpp"
+#include "tensor/primitives/logarithm.hpp"
 #include "tensor/primitives/multiply.hpp"
 #include "tensor/primitives/negate.hpp"
+#include "tensor/primitives/square_root.hpp"
 #include "tensor/primitives/subtract.hpp"
 
 namespace minitensor::detail::cpu
@@ -58,6 +63,54 @@ namespace minitensor::detail::cpu
                 [](auto input)
                 {
                     return -input;
+                });
+        }
+
+        void run_exponential(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
+        {
+            run_unary<ExponentialPrimitive>(
+                primitive,
+                inputs,
+                output,
+                [](auto input)
+                {
+                    return std::exp(input);
+                });
+        }
+
+        void run_logarithm(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
+        {
+            run_unary<LogarithmPrimitive>(
+                primitive,
+                inputs,
+                output,
+                [](auto input)
+                {
+                    return std::log(input);
+                });
+        }
+
+        void run_square_root(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
+        {
+            run_unary<SquareRootPrimitive>(
+                primitive,
+                inputs,
+                output,
+                [](auto input)
+                {
+                    return std::sqrt(input);
+                });
+        }
+
+        void run_hyperbolic_tangent(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
+        {
+            run_unary<HyperbolicTangentPrimitive>(
+                primitive,
+                inputs,
+                output,
+                [](auto input)
+                {
+                    return std::tanh(input);
                 });
         }
 
@@ -113,6 +166,10 @@ namespace minitensor::detail::cpu
     void register_elementwise_kernels(KernelRegistry &registry)
     {
         registry.register_kernel(KernelKey{typeid(NegatePrimitive), DeviceType::Cpu, DType::Float32}, run_negate);
+        registry.register_kernel(KernelKey{typeid(ExponentialPrimitive), DeviceType::Cpu, DType::Float32}, run_exponential);
+        registry.register_kernel(KernelKey{typeid(LogarithmPrimitive), DeviceType::Cpu, DType::Float32}, run_logarithm);
+        registry.register_kernel(KernelKey{typeid(SquareRootPrimitive), DeviceType::Cpu, DType::Float32}, run_square_root);
+        registry.register_kernel(KernelKey{typeid(HyperbolicTangentPrimitive), DeviceType::Cpu, DType::Float32}, run_hyperbolic_tangent);
         registry.register_kernel(KernelKey{typeid(AddPrimitive), DeviceType::Cpu, DType::Float32}, run_add);
         registry.register_kernel(KernelKey{typeid(SubtractPrimitive), DeviceType::Cpu, DType::Float32}, run_subtract);
         registry.register_kernel(KernelKey{typeid(MultiplyPrimitive), DeviceType::Cpu, DType::Float32}, run_multiply);

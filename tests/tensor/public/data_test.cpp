@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <limits>
 #include <span>
 #include <stdexcept>
 
@@ -84,6 +86,24 @@ namespace minitensor::test
         expect(std::ranges::equal(to_vector(negated), expected_negated),
                "elementwise negation computes additive inverses from a strided input");
 
+        const std::array<float, 3> positive_values{1.0F, 2.0F, 4.0F};
+        const Tensor positive_input = from_data(positive_values, Shape{3});
+        const std::array<float, 3> expected_exp{
+            std::exp(1.0F), std::exp(2.0F), std::exp(4.0F)};
+        const std::array<float, 3> expected_log{
+            0.0F, std::log(2.0F), std::log(4.0F)};
+        const std::array<float, 3> expected_sqrt{1.0F, std::sqrt(2.0F), 2.0F};
+        const std::array<float, 3> expected_tanh{
+            std::tanh(1.0F), std::tanh(2.0F), std::tanh(4.0F)};
+        expect_near(to_vector(exp(positive_input)), expected_exp, 1.0E-6F,
+                    "exp computes elementwise exponentials");
+        expect_near(to_vector(log(positive_input)), expected_log, 1.0E-6F,
+                    "log computes elementwise natural logarithms");
+        expect_near(to_vector(sqrt(positive_input)), expected_sqrt, 1.0E-6F,
+                    "sqrt computes elementwise square roots");
+        expect_near(to_vector(tanh(positive_input)), expected_tanh, 1.0E-6F,
+                    "tanh computes elementwise hyperbolic tangents");
+
         const Tensor subtracted = from_data(lhs_values, Shape{2, 1}) -
                                   from_data(rhs_values, Shape{1, 3});
         const std::array<float, 6> expected_difference{-9.0F, -19.0F, -29.0F, -8.0F, -18.0F, -28.0F};
@@ -113,10 +133,39 @@ namespace minitensor::test
         expect(item(sum(matrix)) == 21.0F,
                "sum without explicit axes reduces all input elements");
 
+        const std::array<float, 6> reduction_values{1.0F, 5.0F, 3.0F, 4.0F, 2.0F, 6.0F};
+        const Tensor reduction_input = from_data(reduction_values, Shape{2, 3});
+        const std::array<float, 2> expected_row_means{3.0F, 4.0F};
+        const std::array<float, 2> expected_row_maxima{5.0F, 6.0F};
+        const std::array<float, 2> expected_row_minima{1.0F, 2.0F};
+        expect(std::ranges::equal(to_vector(mean(reduction_input, last_axis)), expected_row_means),
+               "mean reduces a selected axis");
+        expect(std::ranges::equal(to_vector(max(reduction_input, last_axis)), expected_row_maxima),
+               "max reduces a selected axis");
+        expect(std::ranges::equal(to_vector(min(reduction_input, last_axis)), expected_row_minima),
+               "min reduces a selected axis");
+        expect(item(mean(reduction_input)) == 3.5F &&
+                   item(max(reduction_input)) == 6.0F &&
+                   item(min(reduction_input)) == 1.0F,
+               "value reductions reduce all axes when none are explicit");
+        expect(std::ranges::equal(
+                   to_vector(mean(reduction_input, std::span<const Axis>{})),
+                   reduction_values),
+               "mean over no axes preserves values");
+
         constexpr std::array<Axis, 1> zero_length_axis{1};
         const std::array<float, 6> expected_empty_sums{};
         expect(std::ranges::equal(to_vector(sum(empty, zero_length_axis)), expected_empty_sums),
                "sum produces the additive identity when a reduction axis is empty");
+        const std::vector<float> empty_means = to_vector(mean(empty, zero_length_axis));
+        expect(std::ranges::all_of(empty_means, [](float value) { return std::isnan(value); }),
+               "mean over an empty axis produces NaN values");
+
+        const float nan = std::numeric_limits<float>::quiet_NaN();
+        const std::array<float, 3> values_with_nan{1.0F, nan, 3.0F};
+        const Tensor input_with_nan = from_data(values_with_nan, Shape{3});
+        expect(std::isnan(item(max(input_with_nan))) && std::isnan(item(min(input_with_nan))),
+               "max and min propagate NaN values");
 
         expect_throws<std::invalid_argument>(
             []
