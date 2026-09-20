@@ -31,6 +31,22 @@ namespace minitensor::test
         expect(configured.dtype() == options.dtype, "full preserves an explicit dtype option");
         expect(configured.device() == options.device, "full preserves an explicit device option");
 
+        const Tensor zero_tensor = zeros(Shape{2, 3});
+        const Tensor one_tensor = ones(Shape{2, 3});
+        expect(zero_tensor.shape() == Shape{2, 3} && one_tensor.shape() == Shape{2, 3},
+               "zeros and ones preserve their requested shapes");
+
+        const Tensor like_configured = full_like(configured, -2.0F);
+        expect(like_configured.shape() == configured.shape() &&
+                   like_configured.dtype() == configured.dtype() &&
+                   like_configured.device() == configured.device(),
+               "full_like inherits shape, dtype, and device when options are omitted");
+        expect(zeros_like(configured).device() == configured.device() &&
+                   ones_like(configured).device() == configured.device(),
+               "zeros_like and ones_like inherit the input device");
+        expect(zeros_like(configured, TensorOptions{}).device() == Device::cpu(),
+               "explicit like-options override the input options");
+
         Tensor copied = matrix;
         expect(copied.shape() == matrix.shape(), "copy construction preserves tensor metadata");
         Tensor assigned = full(Shape{1}, 0.0F);
@@ -93,6 +109,16 @@ namespace minitensor::test
         expect(permute(scalar, std::span<const Axis>{}).shape().is_scalar(),
                "an empty permutation preserves a scalar tensor");
 
+        const Tensor volume = full(Shape{2, 3, 4}, 1.0F);
+        expect(transpose(volume).shape() == Shape{4, 3, 2},
+               "transpose without axes reverses all dimensions");
+        expect(transpose(volume, 0, -1).shape() == Shape{4, 3, 2},
+               "transpose swaps two normalized axes");
+        expect(transpose(matrix).shape() == Shape{3, 2},
+               "transpose reverses matrix dimensions");
+        expect(transpose(scalar).shape().is_scalar(),
+               "transpose preserves a scalar tensor");
+
         const Tensor reshaped_matrix = reshape(matrix, Shape{3, 2});
         expect(reshaped_matrix.shape() == Shape{3, 2},
                "reshape replaces the tensor shape while preserving its element count");
@@ -103,6 +129,37 @@ namespace minitensor::test
                "reshape can convert a scalar into a ranked singleton tensor");
         expect(reshape(empty, Shape{0, 6}).shape() == Shape{0, 6},
                "reshape accepts a different empty shape");
+
+        expect(flatten(matrix).shape() == Shape{6},
+               "flatten without axes produces a vector");
+        expect(flatten(volume, 1).shape() == Shape{2, 12},
+               "flatten combines an inclusive range of dimensions");
+        expect(flatten(volume, -2, -1).shape() == Shape{2, 12},
+               "flatten normalizes negative axes");
+        expect(flatten(volume, 1, 1).shape() == volume.shape(),
+               "flattening one axis preserves the input shape");
+        expect(flatten(scalar).shape() == Shape{1},
+               "flatten converts a scalar to a one-element vector");
+        expect(flatten(empty).shape() == Shape{0},
+               "flatten preserves an empty tensor's element count");
+
+        const Tensor singleton_dimensions = full(Shape{1, 2, 1, 3}, 1.0F);
+        expect(squeeze(singleton_dimensions).shape() == Shape{2, 3},
+               "squeeze without axes removes every singleton dimension");
+        expect(squeeze(singleton_dimensions, 0).shape() == Shape{2, 1, 3},
+               "squeeze removes one selected singleton dimension");
+        constexpr std::array<Axis, 2> squeezed_axes{0, -2};
+        expect(squeeze(singleton_dimensions, squeezed_axes).shape() == Shape{2, 3},
+               "squeeze accepts multiple normalized singleton axes");
+        expect(squeeze(scalar).shape().is_scalar(),
+               "squeeze preserves a scalar tensor");
+
+        expect(unsqueeze(matrix, 0).shape() == Shape{1, 2, 3},
+               "unsqueeze inserts a leading singleton dimension");
+        expect(unsqueeze(matrix, -1).shape() == Shape{2, 3, 1},
+               "unsqueeze accepts a negative trailing insertion axis");
+        expect(unsqueeze(scalar, 0).shape() == Shape{1},
+               "unsqueeze converts a scalar to a singleton vector");
 
         const Tensor broadcast_source = full(Shape{2, 1}, 3.0F);
         const Tensor broadcasted_tensor = broadcast_to(broadcast_source, Shape{2, 3});
@@ -218,12 +275,49 @@ namespace minitensor::test
                 (void)permute(matrix, out_of_range_axes);
             },
             "permutation rejects an axis outside the input rank");
+        expect_throws<std::out_of_range>(
+            [&matrix]
+            {
+                (void)transpose(matrix, 0, 2);
+            },
+            "transpose rejects an axis outside the input rank");
         expect_throws<std::invalid_argument>(
             [&matrix]
             {
                 (void)reshape(matrix, Shape{5});
             },
             "reshape rejects a shape with a different element count");
+        expect_throws<std::invalid_argument>(
+            [&volume]
+            {
+                (void)flatten(volume, 2, 1);
+            },
+            "flatten rejects a reversed axis range");
+        expect_throws<std::out_of_range>(
+            [&volume]
+            {
+                (void)flatten(volume, 0, 3);
+            },
+            "flatten rejects an axis outside the input rank");
+        expect_throws<std::invalid_argument>(
+            [&singleton_dimensions]
+            {
+                (void)squeeze(singleton_dimensions, 1);
+            },
+            "squeeze rejects a selected dimension that is not a singleton");
+        expect_throws<std::invalid_argument>(
+            [&singleton_dimensions]
+            {
+                constexpr std::array<Axis, 2> duplicate_axes{0, -4};
+                (void)squeeze(singleton_dimensions, duplicate_axes);
+            },
+            "squeeze rejects axes that become duplicates after normalization");
+        expect_throws<std::out_of_range>(
+            [&matrix]
+            {
+                (void)unsqueeze(matrix, 3);
+            },
+            "unsqueeze rejects an insertion axis outside the output rank");
         expect_throws<std::invalid_argument>(
             [&matrix]
             {

@@ -36,6 +36,13 @@ namespace minitensor::test
         expect(std::ranges::equal(
                    to_vector(reshape(permuted_matrix, Shape{2, 3})), expected_permuted),
                "reshape preserves logical element order for a noncontiguous input");
+        expect(std::ranges::equal(to_vector(flatten(permuted_matrix)), expected_permuted),
+               "flatten preserves the logical order of a noncontiguous input");
+        expect(std::ranges::equal(to_vector(transpose(matrix)), expected_permuted),
+               "transpose reverses matrix axes through permutation");
+        expect(std::ranges::equal(
+                   to_vector(squeeze(unsqueeze(matrix, -1))), expected_source),
+               "squeeze and unsqueeze preserve element order through reshape");
 
         const std::array<float, 3> row_values{7.0F, 8.0F, 9.0F};
         const std::array<float, 6> expected_broadcast{7.0F, 8.0F, 9.0F, 7.0F, 8.0F, 9.0F};
@@ -53,6 +60,16 @@ namespace minitensor::test
 
         const Tensor empty = from_data(std::span<const float>{}, Shape{2, 0, 3});
         expect(to_vector(empty).empty(), "data transfer supports empty tensors");
+
+        const std::array<float, 6> expected_zeros{};
+        const std::array<float, 6> expected_ones{1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F};
+        const std::array<float, 6> expected_full_like{-2.0F, -2.0F, -2.0F, -2.0F, -2.0F, -2.0F};
+        expect(std::ranges::equal(to_vector(zeros_like(matrix)), expected_zeros),
+               "zeros_like composes full with the input metadata and zero value");
+        expect(std::ranges::equal(to_vector(ones(Shape{2, 3})), expected_ones),
+               "ones composes full with the requested shape and unit value");
+        expect(std::ranges::equal(to_vector(full_like(matrix, -2.0F)), expected_full_like),
+               "full_like composes full with the input shape and requested value");
 
         const std::array<float, 2> lhs_values{1.0F, 2.0F};
         const std::array<float, 3> rhs_values{10.0F, 20.0F, 30.0F};
