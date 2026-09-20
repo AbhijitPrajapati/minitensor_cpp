@@ -14,9 +14,12 @@
 #include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/dispatch/tensor_view.hpp"
 #include "tensor/ops/add.hpp"
+#include "tensor/ops/divide.hpp"
 #include "tensor/ops/full.hpp"
 #include "tensor/ops/multiply.hpp"
+#include "tensor/ops/negate.hpp"
 #include "tensor/ops/reshape.hpp"
+#include "tensor/ops/subtract.hpp"
 #include "tensor/ops/sum.hpp"
 #include "tensor/storage/layout.hpp"
 #include "tensor/storage/materialization.hpp"
@@ -40,6 +43,7 @@ namespace minitensor::test
     {
         using detail::AddPrimitive;
         using detail::BufferRef;
+        using detail::DividePrimitive;
         using detail::FullPrimitive;
         using detail::KernelFn;
         using detail::KernelKey;
@@ -48,8 +52,10 @@ namespace minitensor::test
         using detail::Materialization;
         using detail::MultiplyPrimitive;
         using detail::MutableTensorView;
+        using detail::NegatePrimitive;
         using detail::ReshapePrimitive;
         using detail::SumPrimitive;
+        using detail::SubtractPrimitive;
         using detail::TensorSpec;
         using detail::TensorView;
         using detail::cpu::CpuRuntime;
@@ -59,12 +65,18 @@ namespace minitensor::test
 
         KernelKey full_key{typeid(FullPrimitive), DeviceType::Cpu, DType::Float32};
         KernelKey add_key{typeid(AddPrimitive), DeviceType::Cpu, DType::Float32};
+        KernelKey negate_key{typeid(NegatePrimitive), DeviceType::Cpu, DType::Float32};
+        KernelKey subtract_key{typeid(SubtractPrimitive), DeviceType::Cpu, DType::Float32};
         KernelKey multiply_key{typeid(MultiplyPrimitive), DeviceType::Cpu, DType::Float32};
+        KernelKey divide_key{typeid(DividePrimitive), DeviceType::Cpu, DType::Float32};
         KernelKey reshape_key{typeid(ReshapePrimitive), DeviceType::Cpu, DType::Float32};
         KernelKey sum_key{typeid(SumPrimitive), DeviceType::Cpu, DType::Float32};
         expect(registry.contains(full_key), "cpu kernel registration installs the Float32 full kernel");
         expect(registry.contains(add_key), "cpu kernel registration installs the Float32 add kernel");
+        expect(registry.contains(negate_key), "cpu kernel registration installs the Float32 negate kernel");
+        expect(registry.contains(subtract_key), "cpu kernel registration installs the Float32 subtract kernel");
         expect(registry.contains(multiply_key), "cpu kernel registration installs the Float32 multiply kernel");
+        expect(registry.contains(divide_key), "cpu kernel registration installs the Float32 divide kernel");
         expect(registry.contains(reshape_key), "cpu kernel registration installs the Float32 reshape kernel");
         expect(registry.contains(sum_key), "cpu kernel registration installs the Float32 sum kernel");
 

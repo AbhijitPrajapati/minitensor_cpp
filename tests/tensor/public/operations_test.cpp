@@ -55,12 +55,29 @@ namespace minitensor::test
         expect(empty_sum.shape() == Shape{2, 0, 3}, "addition broadcasts compatible empty shapes");
         expect(empty_sum.numel() == 0, "a broadcasted empty result remains empty");
 
+        const Tensor negated = -matrix;
+        expect(negated.shape() == matrix.shape() &&
+                   negated.dtype() == matrix.dtype() &&
+                   negated.device() == matrix.device(),
+               "negation preserves the input shape, dtype, and device");
+
+        const Tensor broadcast_difference = full(Shape{2, 1}, 2.0F) - full(Shape{1, 3}, 3.0F);
+        expect(broadcast_difference.shape() == Shape{2, 3},
+               "subtraction broadcasts compatible input shapes");
+
         const Tensor broadcast_product = full(Shape{2, 1}, 2.0F) * full(Shape{1, 3}, 3.0F);
         expect(broadcast_product.shape() == Shape{2, 3},
                "multiplication broadcasts compatible input shapes");
         expect(broadcast_product.dtype() == DType::Float32 &&
                    broadcast_product.device() == Device::cpu(),
                "multiplication preserves the input dtype and device");
+
+        const Tensor broadcast_quotient = full(Shape{2, 1}, 2.0F) / full(Shape{1, 3}, 4.0F);
+        expect(broadcast_quotient.shape() == Shape{2, 3},
+               "division broadcasts compatible input shapes");
+        expect(broadcast_quotient.dtype() == DType::Float32 &&
+                   broadcast_quotient.device() == Device::cpu(),
+               "division preserves the input dtype and device");
 
         constexpr std::array<Axis, 2> swapped_axes{1, 0};
         const Tensor permuted_matrix = permute(matrix, swapped_axes);
@@ -141,6 +158,20 @@ namespace minitensor::test
         expect_throws<std::invalid_argument>(
             []
             {
+                (void)(full(Shape{2, 3}, 1.0F) - full(Shape{2, 2}, 1.0F));
+            },
+            "subtraction rejects incompatible shapes");
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                const Tensor lhs = full(Shape{2}, 1.0F, TensorOptions{DType::Float32, Device::cpu(0)});
+                const Tensor rhs = full(Shape{2}, 1.0F, TensorOptions{DType::Float32, Device::cpu(1)});
+                (void)(lhs - rhs);
+            },
+            "subtraction rejects tensors on different devices");
+        expect_throws<std::invalid_argument>(
+            []
+            {
                 (void)(full(Shape{2, 3}, 1.0F) * full(Shape{2, 2}, 1.0F));
             },
             "multiplication rejects incompatible shapes");
@@ -152,6 +183,20 @@ namespace minitensor::test
                 (void)(lhs * rhs);
             },
             "multiplication rejects tensors on different devices");
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                (void)(full(Shape{2, 3}, 1.0F) / full(Shape{2, 2}, 1.0F));
+            },
+            "division rejects incompatible shapes");
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                const Tensor lhs = full(Shape{2}, 1.0F, TensorOptions{DType::Float32, Device::cpu(0)});
+                const Tensor rhs = full(Shape{2}, 1.0F, TensorOptions{DType::Float32, Device::cpu(1)});
+                (void)(lhs / rhs);
+            },
+            "division rejects tensors on different devices");
         expect_throws<std::invalid_argument>(
             [&matrix]
             {

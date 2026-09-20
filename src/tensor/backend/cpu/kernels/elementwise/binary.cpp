@@ -1,4 +1,4 @@
-#include "tensor/backend/cpu/kernels/registrations.hpp"
+#include "registrations.hpp"
 
 #include <cassert>
 #include <span>
@@ -12,7 +12,9 @@
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/ops/add.hpp"
+#include "tensor/ops/divide.hpp"
 #include "tensor/ops/multiply.hpp"
+#include "tensor/ops/subtract.hpp"
 
 namespace minitensor::detail::cpu
 {
@@ -55,11 +57,37 @@ namespace minitensor::detail::cpu
                     return lhs * rhs;
                 });
         }
+
+        void run_subtract(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
+        {
+            run_binary<SubtractPrimitive>(
+                primitive,
+                inputs,
+                output,
+                [](auto lhs, auto rhs)
+                {
+                    return lhs - rhs;
+                });
+        }
+
+        void run_divide(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
+        {
+            run_binary<DividePrimitive>(
+                primitive,
+                inputs,
+                output,
+                [](auto lhs, auto rhs)
+                {
+                    return lhs / rhs;
+                });
+        }
     }
 
-    void register_elementwise_kernels(KernelRegistry &registry)
+    void register_binary_kernels(KernelRegistry &registry)
     {
         registry.register_kernel(KernelKey{typeid(AddPrimitive), DeviceType::Cpu, DType::Float32}, run_add);
+        registry.register_kernel(KernelKey{typeid(SubtractPrimitive), DeviceType::Cpu, DType::Float32}, run_subtract);
         registry.register_kernel(KernelKey{typeid(MultiplyPrimitive), DeviceType::Cpu, DType::Float32}, run_multiply);
+        registry.register_kernel(KernelKey{typeid(DividePrimitive), DeviceType::Cpu, DType::Float32}, run_divide);
     }
 }
