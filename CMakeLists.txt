@@ -32,11 +32,10 @@ target_sources(
         src/tensor/backend/cpu/cpu_buffer.cpp
         src/tensor/backend/cpu/cpu_runtime.cpp
         src/tensor/backend/cpu/register_kernels.cpp
-        src/tensor/backend/cpu/kernels/add.cpp
-        src/tensor/backend/cpu/kernels/multiply.cpp
-        src/tensor/backend/cpu/kernels/full.cpp
-        src/tensor/backend/cpu/kernels/reshape.cpp
-        src/tensor/backend/cpu/kernels/sum.cpp
+        src/tensor/backend/cpu/kernels/creation/fill.cpp
+        src/tensor/backend/cpu/kernels/elementwise/binary.cpp
+        src/tensor/backend/cpu/kernels/movement/copy.cpp
+        src/tensor/backend/cpu/kernels/reduction/reductions.cpp
         src/tensor/dispatch/kernel_registry.cpp
         src/tensor/dispatch/tensor_view.cpp
         src/tensor/execution/evaluator.cpp

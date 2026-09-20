@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <concepts>
 #include <functional>
+#include <limits>
 #include <span>
 #include <vector>
 
@@ -13,12 +14,18 @@
 namespace minitensor::detail
 {
 	template <typename Function>
-	concept ElementwiseFunction = std::invocable<Function &, Shape::size_type, std::span<const Layout::offset_type>>;
+	concept ElementwiseRunFunction = std::invocable<
+		Function &,
+		Shape::size_type,
+		std::span<const Layout::offset_type>,
+		std::span<const Layout::stride_type>,
+		Shape::size_type>;
 
 	class ElementwisePlan final
 	{
 	public:
 		using offset_type = Layout::offset_type;
+		using stride_type = Layout::stride_type;
 		using size_type = Shape::size_type;
 
 		ElementwisePlan(const Shape &shape, std::span<const Layout> layouts);
@@ -26,9 +33,11 @@ namespace minitensor::detail
 		[[nodiscard]] size_type numel() const noexcept;
 		[[nodiscard]] std::size_t layout_count() const noexcept;
 
-		// calls function(linear_index, layout_offsets) for each logical element
-		template <ElementwiseFunction Function>
-		void for_each(Function &&function) const;
+		// Calls function(linear_index, layout_offsets, layout_strides, run_size)
+		// for each run along the innermost non-singleton dimension. Offsets point
+		// to the first logical element in the run and strides advance each layout.
+		template <ElementwiseRunFunction Function>
+		void for_each_run(Function &&function) const;
 
 	private:
 		struct AxisPlan
@@ -45,8 +54,8 @@ namespace minitensor::detail
 		std::vector<AxisPlan> axes_;
 	};
 
-	template <ElementwiseFunction Function>
-	void ElementwisePlan::for_each(Function &&function) const
+	template <ElementwiseRunFunction Function>
+	void ElementwisePlan::for_each_run(Function &&function) const
 	{
 		if (numel_ == 0)
 		{
@@ -54,27 +63,69 @@ namespace minitensor::detail
 		}
 
 		std::vector<offset_type> offsets = initial_offsets_;
-		std::vector<Extent> indices(axes_.size(), Extent{0});
 
-		for (size_type linear = 0; linear < numel_; ++linear)
+		// Scalars and shapes containing only singleton dimensions have one
+		// logical element and no meaningful physical stride.
+		if (axes_.empty())
 		{
-			std::invoke(
-				function,
-				linear,
-				offsets);
+			const std::vector<stride_type> strides(layout_count(), stride_type{0});
+			std::invoke(function, size_type{0}, offsets, strides, size_type{1});
+			return;
+		}
 
-			if (linear + 1 == numel_)
+		const AxisPlan &run_axis = axes_.back();
+		size_type run_size = static_cast<size_type>(run_axis.extent);
+		std::size_t run_axis_start = axes_.size() - 1;
+
+		// Fold adjacent dimensions into the run when every layout advances as
+		// one physically strided sequence across the dimension boundary.
+		while (run_axis_start > 0)
+		{
+			if (run_size > static_cast<size_type>(std::numeric_limits<offset_type>::max()))
 			{
 				break;
 			}
 
-			for (std::size_t i = axes_.size(); i > 0; --i)
+			const offset_type run_extent = static_cast<offset_type>(run_size);
+			const AxisPlan &outer_axis = axes_[run_axis_start - 1];
+			bool can_fold = true;
+			for (std::size_t layout_idx = 0; layout_idx < layout_count(); ++layout_idx)
+			{
+				const offset_type outer_step = outer_axis.steps[layout_idx];
+				if (outer_step % run_extent != 0 || outer_step / run_extent != run_axis.steps[layout_idx])
+				{
+					can_fold = false;
+					break;
+				}
+			}
+
+			if (!can_fold)
+			{
+				break;
+			}
+
+			run_size *= static_cast<size_type>(outer_axis.extent);
+			--run_axis_start;
+		}
+
+		const std::size_t outer_axis_count = run_axis_start;
+		std::vector<Extent> outer_indices(outer_axis_count, Extent{0});
+
+		for (size_type linear = 0; linear < numel_; linear += run_size)
+		{
+			std::invoke(function, linear, offsets, run_axis.steps, run_size);
+
+			if (linear + run_size == numel_)
+			{
+				break;
+			}
+
+			for (std::size_t i = outer_axis_count; i > 0; --i)
 			{
 				const std::size_t axis_idx = i - 1;
 				const AxisPlan &axis = axes_[axis_idx];
-				Extent &index = indices[axis_idx];
+				Extent &index = outer_indices[axis_idx];
 
-				// no wrap
 				if (index + 1 < axis.extent)
 				{
 					++index;
@@ -85,7 +136,6 @@ namespace minitensor::detail
 					break;
 				}
 
-				// wrap -> subtract the reset values
 				index = 0;
 				for (std::size_t layout_idx = 0; layout_idx < offsets.size(); ++layout_idx)
 				{
