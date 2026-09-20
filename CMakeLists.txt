@@ -21,14 +21,22 @@ target_sources(
         src/tensor/graph/value.cpp
         src/tensor/ops.cpp
         src/tensor/primitives/add.cpp
+        src/tensor/primitives/exponential.cpp
+        src/tensor/primitives/logarithm.cpp
         src/tensor/primitives/negate.cpp
+        src/tensor/primitives/square_root.cpp
         src/tensor/primitives/subtract.cpp
+        src/tensor/primitives/hyperbolic_tangent.cpp
         src/tensor/primitives/multiply.cpp
         src/tensor/primitives/divide.cpp
         src/tensor/primitives/full.cpp
+        src/tensor/primitives/max.cpp
+        src/tensor/primitives/mean.cpp
+        src/tensor/primitives/min.cpp
         src/tensor/primitives/permute.cpp
         src/tensor/primitives/reshape.cpp
         src/tensor/primitives/broadcast_to.cpp
+        src/tensor/primitives/reduction_attributes.cpp
         src/tensor/primitives/sum.cpp
         src/tensor/primitives/matmul.cpp
         src/tensor/storage/layout.cpp

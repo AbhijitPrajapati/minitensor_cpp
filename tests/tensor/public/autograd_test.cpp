@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <stdexcept>
 #include <vector>
 
@@ -85,6 +86,51 @@ namespace minitensor::test
                    kept_sum_vjp.front().shape() == matrix.shape() &&
                    std::ranges::equal(to_vector(kept_sum_vjp.front()), expected_kept_sum_vjp),
                "sum VJP broadcasts a kept-dimension cotangent over the reduced axis");
+
+        const std::array<float, 2> unary_values{1.0F, 2.0F};
+        const Tensor unary_input = from_data(unary_values, Shape{2});
+        const std::array<Tensor, 1> unary_target{unary_input};
+
+        const std::array<float, 2> expected_exp_gradient{std::exp(1.0F), std::exp(2.0F)};
+        expect_near(
+            to_vector(grad(sum(exp(unary_input)), unary_target).front()),
+            expected_exp_gradient,
+            1.0E-6F,
+            "exp VJP reuses the forward output");
+
+        const std::array<float, 2> expected_log_gradient{1.0F, 0.5F};
+        expect_near(
+            to_vector(grad(sum(log(unary_input)), unary_target).front()),
+            expected_log_gradient,
+            1.0E-6F,
+            "log VJP divides by its input");
+
+        const std::array<float, 2> expected_sqrt_gradient{
+            0.5F, 0.5F / std::sqrt(2.0F)};
+        expect_near(
+            to_vector(grad(sum(sqrt(unary_input)), unary_target).front()),
+            expected_sqrt_gradient,
+            1.0E-6F,
+            "sqrt VJP scales by twice the forward output");
+
+        const std::array<float, 2> expected_tanh_gradient{
+            1.0F - std::tanh(1.0F) * std::tanh(1.0F),
+            1.0F - std::tanh(2.0F) * std::tanh(2.0F)};
+        expect_near(
+            to_vector(grad(sum(tanh(unary_input)), unary_target).front()),
+            expected_tanh_gradient,
+            1.0E-6F,
+            "tanh VJP uses one minus the squared forward output");
+
+        const std::vector<Tensor> mean_gradient = grad(mean(matrix), matrix_target);
+        const std::array<float, 6> expected_mean_gradient{
+            1.0F / 6.0F, 1.0F / 6.0F, 1.0F / 6.0F,
+            1.0F / 6.0F, 1.0F / 6.0F, 1.0F / 6.0F};
+        expect_near(
+            to_vector(mean_gradient.front()),
+            expected_mean_gradient,
+            1.0E-6F,
+            "mean VJP broadcasts and normalizes the output cotangent");
 
         expect_throws<std::invalid_argument>(
             [&transformed, &matrix_target]

@@ -12,6 +12,10 @@ namespace minitensor
     [[nodiscard]] Tensor operator-(const Tensor &lhs, const Tensor &rhs);
     [[nodiscard]] Tensor operator*(const Tensor &lhs, const Tensor &rhs);
     [[nodiscard]] Tensor operator/(const Tensor &lhs, const Tensor &rhs);
+    [[nodiscard]] Tensor exp(const Tensor &input);
+    [[nodiscard]] Tensor log(const Tensor &input);
+    [[nodiscard]] Tensor sqrt(const Tensor &input);
+    [[nodiscard]] Tensor tanh(const Tensor &input);
     [[nodiscard]] Tensor full(Shape shape, float value, TensorOptions options = {});
     [[nodiscard]] Tensor full_like(const Tensor &input, float value);
     [[nodiscard]] Tensor full_like(const Tensor &input, float value, TensorOptions options);
@@ -34,5 +38,11 @@ namespace minitensor
     [[nodiscard]] Tensor broadcast_to(const Tensor &input, Shape shape);
     [[nodiscard]] Tensor sum(const Tensor &input, std::span<const Axis> axes, bool keep_dim = false);
     [[nodiscard]] Tensor sum(const Tensor &input, bool keep_dim = false);
+    [[nodiscard]] Tensor mean(const Tensor &input, std::span<const Axis> axes, bool keep_dim = false);
+    [[nodiscard]] Tensor mean(const Tensor &input, bool keep_dim = false);
+    [[nodiscard]] Tensor max(const Tensor &input, std::span<const Axis> axes, bool keep_dim = false);
+    [[nodiscard]] Tensor max(const Tensor &input, bool keep_dim = false);
+    [[nodiscard]] Tensor min(const Tensor &input, std::span<const Axis> axes, bool keep_dim = false);
+    [[nodiscard]] Tensor min(const Tensor &input, bool keep_dim = false);
     [[nodiscard]] Tensor matmul(const Tensor &lhs, const Tensor &rhs);
 } // namespace minitensor

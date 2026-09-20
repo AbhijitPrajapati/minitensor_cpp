@@ -8,15 +8,19 @@
 
 namespace minitensor::detail
 {
-    class SumPrimitive final : public Primitive
+    class MeanPrimitive final : public Primitive
     {
     public:
-        explicit SumPrimitive(std::span<const Axis> axes, Shape::size_type input_rank, bool keep_dim);
+        explicit MeanPrimitive(std::span<const Axis> axes, Shape::size_type input_rank, bool keep_dim);
         [[nodiscard]] std::string_view name() const noexcept override;
         [[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;
         [[nodiscard]] const std::vector<Shape::size_type> &axes() const noexcept;
         [[nodiscard]] bool keep_dim() const noexcept;
-        [[nodiscard]] std::vector<std::optional<Tensor>> vjp(std::span<const Tensor> inputs, const Tensor &, const Tensor &output_cotangent) const override;
+        [[nodiscard]] std::size_t reduction_size(const Shape &input_shape) const;
+        [[nodiscard]] std::vector<std::optional<Tensor>> vjp(
+            std::span<const Tensor> inputs,
+            const Tensor &output,
+            const Tensor &output_cotangent) const override;
 
     private:
         ReductionAttributes reduction_;

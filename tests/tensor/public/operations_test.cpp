@@ -77,6 +77,12 @@ namespace minitensor::test
                    negated.device() == matrix.device(),
                "negation preserves the input shape, dtype, and device");
 
+        expect(exp(matrix).shape() == matrix.shape() &&
+                   log(matrix).shape() == matrix.shape() &&
+                   sqrt(matrix).shape() == matrix.shape() &&
+                   tanh(matrix).shape() == matrix.shape(),
+               "unary math operations preserve the input tensor specification");
+
         const Tensor broadcast_difference = full(Shape{2, 1}, 2.0F) - full(Shape{1, 3}, 3.0F);
         expect(broadcast_difference.shape() == Shape{2, 3},
                "subtraction broadcasts compatible input shapes");
@@ -193,6 +199,23 @@ namespace minitensor::test
                "sum with keep_dim retains every implicitly reduced axis");
         expect(sum(scalar).shape().is_scalar(),
                "sum without explicit axes preserves a scalar shape");
+
+        expect(mean(matrix, last_axis).shape() == Shape{2} &&
+                   max(matrix, last_axis).shape() == Shape{2} &&
+                   min(matrix, last_axis).shape() == Shape{2},
+               "value reductions remove selected axes");
+        expect(mean(matrix, last_axis, true).shape() == Shape{2, 1} &&
+                   max(matrix, last_axis, true).shape() == Shape{2, 1} &&
+                   min(matrix, last_axis, true).shape() == Shape{2, 1},
+               "value reductions retain selected axes when requested");
+        expect(mean(matrix).shape().is_scalar() &&
+                   max(matrix).shape().is_scalar() &&
+                   min(matrix).shape().is_scalar(),
+               "value reductions without explicit axes reduce every matrix axis");
+        expect(mean(matrix, std::span<const Axis>{}).shape() == matrix.shape() &&
+                   max(matrix, std::span<const Axis>{}).shape() == matrix.shape() &&
+                   min(matrix, std::span<const Axis>{}).shape() == matrix.shape(),
+               "value reductions over no axes preserve the input shape");
 
         constexpr std::array<Axis, 1> empty_reduction_axis{1};
         expect(sum(empty, empty_reduction_axis).shape() == Shape{2, 3},
@@ -351,5 +374,26 @@ namespace minitensor::test
                 (void)sum(matrix, too_many_axes);
             },
             "sum rejects more reduction axes than the input rank");
+        expect_throws<std::invalid_argument>(
+            [&matrix]
+            {
+                constexpr std::array<Axis, 2> duplicate_axes{1, -1};
+                (void)mean(matrix, duplicate_axes);
+            },
+            "mean rejects axes that become duplicates after normalization");
+        expect_throws<std::invalid_argument>(
+            [&empty]
+            {
+                constexpr std::array<Axis, 1> zero_length_axis{1};
+                (void)max(empty, zero_length_axis);
+            },
+            "max rejects a reduction over an empty axis");
+        expect_throws<std::invalid_argument>(
+            [&empty]
+            {
+                constexpr std::array<Axis, 1> zero_length_axis{1};
+                (void)min(empty, zero_length_axis);
+            },
+            "min rejects a reduction over an empty axis");
     }
 }

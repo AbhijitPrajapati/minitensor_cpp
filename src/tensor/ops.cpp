@@ -15,12 +15,19 @@
 #include "tensor/primitives/add.hpp"
 #include "tensor/primitives/broadcast_to.hpp"
 #include "tensor/primitives/divide.hpp"
+#include "tensor/primitives/exponential.hpp"
 #include "tensor/primitives/full.hpp"
+#include "tensor/primitives/hyperbolic_tangent.hpp"
+#include "tensor/primitives/logarithm.hpp"
 #include "tensor/primitives/matmul.hpp"
+#include "tensor/primitives/max.hpp"
+#include "tensor/primitives/mean.hpp"
+#include "tensor/primitives/min.hpp"
 #include "tensor/primitives/multiply.hpp"
 #include "tensor/primitives/negate.hpp"
 #include "tensor/primitives/permute.hpp"
 #include "tensor/primitives/reshape.hpp"
+#include "tensor/primitives/square_root.hpp"
 #include "tensor/primitives/subtract.hpp"
 #include "tensor/primitives/sum.hpp"
 #include "tensor/tensor_access.hpp"
@@ -41,6 +48,13 @@ namespace minitensor
         [[nodiscard]] TensorOptions options_like(const Tensor &input) noexcept
         {
             return TensorOptions{input.dtype(), input.device()};
+        }
+
+        [[nodiscard]] std::vector<Axis> all_axes(const Tensor &input)
+        {
+            std::vector<Axis> axes(input.rank());
+            std::iota(axes.begin(), axes.end(), Axis{0});
+            return axes;
         }
 
         [[nodiscard]] Extent flattened_extent(
@@ -93,6 +107,27 @@ namespace minitensor
     Tensor operator/(const Tensor &lhs, const Tensor &rhs)
     {
         return apply_primitive(std::make_unique<detail::DividePrimitive>(), lhs, rhs);
+    }
+
+    Tensor exp(const Tensor &input)
+    {
+        return apply_primitive(std::make_unique<detail::ExponentialPrimitive>(), input);
+    }
+
+    Tensor log(const Tensor &input)
+    {
+        return apply_primitive(std::make_unique<detail::LogarithmPrimitive>(), input);
+    }
+
+    Tensor sqrt(const Tensor &input)
+    {
+        return apply_primitive(std::make_unique<detail::SquareRootPrimitive>(), input);
+    }
+
+    Tensor tanh(const Tensor &input)
+    {
+        return apply_primitive(
+            std::make_unique<detail::HyperbolicTangentPrimitive>(), input);
     }
 
     Tensor full(Shape shape, float value, TensorOptions options)
@@ -293,15 +328,62 @@ namespace minitensor
 
     Tensor sum(const Tensor &input, std::span<const Axis> axes, bool keep_dim)
     {
+        if (axes.empty())
+        {
+            return input;
+        }
         return apply_primitive(
             std::make_unique<detail::SumPrimitive>(axes, input.rank(), keep_dim), input);
     }
 
     Tensor sum(const Tensor &input, bool keep_dim)
     {
-        std::vector<Axis> axes(input.rank());
-        std::iota(axes.begin(), axes.end(), Axis{0});
-        return sum(input, axes, keep_dim);
+        return sum(input, all_axes(input), keep_dim);
+    }
+
+    Tensor mean(const Tensor &input, std::span<const Axis> axes, bool keep_dim)
+    {
+        if (axes.empty())
+        {
+            return input;
+        }
+        return apply_primitive(
+            std::make_unique<detail::MeanPrimitive>(axes, input.rank(), keep_dim), input);
+    }
+
+    Tensor mean(const Tensor &input, bool keep_dim)
+    {
+        return mean(input, all_axes(input), keep_dim);
+    }
+
+    Tensor max(const Tensor &input, std::span<const Axis> axes, bool keep_dim)
+    {
+        if (axes.empty())
+        {
+            return input;
+        }
+        return apply_primitive(
+            std::make_unique<detail::MaxPrimitive>(axes, input.rank(), keep_dim), input);
+    }
+
+    Tensor max(const Tensor &input, bool keep_dim)
+    {
+        return max(input, all_axes(input), keep_dim);
+    }
+
+    Tensor min(const Tensor &input, std::span<const Axis> axes, bool keep_dim)
+    {
+        if (axes.empty())
+        {
+            return input;
+        }
+        return apply_primitive(
+            std::make_unique<detail::MinPrimitive>(axes, input.rank(), keep_dim), input);
+    }
+
+    Tensor min(const Tensor &input, bool keep_dim)
+    {
+        return min(input, all_axes(input), keep_dim);
     }
 
     Tensor matmul(const Tensor &lhs, const Tensor &rhs)

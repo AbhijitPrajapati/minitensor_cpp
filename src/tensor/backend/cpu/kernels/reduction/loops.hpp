@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <functional>
 #include <span>
+#include <utility>
 
 #include <minitensor/types.hpp>
 
@@ -46,5 +47,35 @@ namespace minitensor::detail::cpu
                     accumulator,
                     input_data[static_cast<std::size_t>(input_offset)]));
             });
+    }
+
+    template <CpuElement T, typename Combine, typename Finalize>
+        requires std::invocable<Combine &, T, T> &&
+                 std::convertible_to<std::invoke_result_t<Combine &, T, T>, T> &&
+                 std::invocable<Finalize &, T> &&
+                 std::convertible_to<std::invoke_result_t<Finalize &, T>, T>
+    void reduce(
+        const TensorView &input,
+        MutableTensorView output,
+        std::span<const Shape::size_type> axes,
+        T identity,
+        Combine &&combine,
+        Finalize &&finalize)
+    {
+        reduce<T>(input, output, axes, identity, std::forward<Combine>(combine));
+
+        const Shape::size_type output_numel = output.shape().numel();
+        if (output_numel == 0)
+        {
+            return;
+        }
+
+        T *output_data = data<T>(output);
+        const auto output_offset = static_cast<std::size_t>(output.layout().offset());
+        for (Shape::size_type index = 0; index < output_numel; ++index)
+        {
+            T &value = output_data[output_offset + index];
+            value = static_cast<T>(std::invoke(finalize, value));
+        }
     }
 }
