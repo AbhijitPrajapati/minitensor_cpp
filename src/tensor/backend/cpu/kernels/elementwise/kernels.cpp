@@ -1,4 +1,4 @@
-#include "registrations.hpp"
+#include "tensor/backend/cpu/kernels/registrations.hpp"
 
 #include <cassert>
 #include <span>
@@ -11,15 +11,30 @@
 #include "tensor/backend/cpu/kernels/elementwise/loops.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
-#include "tensor/ops/add.hpp"
-#include "tensor/ops/divide.hpp"
-#include "tensor/ops/multiply.hpp"
-#include "tensor/ops/subtract.hpp"
+#include "tensor/primitives/add.hpp"
+#include "tensor/primitives/divide.hpp"
+#include "tensor/primitives/multiply.hpp"
+#include "tensor/primitives/negate.hpp"
+#include "tensor/primitives/subtract.hpp"
 
 namespace minitensor::detail::cpu
 {
     namespace
     {
+        template <typename PrimitiveType, typename Operation>
+        void run_unary(const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output, Operation operation)
+        {
+            assert(inputs.size() == 1);
+            (void)dynamic_cast<const PrimitiveType &>(primitive);
+
+            dispatch_dtype(
+                output.dtype(),
+                [&]<typename T>(std::type_identity<T>)
+                {
+                    unary_elementwise<T>(inputs[0], output, operation);
+                });
+        }
+
         template <typename PrimitiveType, typename Operation>
         void run_binary(const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output, Operation operation)
         {
@@ -31,6 +46,18 @@ namespace minitensor::detail::cpu
                 [&]<typename T>(std::type_identity<T>)
                 {
                     binary_elementwise<T>(inputs[0], inputs[1], output, operation);
+                });
+        }
+
+        void run_negate(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
+        {
+            run_unary<NegatePrimitive>(
+                primitive,
+                inputs,
+                output,
+                [](auto input)
+                {
+                    return -input;
                 });
         }
 
@@ -46,18 +73,6 @@ namespace minitensor::detail::cpu
                 });
         }
 
-        void run_multiply(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
-        {
-            run_binary<MultiplyPrimitive>(
-                primitive,
-                inputs,
-                output,
-                [](auto lhs, auto rhs)
-                {
-                    return lhs * rhs;
-                });
-        }
-
         void run_subtract(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
         {
             run_binary<SubtractPrimitive>(
@@ -67,6 +82,18 @@ namespace minitensor::detail::cpu
                 [](auto lhs, auto rhs)
                 {
                     return lhs - rhs;
+                });
+        }
+
+        void run_multiply(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
+        {
+            run_binary<MultiplyPrimitive>(
+                primitive,
+                inputs,
+                output,
+                [](auto lhs, auto rhs)
+                {
+                    return lhs * rhs;
                 });
         }
 
@@ -83,8 +110,9 @@ namespace minitensor::detail::cpu
         }
     }
 
-    void register_binary_kernels(KernelRegistry &registry)
+    void register_elementwise_kernels(KernelRegistry &registry)
     {
+        registry.register_kernel(KernelKey{typeid(NegatePrimitive), DeviceType::Cpu, DType::Float32}, run_negate);
         registry.register_kernel(KernelKey{typeid(AddPrimitive), DeviceType::Cpu, DType::Float32}, run_add);
         registry.register_kernel(KernelKey{typeid(SubtractPrimitive), DeviceType::Cpu, DType::Float32}, run_subtract);
         registry.register_kernel(KernelKey{typeid(MultiplyPrimitive), DeviceType::Cpu, DType::Float32}, run_multiply);
