@@ -90,14 +90,25 @@ namespace minitensor
 
         const std::array<detail::Layout, 1> layouts{materialization->layout()};
         detail::ElementwisePlan plan(tensor.shape(), layouts);
-        plan.for_each(
-            [&](Shape::size_type linear, std::span<const detail::Layout::offset_type> offsets)
+        plan.for_each_run(
+            [&](Shape::size_type linear,
+                std::span<const detail::Layout::offset_type> offsets,
+                std::span<const detail::Layout::stride_type> strides,
+                Shape::size_type run_size)
             {
                 assert(offsets.size() == 1);
-                assert(offsets[0] >= 0);
-                const auto source_offset_bytes = static_cast<std::size_t>(offsets[0]) * sizeof(float);
-                assert(source_offset_bytes <= host_storage.size());
-                std::memcpy(&result[linear], host_storage.data() + source_offset_bytes, sizeof(float));
+                assert(strides.size() == 1);
+
+                detail::Layout::offset_type source_offset = offsets[0];
+                const detail::Layout::stride_type source_stride = strides[0];
+                for (Shape::size_type i = 0; i < run_size; ++i)
+                {
+                    assert(source_offset >= 0);
+                    const auto source_offset_bytes = static_cast<std::size_t>(source_offset) * sizeof(float);
+                    assert(source_offset_bytes <= host_storage.size());
+                    std::memcpy(&result[linear + i], host_storage.data() + source_offset_bytes, sizeof(float));
+                    source_offset += source_stride;
+                }
             });
 
         return result;
