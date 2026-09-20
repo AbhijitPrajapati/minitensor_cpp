@@ -26,6 +26,7 @@ target_sources(
         src/tensor/ops/reshape.cpp
         src/tensor/ops/broadcast_to.cpp
         src/tensor/ops/sum.cpp
+        src/tensor/ops/matmul.cpp
         src/tensor/storage/layout.cpp
         src/tensor/storage/materialization.cpp
         src/tensor/backend/cpu/cpu_buffer.cpp
