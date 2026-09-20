@@ -10,7 +10,7 @@
 #include "tensor/backend/cpu/kernels/movement/copy.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
-#include "tensor/ops/reshape.hpp"
+#include "tensor/primitives/reshape.hpp"
 
 namespace minitensor::detail::cpu
 {

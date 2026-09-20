@@ -10,7 +10,7 @@
 #include "tensor/backend/cpu/kernels/reduction/loops.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
-#include "tensor/ops/sum.hpp"
+#include "tensor/primitives/sum.hpp"
 
 namespace minitensor::detail::cpu
 {

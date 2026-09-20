@@ -19,26 +19,25 @@ target_sources(
         src/tensor/graph/apply_operation.cpp
         src/tensor/graph/node.cpp
         src/tensor/graph/value.cpp
-        src/tensor/ops/add.cpp
-        src/tensor/ops/negate.cpp
-        src/tensor/ops/subtract.cpp
-        src/tensor/ops/multiply.cpp
-        src/tensor/ops/divide.cpp
-        src/tensor/ops/full.cpp
-        src/tensor/ops/permute.cpp
-        src/tensor/ops/reshape.cpp
-        src/tensor/ops/broadcast_to.cpp
-        src/tensor/ops/sum.cpp
-        src/tensor/ops/matmul.cpp
+        src/tensor/ops.cpp
+        src/tensor/primitives/add.cpp
+        src/tensor/primitives/negate.cpp
+        src/tensor/primitives/subtract.cpp
+        src/tensor/primitives/multiply.cpp
+        src/tensor/primitives/divide.cpp
+        src/tensor/primitives/full.cpp
+        src/tensor/primitives/permute.cpp
+        src/tensor/primitives/reshape.cpp
+        src/tensor/primitives/broadcast_to.cpp
+        src/tensor/primitives/sum.cpp
+        src/tensor/primitives/matmul.cpp
         src/tensor/storage/layout.cpp
         src/tensor/storage/materialization.cpp
         src/tensor/backend/cpu/cpu_buffer.cpp
         src/tensor/backend/cpu/cpu_runtime.cpp
         src/tensor/backend/cpu/register_kernels.cpp
         src/tensor/backend/cpu/kernels/creation/fill.cpp
-        src/tensor/backend/cpu/kernels/elementwise/register.cpp
-        src/tensor/backend/cpu/kernels/elementwise/unary.cpp
-        src/tensor/backend/cpu/kernels/elementwise/binary.cpp
+        src/tensor/backend/cpu/kernels/elementwise/kernels.cpp
         src/tensor/backend/cpu/kernels/movement/copy.cpp
         src/tensor/backend/cpu/kernels/reduction/reductions.cpp
         src/tensor/dispatch/kernel_registry.cpp
