@@ -135,32 +135,20 @@ namespace minitensor::test
 
         const std::array<float, 6> reduction_values{1.0F, 5.0F, 3.0F, 4.0F, 2.0F, 6.0F};
         const Tensor reduction_input = from_data(reduction_values, Shape{2, 3});
-        const std::array<float, 2> expected_row_means{3.0F, 4.0F};
         const std::array<float, 2> expected_row_maxima{5.0F, 6.0F};
         const std::array<float, 2> expected_row_minima{1.0F, 2.0F};
-        expect(std::ranges::equal(to_vector(mean(reduction_input, last_axis)), expected_row_means),
-               "mean reduces a selected axis");
         expect(std::ranges::equal(to_vector(max(reduction_input, last_axis)), expected_row_maxima),
                "max reduces a selected axis");
         expect(std::ranges::equal(to_vector(min(reduction_input, last_axis)), expected_row_minima),
                "min reduces a selected axis");
-        expect(item(mean(reduction_input)) == 3.5F &&
-                   item(max(reduction_input)) == 6.0F &&
-                   item(min(reduction_input)) == 1.0F,
-               "value reductions reduce all axes when none are explicit");
-        expect(std::ranges::equal(
-                   to_vector(mean(reduction_input, std::span<const Axis>{})),
-                   reduction_values),
-               "mean over no axes preserves values");
+        expect(item(max(reduction_input)) == 6.0F &&
+                    item(min(reduction_input)) == 1.0F,
+                "extrema reductions reduce all axes when none are explicit");
 
         constexpr std::array<Axis, 1> zero_length_axis{1};
         const std::array<float, 6> expected_empty_sums{};
         expect(std::ranges::equal(to_vector(sum(empty, zero_length_axis)), expected_empty_sums),
                "sum produces the additive identity when a reduction axis is empty");
-        const std::vector<float> empty_means = to_vector(mean(empty, zero_length_axis));
-        expect(std::ranges::all_of(empty_means, [](float value) { return std::isnan(value); }),
-               "mean over an empty axis produces NaN values");
-
         const float nan = std::numeric_limits<float>::quiet_NaN();
         const std::array<float, 3> values_with_nan{1.0F, nan, 3.0F};
         const Tensor input_with_nan = from_data(values_with_nan, Shape{3});

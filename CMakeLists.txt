@@ -19,26 +19,29 @@ target_sources(
         src/tensor/graph/apply_operation.cpp
         src/tensor/graph/node.cpp
         src/tensor/graph/value.cpp
-        src/tensor/ops.cpp
-        src/tensor/primitives/add.cpp
-        src/tensor/primitives/exponential.cpp
-        src/tensor/primitives/logarithm.cpp
-        src/tensor/primitives/negate.cpp
-        src/tensor/primitives/square_root.cpp
-        src/tensor/primitives/subtract.cpp
-        src/tensor/primitives/hyperbolic_tangent.cpp
-        src/tensor/primitives/multiply.cpp
-        src/tensor/primitives/divide.cpp
-        src/tensor/primitives/full.cpp
-        src/tensor/primitives/max.cpp
-        src/tensor/primitives/mean.cpp
-        src/tensor/primitives/min.cpp
-        src/tensor/primitives/permute.cpp
-        src/tensor/primitives/reshape.cpp
-        src/tensor/primitives/broadcast_to.cpp
-        src/tensor/primitives/reduction_attributes.cpp
-        src/tensor/primitives/sum.cpp
-        src/tensor/primitives/matmul.cpp
+        src/tensor/ops/creation.cpp
+        src/tensor/ops/elementwise.cpp
+        src/tensor/ops/linalg.cpp
+        src/tensor/ops/manipulation.cpp
+        src/tensor/ops/reduction.cpp
+        src/tensor/primitives/creation/full.cpp
+        src/tensor/primitives/elementwise/add.cpp
+        src/tensor/primitives/elementwise/divide.cpp
+        src/tensor/primitives/elementwise/exponential.cpp
+        src/tensor/primitives/elementwise/hyperbolic_tangent.cpp
+        src/tensor/primitives/elementwise/logarithm.cpp
+        src/tensor/primitives/elementwise/multiply.cpp
+        src/tensor/primitives/elementwise/negate.cpp
+        src/tensor/primitives/elementwise/square_root.cpp
+        src/tensor/primitives/elementwise/subtract.cpp
+        src/tensor/primitives/linalg/matmul.cpp
+        src/tensor/primitives/manipulation/broadcast_to.cpp
+        src/tensor/primitives/manipulation/permute.cpp
+        src/tensor/primitives/manipulation/reshape.cpp
+        src/tensor/primitives/reduction/max.cpp
+        src/tensor/primitives/reduction/min.cpp
+        src/tensor/primitives/reduction/reduction_common.cpp
+        src/tensor/primitives/reduction/sum.cpp
         src/tensor/storage/layout.cpp
         src/tensor/storage/materialization.cpp
         src/tensor/backend/cpu/cpu_buffer.cpp
@@ -46,7 +49,7 @@ target_sources(
         src/tensor/backend/cpu/register_kernels.cpp
         src/tensor/backend/cpu/kernels/creation/fill.cpp
         src/tensor/backend/cpu/kernels/elementwise/kernels.cpp
-        src/tensor/backend/cpu/kernels/movement/copy.cpp
+        src/tensor/backend/cpu/kernels/copy/copy.cpp
         src/tensor/backend/cpu/kernels/reduction/reductions.cpp
         src/tensor/dispatch/kernel_registry.cpp
         src/tensor/dispatch/tensor_view.cpp

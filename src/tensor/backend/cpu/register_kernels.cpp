@@ -8,7 +8,7 @@ namespace minitensor::detail::cpu
     {
         register_creation_kernels(registry);
         register_elementwise_kernels(registry);
-        register_movement_kernels(registry);
+        register_copy_kernels(registry);
         register_reduction_kernels(registry);
     }
 }

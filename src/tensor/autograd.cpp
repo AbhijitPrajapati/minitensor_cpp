@@ -5,7 +5,7 @@
 #include <stdexcept>
 
 #include <minitensor/tensor.hpp>
-#include <minitensor/ops.hpp>
+#include <minitensor/ops/creation.hpp>
 #include <minitensor/types.hpp>
 
 #include "tensor/autograd/engine.hpp"

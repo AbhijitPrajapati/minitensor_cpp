@@ -9,7 +9,8 @@
 #include <vector>
 
 #include <minitensor/tensor.hpp>
-#include <minitensor/ops.hpp>
+#include <minitensor/ops/creation.hpp>
+#include <minitensor/ops/elementwise.hpp>
 
 #include "tensor/graph/fwd.hpp"
 #include "tensor/graph/node.hpp"

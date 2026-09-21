@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include <minitensor/ops.hpp>
+#include <minitensor/ops/elementwise.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
 

@@ -7,10 +7,10 @@
 #include <minitensor/types.hpp>
 
 #include "tensor/backend/cpu/kernels/common/dtype_dispatch.hpp"
-#include "tensor/backend/cpu/kernels/movement/copy.hpp"
+#include "tensor/backend/cpu/kernels/copy/copy.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
-#include "tensor/primitives/reshape.hpp"
+#include "tensor/primitives/manipulation/reshape.hpp"
 
 namespace minitensor::detail::cpu
 {
@@ -30,7 +30,7 @@ namespace minitensor::detail::cpu
         }
     }
 
-    void register_movement_kernels(KernelRegistry &registry)
+    void register_copy_kernels(KernelRegistry &registry)
     {
         registry.register_kernel(KernelKey{typeid(ReshapePrimitive), DeviceType::Cpu, DType::Float32}, run_reshape);
     }

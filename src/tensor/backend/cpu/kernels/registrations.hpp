@@ -8,7 +8,7 @@ namespace minitensor::detail
     {
         void register_creation_kernels(KernelRegistry &registry);
         void register_elementwise_kernels(KernelRegistry &registry);
-        void register_movement_kernels(KernelRegistry &registry);
+        void register_copy_kernels(KernelRegistry &registry);
         void register_reduction_kernels(KernelRegistry &registry);
     }
 }

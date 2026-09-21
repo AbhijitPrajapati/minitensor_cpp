@@ -122,16 +122,6 @@ namespace minitensor::test
             1.0E-6F,
             "tanh VJP uses one minus the squared forward output");
 
-        const std::vector<Tensor> mean_gradient = grad(mean(matrix), matrix_target);
-        const std::array<float, 6> expected_mean_gradient{
-            1.0F / 6.0F, 1.0F / 6.0F, 1.0F / 6.0F,
-            1.0F / 6.0F, 1.0F / 6.0F, 1.0F / 6.0F};
-        expect_near(
-            to_vector(mean_gradient.front()),
-            expected_mean_gradient,
-            1.0E-6F,
-            "mean VJP broadcasts and normalizes the output cotangent");
-
         expect_throws<std::invalid_argument>(
             [&transformed, &matrix_target]
             {

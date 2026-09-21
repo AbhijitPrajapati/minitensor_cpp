@@ -6,7 +6,8 @@
 
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
-#include <minitensor/ops.hpp>
+#include <minitensor/ops/manipulation.hpp>
+#include <minitensor/ops/reduction.hpp>
 
 namespace minitensor::detail
 {

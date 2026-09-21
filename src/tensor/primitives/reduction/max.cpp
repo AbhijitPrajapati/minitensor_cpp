@@ -1,12 +1,16 @@
 #include "max.hpp"
 
+#include "reduction_common.hpp"
+
 namespace minitensor::detail
 {
     MaxPrimitive::MaxPrimitive(
         std::span<const Axis> axes,
         Shape::size_type input_rank,
         bool keep_dim)
-        : reduction_(axes, input_rank, keep_dim) {}
+        : axes_(normalize_reduction_axes(axes, input_rank)),
+          input_rank_(input_rank),
+          keep_dim_(keep_dim) {}
 
     std::string_view MaxPrimitive::name() const noexcept
     {
@@ -15,16 +19,16 @@ namespace minitensor::detail
 
     TensorSpec MaxPrimitive::infer(std::span<const TensorSpec> inputs) const
     {
-        return reduction_.infer(inputs, name(), false);
+        return infer_reduction(inputs, axes_, input_rank_, keep_dim_, name(), false);
     }
 
     const std::vector<Shape::size_type> &MaxPrimitive::axes() const noexcept
     {
-        return reduction_.axes();
+        return axes_;
     }
 
     bool MaxPrimitive::keep_dim() const noexcept
     {
-        return reduction_.keep_dim();
+        return keep_dim_;
     }
 }

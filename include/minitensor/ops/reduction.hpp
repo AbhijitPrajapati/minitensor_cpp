@@ -1,0 +1,15 @@
+#pragma once
+
+#include <span>
+
+#include <minitensor/tensor.hpp>
+
+namespace minitensor
+{
+    [[nodiscard]] Tensor sum(const Tensor &input, std::span<const Axis> axes, bool keep_dim = false);
+    [[nodiscard]] Tensor sum(const Tensor &input, bool keep_dim = false);
+    [[nodiscard]] Tensor max(const Tensor &input, std::span<const Axis> axes, bool keep_dim = false);
+    [[nodiscard]] Tensor max(const Tensor &input, bool keep_dim = false);
+    [[nodiscard]] Tensor min(const Tensor &input, std::span<const Axis> axes, bool keep_dim = false);
+    [[nodiscard]] Tensor min(const Tensor &input, bool keep_dim = false);
+}
