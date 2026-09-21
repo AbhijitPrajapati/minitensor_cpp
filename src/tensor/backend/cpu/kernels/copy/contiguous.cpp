@@ -6,7 +6,7 @@
 
 #include <minitensor/types.hpp>
 
-#include "tensor/backend/cpu/kernels/detail/dtype_dispatch.hpp"
+#include "tensor/backend/cpu/detail/dtype_dispatch.hpp"
 #include "tensor/backend/cpu/kernels/copy/contiguous.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"

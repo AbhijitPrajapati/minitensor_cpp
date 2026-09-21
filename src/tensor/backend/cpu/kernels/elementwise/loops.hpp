@@ -13,8 +13,8 @@
 
 #include "tensor/dispatch/tensor_view.hpp"
 #include "tensor/storage/layout.hpp"
-#include "tensor/backend/cpu/kernels/detail/buffer_access.hpp"
-#include "tensor/backend/cpu/kernels/iteration/elementwise.hpp"
+#include "tensor/backend/cpu/detail/buffer_access.hpp"
+#include "tensor/backend/cpu/iteration/elementwise.hpp"
 
 namespace minitensor::detail::cpu
 {
