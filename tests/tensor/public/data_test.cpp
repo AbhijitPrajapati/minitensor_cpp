@@ -34,6 +34,8 @@ namespace minitensor::test
         const Tensor permuted_matrix = permute(matrix, swapped_axes);
         expect(std::ranges::equal(to_vector(permuted_matrix), expected_permuted),
                "to_vector reads a permuted view in its logical element order");
+        expect(std::ranges::equal(to_vector(contiguous(permuted_matrix)), expected_permuted),
+               "contiguous materializes a strided input in logical element order");
         expect(std::ranges::equal(
                    to_vector(reshape(permuted_matrix, Shape{2, 3})), expected_permuted),
                "reshape preserves logical element order for a noncontiguous input");
@@ -85,6 +87,18 @@ namespace minitensor::test
         expect(std::ranges::equal(to_vector(negated), expected_negated),
                "elementwise negation computes additive inverses from a strided input");
 
+        const std::array<float, 6> expected_doubled_permutation{2.0F, 8.0F, 4.0F, 10.0F, 6.0F, 12.0F};
+        expect(std::ranges::equal(
+                   to_vector(permuted_matrix + permuted_matrix),
+                   expected_doubled_permutation),
+               "binary elementwise kernels support two strided inputs");
+
+        const std::array<float, 6> expected_scalar_sum{3.0F, 6.0F, 4.0F, 7.0F, 5.0F, 8.0F};
+        expect(std::ranges::equal(
+                   to_vector(permuted_matrix + full(Shape{}, 2.0F)),
+                   expected_scalar_sum),
+               "binary elementwise kernels support scalar broadcasting with a strided input");
+
         const std::array<float, 3> positive_values{1.0F, 2.0F, 4.0F};
         const Tensor positive_input = from_data(positive_values, Shape{3});
         const std::array<float, 3> expected_exp{
@@ -131,6 +145,38 @@ namespace minitensor::test
                "sum with keep_dim preserves reduction results while retaining the axis");
         expect(item(sum(matrix)) == 21.0F,
                "sum without explicit axes reduces all input elements");
+
+        constexpr std::array<Axis, 1> leading_axis{0};
+        const std::array<float, 2> expected_permuted_column_sums{6.0F, 15.0F};
+        expect(std::ranges::equal(
+                   to_vector(sum(permuted_matrix, leading_axis)),
+                   expected_permuted_column_sums),
+               "sum handles a leading reduction axis on a strided input");
+
+        constexpr std::array<Axis, 1> permuted_last_axis{1};
+        const std::array<float, 3> expected_permuted_row_sums{5.0F, 7.0F, 9.0F};
+        expect(std::ranges::equal(
+                   to_vector(sum(permuted_matrix, permuted_last_axis)),
+                   expected_permuted_row_sums),
+               "sum handles a noncontiguous reduced dimension");
+
+        const std::array<float, 3> expected_broadcast_sums{14.0F, 16.0F, 18.0F};
+        expect(std::ranges::equal(
+                   to_vector(sum(broadcasted_row, leading_axis)),
+                   expected_broadcast_sums),
+               "sum honors zero strides in a broadcasted input");
+
+        const std::array<float, 12> volume_values{
+            1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F,
+            7.0F, 8.0F, 9.0F, 10.0F, 11.0F, 12.0F};
+        constexpr std::array<Axis, 2> nonadjacent_axes{0, 2};
+        const std::array<float, 3> expected_nonadjacent_sums{18.0F, 26.0F, 34.0F};
+        expect(std::ranges::equal(
+                   to_vector(sum(
+                       from_data(volume_values, Shape{2, 3, 2}),
+                       nonadjacent_axes)),
+                   expected_nonadjacent_sums),
+               "sum handles multiple nonadjacent reduction axes");
 
         constexpr std::array<Axis, 1> zero_length_axis{1};
         const std::array<float, 6> expected_empty_sums{};

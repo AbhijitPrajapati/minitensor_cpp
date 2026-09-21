@@ -9,14 +9,6 @@
 
 namespace minitensor
 {
-    namespace
-    {
-        [[nodiscard]] TensorOptions options_like(const Tensor &input) noexcept
-        {
-            return TensorOptions{input.dtype(), input.device()};
-        }
-    }
-
     Tensor full(Shape shape, float value, TensorOptions options)
     {
         detail::TensorSpec output_spec{std::move(shape), options.dtype, options.device};
@@ -26,7 +18,8 @@ namespace minitensor
 
     Tensor full_like(const Tensor &input, float value)
     {
-        return full(input.shape(), value, options_like(input));
+        const TensorOptions options_like = TensorOptions{ input.dtype(), input.device() };
+        return full(input.shape(), value, options_like);
     }
 
     Tensor full_like(const Tensor &input, float value, TensorOptions options)

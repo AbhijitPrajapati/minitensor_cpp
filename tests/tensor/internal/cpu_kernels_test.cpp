@@ -19,6 +19,7 @@
 #include "tensor/primitives/elementwise/multiply.hpp"
 #include "tensor/primitives/elementwise/negate.hpp"
 #include "tensor/primitives/elementwise/subtract.hpp"
+#include "tensor/primitives/manipulation/contiguous.hpp"
 #include "tensor/primitives/manipulation/reshape.hpp"
 #include "tensor/primitives/reduction/sum.hpp"
 #include "tensor/storage/layout.hpp"
@@ -43,6 +44,7 @@ namespace minitensor::test
     {
         using detail::AddPrimitive;
         using detail::BufferRef;
+        using detail::ContiguousPrimitive;
         using detail::DividePrimitive;
         using detail::FullPrimitive;
         using detail::KernelFn;
@@ -70,6 +72,7 @@ namespace minitensor::test
         KernelKey multiply_key{typeid(MultiplyPrimitive), DeviceType::Cpu, DType::Float32};
         KernelKey divide_key{typeid(DividePrimitive), DeviceType::Cpu, DType::Float32};
         KernelKey reshape_key{typeid(ReshapePrimitive), DeviceType::Cpu, DType::Float32};
+        KernelKey contiguous_key{typeid(ContiguousPrimitive), DeviceType::Cpu, DType::Float32};
         KernelKey sum_key{typeid(SumPrimitive), DeviceType::Cpu, DType::Float32};
         expect(registry.contains(full_key), "cpu kernel registration installs the Float32 full kernel");
         expect(registry.contains(add_key), "cpu kernel registration installs the Float32 add kernel");
@@ -78,6 +81,7 @@ namespace minitensor::test
         expect(registry.contains(multiply_key), "cpu kernel registration installs the Float32 multiply kernel");
         expect(registry.contains(divide_key), "cpu kernel registration installs the Float32 divide kernel");
         expect(registry.contains(reshape_key), "cpu kernel registration installs the Float32 reshape kernel");
+        expect(registry.contains(contiguous_key), "cpu kernel registration installs the Float32 contiguous kernel");
         expect(registry.contains(sum_key), "cpu kernel registration installs the Float32 sum kernel");
 
         CpuRuntime runtime;
