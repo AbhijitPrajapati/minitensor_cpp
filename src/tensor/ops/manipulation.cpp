@@ -12,6 +12,7 @@
 #include "apply_primitive.hpp"
 #include "tensor/core/axis.hpp"
 #include "tensor/primitives/manipulation/broadcast_to.hpp"
+#include "tensor/primitives/manipulation/contiguous.hpp"
 #include "tensor/primitives/manipulation/permute.hpp"
 #include "tensor/primitives/manipulation/reshape.hpp"
 
@@ -44,6 +45,12 @@ namespace minitensor
             }
             return extent;
         }
+    }
+
+    Tensor contiguous(const Tensor &input)
+    {
+        return detail::apply_primitive(
+            std::make_unique<detail::ContiguousPrimitive>(), input);
     }
 
     Tensor permute(const Tensor &input, std::span<const Axis> permutation)

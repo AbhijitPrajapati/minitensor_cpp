@@ -1,9 +1,7 @@
 #include <minitensor/data.hpp>
 
-#include <array>
 #include <cassert>
 #include <cstddef>
-#include <cstring>
 #include <memory>
 #include <span>
 #include <stdexcept>
@@ -11,6 +9,7 @@
 #include <vector>
 
 #include <minitensor/evaluation.hpp>
+#include <minitensor/ops/manipulation.hpp>
 
 #include "tensor/backend/device_runtime.hpp"
 #include "tensor/core/tensor_spec.hpp"
@@ -22,7 +21,6 @@
 #include "tensor/graph/value.hpp"
 #include "tensor/tensor_access.hpp"
 #include "tensor/graph/fwd.hpp"
-#include "tensor/iteration/elementwise.hpp"
 
 namespace minitensor
 {
@@ -49,9 +47,15 @@ namespace minitensor
 
     std::vector<float> to_vector(const Tensor &tensor)
     {
-        eval(tensor);
+        if (tensor.dtype() != DType::Float32)
+        {
+            throw std::logic_error{"unsupported datatype detected"};
+        }
 
-        const detail::ValueRef &value = detail::TensorAccess::value(tensor);
+        const Tensor contiguous_tensor = contiguous(tensor);
+        eval(contiguous_tensor);
+
+        const detail::ValueRef &value = detail::TensorAccess::value(contiguous_tensor);
         const detail::Materialization *materialization = value->materialization();
         if (!materialization)
         {
@@ -59,11 +63,6 @@ namespace minitensor
         }
 
         const detail::TensorSpec &spec = value->spec();
-        if (spec.dtype != DType::Float32)
-        {
-            throw std::logic_error{"unsupported datatype detected"};
-        }
-
         std::vector<float> result(spec.shape.numel());
         if (result.empty())
         {
@@ -73,43 +72,14 @@ namespace minitensor
         detail::DeviceRuntime &runtime = detail::environment().runtime_for(spec.device);
         const detail::BufferRef &buffer = materialization->buffer_ref();
         const detail::Layout &layout = materialization->layout();
-
-        // fast path if contiguous
-        if (layout.is_contiguous(spec.shape))
-        {
-            assert(layout.offset() >= 0);
-            const auto source_offset_bytes = static_cast<std::size_t>(layout.offset()) * sizeof(float);
-            runtime.copy_to_host(std::as_writable_bytes(std::span<float>(result)), *buffer, source_offset_bytes);
-            return result;
-        }
-
-        // general strided path
-
-        std::vector<std::byte> host_storage(buffer->size_bytes());
-        runtime.copy_to_host(host_storage, *buffer, 0);
-
-        const std::array<detail::Layout, 1> layouts{materialization->layout()};
-        detail::ElementwisePlan plan(tensor.shape(), layouts);
-        plan.for_each_run(
-            [&](Shape::size_type linear,
-                std::span<const detail::Layout::offset_type> offsets,
-                std::span<const detail::Layout::stride_type> strides,
-                Shape::size_type run_size)
-            {
-                assert(offsets.size() == 1);
-                assert(strides.size() == 1);
-
-                detail::Layout::offset_type source_offset = offsets[0];
-                const detail::Layout::stride_type source_stride = strides[0];
-                for (Shape::size_type i = 0; i < run_size; ++i)
-                {
-                    assert(source_offset >= 0);
-                    const auto source_offset_bytes = static_cast<std::size_t>(source_offset) * sizeof(float);
-                    assert(source_offset_bytes <= host_storage.size());
-                    std::memcpy(&result[linear + i], host_storage.data() + source_offset_bytes, sizeof(float));
-                    source_offset += source_stride;
-                }
-            });
+        assert(layout.is_contiguous(spec.shape));
+        assert(layout.offset() >= 0);
+        const auto source_offset_bytes =
+            static_cast<std::size_t>(layout.offset()) * sizeof(float);
+        runtime.copy_to_host(
+            std::as_writable_bytes(std::span<float>(result)),
+            *buffer,
+            source_offset_bytes);
 
         return result;
     }

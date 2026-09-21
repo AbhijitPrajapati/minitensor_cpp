@@ -9,16 +9,6 @@
 
 namespace minitensor
 {
-    namespace
-    {
-        [[nodiscard]] std::vector<Axis> all_axes(const Tensor &input)
-        {
-            std::vector<Axis> axes(input.rank());
-            std::iota(axes.begin(), axes.end(), Axis{0});
-            return axes;
-        }
-    }
-
     Tensor sum(const Tensor &input, std::span<const Axis> axes, bool keep_dim)
     {
         if (axes.empty())
@@ -31,7 +21,9 @@ namespace minitensor
 
     Tensor sum(const Tensor &input, bool keep_dim)
     {
-        return sum(input, all_axes(input), keep_dim);
+        std::vector<Axis> axes(input.rank());
+        std::iota(axes.begin(), axes.end(), Axis{ 0 });
+        return sum(input, axes, keep_dim);
     }
 
 }

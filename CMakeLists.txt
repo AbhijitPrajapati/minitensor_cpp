@@ -36,6 +36,7 @@ target_sources(
         src/tensor/primitives/elementwise/subtract.cpp
         src/tensor/primitives/linalg/matmul.cpp
         src/tensor/primitives/manipulation/broadcast_to.cpp
+        src/tensor/primitives/manipulation/contiguous.cpp
         src/tensor/primitives/manipulation/permute.cpp
         src/tensor/primitives/manipulation/reshape.cpp
         src/tensor/primitives/reduction/sum.cpp
@@ -46,15 +47,13 @@ target_sources(
         src/tensor/backend/cpu/register_kernels.cpp
         src/tensor/backend/cpu/kernels/creation/fill.cpp
         src/tensor/backend/cpu/kernels/elementwise/kernels.cpp
-        src/tensor/backend/cpu/kernels/copy/copy.cpp
+        src/tensor/backend/cpu/kernels/copy/contiguous.cpp
         src/tensor/backend/cpu/kernels/reduction/sum.cpp
         src/tensor/dispatch/kernel_registry.cpp
         src/tensor/dispatch/tensor_view.cpp
         src/tensor/execution/evaluator.cpp
         src/tensor/execution/runtime_registry.cpp
         src/tensor/execution/environment.cpp
-        src/tensor/iteration/elementwise.cpp
-        src/tensor/iteration/reduction.cpp
         src/tensor/autograd/engine.cpp
         src/tensor/autograd/reduce_to_shape.cpp
         src/tensor/autograd.cpp
@@ -112,8 +111,6 @@ if(BUILD_TESTING)
     tests/tensor/internal/cpu_kernels_test.cpp
     tests/tensor/internal/evaluator_test.cpp
     tests/tensor/internal/runtime_registry_test.cpp
-    tests/tensor/internal/elementwise_test.cpp
-    tests/tensor/internal/reduction_test.cpp
     tests/tensor/internal/reduce_to_shape_test.cpp
     tests/tensor/internal/autograd_engine_test.cpp
     )

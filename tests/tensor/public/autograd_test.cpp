@@ -63,6 +63,17 @@ namespace minitensor::test
                    std::ranges::equal(to_vector(transformed_vjp.front()), expected_transformed_vjp),
                "vjp applies inverse permutation and reshape rules to a supplied cotangent");
 
+        const std::vector<Tensor> contiguous_gradients = grad(
+            sum(contiguous(transpose(matrix))), matrix_target);
+        const std::array<float, 6> expected_contiguous_gradient{
+            1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F};
+        expect(contiguous_gradients.size() == 1 &&
+                   contiguous_gradients.front().shape() == matrix.shape() &&
+                   std::ranges::equal(
+                       to_vector(contiguous_gradients.front()),
+                       expected_contiguous_gradient),
+               "contiguous preserves cotangents through a materializing copy");
+
         const Tensor row = from_data(rhs_values, Shape{1, 3});
         const Tensor broadcasted = broadcast_to(row, Shape{2, 3});
         const Tensor broadcast_seed = from_data(matrix_values, Shape{2, 3});

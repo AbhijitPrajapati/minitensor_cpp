@@ -6,6 +6,7 @@
 
 namespace minitensor
 {
+    [[nodiscard]] Tensor contiguous(const Tensor &input);
     [[nodiscard]] Tensor permute(const Tensor &input, std::span<const Axis> permutation);
     [[nodiscard]] Tensor transpose(const Tensor &input);
     [[nodiscard]] Tensor transpose(const Tensor &input, Axis axis0, Axis axis1);

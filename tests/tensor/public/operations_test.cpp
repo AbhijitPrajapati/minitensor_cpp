@@ -109,6 +109,12 @@ namespace minitensor::test
                    permuted_matrix.device() == matrix.device(),
                "permutation preserves tensor dtype and device");
 
+        const Tensor contiguous_matrix = contiguous(permuted_matrix);
+        expect(contiguous_matrix.shape() == permuted_matrix.shape() &&
+                   contiguous_matrix.dtype() == permuted_matrix.dtype() &&
+                   contiguous_matrix.device() == permuted_matrix.device(),
+               "contiguous preserves tensor metadata");
+
         constexpr std::array<Axis, 2> negative_swapped_axes{-1, -2};
         expect(permute(matrix, negative_swapped_axes).shape() == Shape{3, 2},
                "permutation accepts normalized negative axes");
