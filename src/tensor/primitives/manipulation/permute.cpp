@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include <minitensor/ops.hpp>
+#include <minitensor/ops/manipulation.hpp>
 
 #include "tensor/core/axis.hpp"
 #include "tensor/storage/layout.hpp"

@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include <minitensor/ops.hpp>
+#include <minitensor/ops/elementwise.hpp>
 
 #include "tensor/autograd/reduce_to_shape.hpp"
 #include "tensor/core/broadcast_shape.hpp"

@@ -4,8 +4,6 @@
 #include <utility>
 #include <vector>
 
-#include <minitensor/ops.hpp>
-
 #include "tensor/autograd/reduce_to_shape.hpp"
 #include "tensor/core/broadcast_shape.hpp"
 #include "tensor/storage/layout.hpp"

@@ -1,9 +1,9 @@
 #pragma once
 
 #include <string_view>
+#include <vector>
 
 #include "tensor/graph/primitive.hpp"
-#include "reduction_attributes.hpp"
 
 namespace minitensor::detail
 {
@@ -17,6 +17,8 @@ namespace minitensor::detail
         [[nodiscard]] bool keep_dim() const noexcept;
 
     private:
-        ReductionAttributes reduction_;
+        std::vector<Shape::size_type> axes_;
+        Shape::size_type input_rank_;
+        bool keep_dim_;
     };
 }

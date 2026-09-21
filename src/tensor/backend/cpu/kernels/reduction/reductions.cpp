@@ -13,10 +13,9 @@
 #include "tensor/backend/cpu/kernels/reduction/loops.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
-#include "tensor/primitives/max.hpp"
-#include "tensor/primitives/mean.hpp"
-#include "tensor/primitives/min.hpp"
-#include "tensor/primitives/sum.hpp"
+#include "tensor/primitives/reduction/max.hpp"
+#include "tensor/primitives/reduction/min.hpp"
+#include "tensor/primitives/reduction/sum.hpp"
 
 namespace minitensor::detail::cpu
 {
@@ -99,29 +98,6 @@ namespace minitensor::detail::cpu
                 });
         }
 
-        void run_mean(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
-        {
-            assert(inputs.size() == 1);
-            const auto &mean = dynamic_cast<const MeanPrimitive &>(primitive);
-
-            dispatch_dtype(
-                output.dtype(),
-                [&]<typename T>(std::type_identity<T>)
-                {
-                    const T normalizer = static_cast<T>(
-                        mean.reduction_size(inputs.front().shape()));
-                    reduce<T>(inputs.front(), output, mean.axes(), T{0},
-                        [](T accumulator, T value)
-                        {
-                            return accumulator + value;
-                        },
-                        [normalizer](T value)
-                        {
-                            return value / normalizer;
-                        });
-                });
-        }
-
         void run_max(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
         {
             assert(inputs.size() == 1);
@@ -162,7 +138,6 @@ namespace minitensor::detail::cpu
     void register_reduction_kernels(KernelRegistry &registry)
     {
         registry.register_kernel(KernelKey{typeid(SumPrimitive), DeviceType::Cpu, DType::Float32}, run_sum);
-        registry.register_kernel(KernelKey{typeid(MeanPrimitive), DeviceType::Cpu, DType::Float32}, run_mean);
         registry.register_kernel(KernelKey{typeid(MaxPrimitive), DeviceType::Cpu, DType::Float32}, run_max);
         registry.register_kernel(KernelKey{typeid(MinPrimitive), DeviceType::Cpu, DType::Float32}, run_min);
     }

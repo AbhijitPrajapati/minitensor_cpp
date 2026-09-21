@@ -12,7 +12,7 @@
 #include "tensor/backend/cpu/kernels/common/dtype_dispatch.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
-#include "tensor/primitives/full.hpp"
+#include "tensor/primitives/creation/full.hpp"
 #include "tensor/storage/layout.hpp"
 
 namespace minitensor::detail::cpu
