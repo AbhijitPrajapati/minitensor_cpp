@@ -86,7 +86,7 @@ namespace minitensor::test
         std::vector<KernelCall> calls;
         KernelRegistry kernels;
         const KernelKey identity_key{
-            typeid(IdentitySpecPrimitive), DeviceType::Cpu, DType::Float32};
+            typeid(IdentitySpecPrimitive), DeviceType::Cpu};
         kernels.register_kernel(
             identity_key,
             [&calls](detail::DeviceRuntime &runtime,
@@ -193,8 +193,7 @@ namespace minitensor::test
                 [](detail::DeviceRuntime &,
                    const Primitive &,
                    std::span<const TensorView>,
-                   MutableTensorView)
-                {});
+                   MutableTensorView) {});
             Evaluator missing_runtime_evaluator{missing_runtime, available_kernel};
             const ValueRef unavailable_output = apply_identity(leaf);
             expect_throws<std::runtime_error>(

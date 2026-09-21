@@ -266,7 +266,7 @@ namespace minitensor::detail::cpu
     void register_reduction_kernels(KernelRegistry &registry)
     {
         registry.register_kernel(
-            KernelKey{typeid(SumPrimitive), DeviceType::Cpu, DType::Float32},
+            KernelKey{typeid(SumPrimitive), DeviceType::Cpu},
             run_sum);
     }
 }

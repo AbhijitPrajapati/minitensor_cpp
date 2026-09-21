@@ -109,7 +109,7 @@ namespace minitensor::detail
                 {
                     const TensorSpec &output_spec = value->spec();
                     DeviceRuntime &runtime = runtimes_.get(output_spec.device);
-                    const KernelKey key{typeid(node->primitive()), output_spec.device.type(), output_spec.dtype};
+                    const KernelKey key{typeid(node->primitive()), output_spec.device.type()};
                     kernel = PlannedKernel{&runtime, kernels_.get(key)};
                 }
 

@@ -44,6 +44,6 @@ namespace minitensor::detail::cpu
 
     void register_creation_kernels(KernelRegistry &registry)
     {
-        registry.register_kernel(KernelKey{typeid(FullPrimitive), DeviceType::Cpu, DType::Float32}, run_full);
+        registry.register_kernel(KernelKey{typeid(FullPrimitive), DeviceType::Cpu}, run_full);
     }
 }

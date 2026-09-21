@@ -40,10 +40,10 @@ namespace minitensor::detail::cpu
     void register_copy_kernels(KernelRegistry &registry)
     {
         registry.register_kernel(
-            KernelKey{typeid(ContiguousPrimitive), DeviceType::Cpu, DType::Float32},
+            KernelKey{typeid(ContiguousPrimitive), DeviceType::Cpu},
             run_contiguous);
         registry.register_kernel(
-            KernelKey{typeid(ReshapePrimitive), DeviceType::Cpu, DType::Float32},
+            KernelKey{typeid(ReshapePrimitive), DeviceType::Cpu},
             run_contiguous);
     }
 }
