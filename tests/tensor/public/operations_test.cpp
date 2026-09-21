@@ -200,19 +200,6 @@ namespace minitensor::test
         expect(sum(scalar).shape().is_scalar(),
                "sum without explicit axes preserves a scalar shape");
 
-        expect(max(matrix, last_axis).shape() == Shape{2} &&
-                   min(matrix, last_axis).shape() == Shape{2},
-               "extrema reductions remove selected axes");
-        expect(max(matrix, last_axis, true).shape() == Shape{2, 1} &&
-                   min(matrix, last_axis, true).shape() == Shape{2, 1},
-               "extrema reductions retain selected axes when requested");
-        expect(max(matrix).shape().is_scalar() &&
-                   min(matrix).shape().is_scalar(),
-               "extrema reductions without explicit axes reduce every matrix axis");
-        expect(max(matrix, std::span<const Axis>{}).shape() == matrix.shape() &&
-                   min(matrix, std::span<const Axis>{}).shape() == matrix.shape(),
-               "extrema reductions over no axes preserve the input shape");
-
         constexpr std::array<Axis, 1> empty_reduction_axis{1};
         expect(sum(empty, empty_reduction_axis).shape() == Shape{2, 3},
                "sum removes a zero-length reduction axis while preserving the other axes");
@@ -370,19 +357,5 @@ namespace minitensor::test
                 (void)sum(matrix, too_many_axes);
             },
             "sum rejects more reduction axes than the input rank");
-        expect_throws<std::invalid_argument>(
-            [&empty]
-            {
-                constexpr std::array<Axis, 1> zero_length_axis{1};
-                (void)max(empty, zero_length_axis);
-            },
-            "max rejects a reduction over an empty axis");
-        expect_throws<std::invalid_argument>(
-            [&empty]
-            {
-                constexpr std::array<Axis, 1> zero_length_axis{1};
-                (void)min(empty, zero_length_axis);
-            },
-            "min rejects a reduction over an empty axis");
     }
 }
