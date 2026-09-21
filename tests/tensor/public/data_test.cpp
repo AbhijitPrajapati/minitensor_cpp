@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <limits>
 #include <span>
 #include <stdexcept>
 
@@ -133,27 +132,10 @@ namespace minitensor::test
         expect(item(sum(matrix)) == 21.0F,
                "sum without explicit axes reduces all input elements");
 
-        const std::array<float, 6> reduction_values{1.0F, 5.0F, 3.0F, 4.0F, 2.0F, 6.0F};
-        const Tensor reduction_input = from_data(reduction_values, Shape{2, 3});
-        const std::array<float, 2> expected_row_maxima{5.0F, 6.0F};
-        const std::array<float, 2> expected_row_minima{1.0F, 2.0F};
-        expect(std::ranges::equal(to_vector(max(reduction_input, last_axis)), expected_row_maxima),
-               "max reduces a selected axis");
-        expect(std::ranges::equal(to_vector(min(reduction_input, last_axis)), expected_row_minima),
-               "min reduces a selected axis");
-        expect(item(max(reduction_input)) == 6.0F &&
-                    item(min(reduction_input)) == 1.0F,
-                "extrema reductions reduce all axes when none are explicit");
-
         constexpr std::array<Axis, 1> zero_length_axis{1};
         const std::array<float, 6> expected_empty_sums{};
         expect(std::ranges::equal(to_vector(sum(empty, zero_length_axis)), expected_empty_sums),
                "sum produces the additive identity when a reduction axis is empty");
-        const float nan = std::numeric_limits<float>::quiet_NaN();
-        const std::array<float, 3> values_with_nan{1.0F, nan, 3.0F};
-        const Tensor input_with_nan = from_data(values_with_nan, Shape{3});
-        expect(std::isnan(item(max(input_with_nan))) && std::isnan(item(min(input_with_nan))),
-               "max and min propagate NaN values");
 
         expect_throws<std::invalid_argument>(
             []

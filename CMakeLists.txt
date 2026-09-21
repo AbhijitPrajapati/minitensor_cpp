@@ -38,9 +38,6 @@ target_sources(
         src/tensor/primitives/manipulation/broadcast_to.cpp
         src/tensor/primitives/manipulation/permute.cpp
         src/tensor/primitives/manipulation/reshape.cpp
-        src/tensor/primitives/reduction/max.cpp
-        src/tensor/primitives/reduction/min.cpp
-        src/tensor/primitives/reduction/reduction_common.cpp
         src/tensor/primitives/reduction/sum.cpp
         src/tensor/storage/layout.cpp
         src/tensor/storage/materialization.cpp
@@ -50,7 +47,7 @@ target_sources(
         src/tensor/backend/cpu/kernels/creation/fill.cpp
         src/tensor/backend/cpu/kernels/elementwise/kernels.cpp
         src/tensor/backend/cpu/kernels/copy/copy.cpp
-        src/tensor/backend/cpu/kernels/reduction/reductions.cpp
+        src/tensor/backend/cpu/kernels/reduction/sum.cpp
         src/tensor/dispatch/kernel_registry.cpp
         src/tensor/dispatch/tensor_view.cpp
         src/tensor/execution/evaluator.cpp
