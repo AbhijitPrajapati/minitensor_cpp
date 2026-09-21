@@ -9,8 +9,8 @@
 
 #include <minitensor/types.hpp>
 
-#include "tensor/backend/cpu/kernels/common/buffer_access.hpp"
-#include "tensor/backend/cpu/kernels/common/dtype_dispatch.hpp"
+#include "tensor/backend/cpu/kernels/detail/buffer_access.hpp"
+#include "tensor/backend/cpu/kernels/detail/dtype_dispatch.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/dispatch/tensor_view.hpp"

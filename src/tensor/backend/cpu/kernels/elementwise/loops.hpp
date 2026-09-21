@@ -13,8 +13,8 @@
 
 #include "tensor/dispatch/tensor_view.hpp"
 #include "tensor/storage/layout.hpp"
-#include "tensor/backend/cpu/kernels/common/buffer_access.hpp"
-#include "tensor/backend/cpu/kernels/common/strided_iteration.hpp"
+#include "tensor/backend/cpu/kernels/detail/buffer_access.hpp"
+#include "tensor/backend/cpu/kernels/iteration/elementwise.hpp"
 
 namespace minitensor::detail::cpu
 {
@@ -127,8 +127,6 @@ namespace minitensor::detail::cpu
         const auto output_offset = static_cast<std::size_t>(output.layout().offset());
         const Shape::size_type numel = output_shape.numel();
 
-        // Keep the overwhelmingly common paths free of broadcast-layout
-        // construction and strided-iteration setup.
         if (lhs.shape() == output_shape && rhs.shape() == output_shape &&
             lhs.layout().is_contiguous(output_shape) &&
             rhs.layout().is_contiguous(output_shape))
