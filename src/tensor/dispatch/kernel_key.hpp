@@ -15,7 +15,6 @@ namespace minitensor::detail
     {
         PrimitiveTypeId primitive_type;
         DeviceType device_type;
-        DType dtype;
         friend bool operator==(const KernelKey &, const KernelKey &) = default;
     };
 
@@ -25,7 +24,6 @@ namespace minitensor::detail
         {
             std::size_t result = key.primitive_type.hash_code();
             combine_hash(result, key.device_type);
-            combine_hash(result, key.dtype);
             return result;
         }
     };

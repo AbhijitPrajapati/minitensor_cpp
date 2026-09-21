@@ -165,14 +165,14 @@ namespace minitensor::detail::cpu
 
     void register_elementwise_kernels(KernelRegistry &registry)
     {
-        registry.register_kernel(KernelKey{typeid(NegatePrimitive), DeviceType::Cpu, DType::Float32}, run_negate);
-        registry.register_kernel(KernelKey{typeid(ExponentialPrimitive), DeviceType::Cpu, DType::Float32}, run_exponential);
-        registry.register_kernel(KernelKey{typeid(LogarithmPrimitive), DeviceType::Cpu, DType::Float32}, run_logarithm);
-        registry.register_kernel(KernelKey{typeid(SquareRootPrimitive), DeviceType::Cpu, DType::Float32}, run_square_root);
-        registry.register_kernel(KernelKey{typeid(HyperbolicTangentPrimitive), DeviceType::Cpu, DType::Float32}, run_hyperbolic_tangent);
-        registry.register_kernel(KernelKey{typeid(AddPrimitive), DeviceType::Cpu, DType::Float32}, run_add);
-        registry.register_kernel(KernelKey{typeid(SubtractPrimitive), DeviceType::Cpu, DType::Float32}, run_subtract);
-        registry.register_kernel(KernelKey{typeid(MultiplyPrimitive), DeviceType::Cpu, DType::Float32}, run_multiply);
-        registry.register_kernel(KernelKey{typeid(DividePrimitive), DeviceType::Cpu, DType::Float32}, run_divide);
+        registry.register_kernel(KernelKey{typeid(NegatePrimitive), DeviceType::Cpu}, run_negate);
+        registry.register_kernel(KernelKey{typeid(ExponentialPrimitive), DeviceType::Cpu}, run_exponential);
+        registry.register_kernel(KernelKey{typeid(LogarithmPrimitive), DeviceType::Cpu}, run_logarithm);
+        registry.register_kernel(KernelKey{typeid(SquareRootPrimitive), DeviceType::Cpu}, run_square_root);
+        registry.register_kernel(KernelKey{typeid(HyperbolicTangentPrimitive), DeviceType::Cpu}, run_hyperbolic_tangent);
+        registry.register_kernel(KernelKey{typeid(AddPrimitive), DeviceType::Cpu}, run_add);
+        registry.register_kernel(KernelKey{typeid(SubtractPrimitive), DeviceType::Cpu}, run_subtract);
+        registry.register_kernel(KernelKey{typeid(MultiplyPrimitive), DeviceType::Cpu}, run_multiply);
+        registry.register_kernel(KernelKey{typeid(DividePrimitive), DeviceType::Cpu}, run_divide);
     }
 }

@@ -35,9 +35,9 @@ namespace minitensor::test
         using detail::TensorView;
         using detail::cpu::CpuRuntime;
 
-        KernelKey key{typeid(IdentitySpecPrimitive), DeviceType::Cpu, DType::Float32};
-        const KernelKey equal_key{typeid(IdentitySpecPrimitive), DeviceType::Cpu, DType::Float32};
-        KernelKey other_key{typeid(DestructionTrackedPrimitive), DeviceType::Cpu, DType::Float32};
+        KernelKey key{typeid(IdentitySpecPrimitive), DeviceType::Cpu};
+        const KernelKey equal_key{typeid(IdentitySpecPrimitive), DeviceType::Cpu};
+        KernelKey other_key{typeid(DestructionTrackedPrimitive), DeviceType::Cpu};
         expect(key == equal_key, "equal kernel keys compare equal");
         expect(key != other_key, "the primitive type participates in kernel key equality");
 
