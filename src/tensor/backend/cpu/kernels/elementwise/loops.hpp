@@ -41,6 +41,7 @@ namespace minitensor::detail::cpu
         const auto output_offset = static_cast<std::size_t>(output.layout().offset());
         const Shape::size_type numel = output_shape.numel();
 
+        // contiguous fast path
         if (input.layout().is_contiguous(output_shape))
         {
             for (Shape::size_type i = 0; i < numel; ++i)
@@ -51,49 +52,18 @@ namespace minitensor::detail::cpu
             return;
         }
 
-        //if (is_single_value_layout(output_shape, input.layout()))
-        //{
-        //    const T value = input_data[input_offset];
-        //    for (Shape::size_type i = 0; i < numel; ++i)
-        //    {
-        //        output_data[output_offset + i] = static_cast<T>(std::invoke(operation, value));
-        //    }
-        //    return;
-        //}
-
+        // regular strided path
         const std::array<Layout, 1> layouts{input.layout()};
         const ElementwisePlan iteration(output_shape, layouts);
         iteration.for_each_run(
             [&](Shape::size_type linear,
-            std::span<const Layout::offset_type> offsets, 
-            std::span<const Layout::stride_type> strides,
-            Shape::size_type run_size)
+                std::span<const Layout::offset_type> offsets,
+                std::span<const Layout::stride_type> strides,
+                Shape::size_type run_size)
             {
                 Layout::offset_type input_offset = offsets[0];
                 const Layout::stride_type input_stride = strides[0];
                 T *run_output = output_data + output_offset + linear;
-
-                //if (input_stride == 1)
-                //{
-                //    assert(input_offset >= 0);
-                //    const T *run_input = input_data + static_cast<std::size_t>(input_offset);
-                //    for (Shape::size_type i = 0; i < run_size; ++i)
-                //    {
-                //        run_output[i] = static_cast<T>(std::invoke(operation, run_input[i]));
-                //    }
-                //    return;
-                //}
-
-                //if (input_stride == 0)
-                //{
-                //    assert(input_offset >= 0);
-                //    const T value = input_data[static_cast<std::size_t>(input_offset)];
-                //    for (Shape::size_type i = 0; i < run_size; ++i)
-                //    {
-                //        run_output[i] = static_cast<T>(std::invoke(operation, value));
-                //    }
-                //    return;
-                //}
 
                 for (Shape::size_type i = 0; i < run_size; ++i)
                 {
@@ -128,6 +98,7 @@ namespace minitensor::detail::cpu
         const auto output_offset = static_cast<std::size_t>(output.layout().offset());
         const Shape::size_type numel = output_shape.numel();
 
+        // no-broadcast both-contiguous fast path
         if (lhs.shape() == output_shape && rhs.shape() == output_shape &&
             lhs.layout().is_contiguous(output_shape) &&
             rhs.layout().is_contiguous(output_shape))
@@ -144,6 +115,7 @@ namespace minitensor::detail::cpu
             return;
         }
 
+        // lhs scalar rhs contiguous fast path
         if (lhs.shape().numel() == 1 && rhs.shape() == output_shape &&
             rhs.layout().is_contiguous(output_shape))
         {
@@ -160,6 +132,7 @@ namespace minitensor::detail::cpu
             return;
         }
 
+        // rhs scalar lhs contiguous fast path
         if (rhs.shape().numel() == 1 && lhs.shape() == output_shape &&
             lhs.layout().is_contiguous(output_shape))
         {
@@ -176,6 +149,7 @@ namespace minitensor::detail::cpu
             return;
         }
 
+        // regular strided path
         const std::array<Layout, 2> layouts{
             lhs.layout().broadcasted_to(lhs.shape(), output_shape),
             rhs.layout().broadcasted_to(rhs.shape(), output_shape)};
@@ -184,114 +158,18 @@ namespace minitensor::detail::cpu
         const Layout &rhs_layout = layouts[1];
         const auto lhs_offset = static_cast<std::size_t>(lhs_layout.offset());
         const auto rhs_offset = static_cast<std::size_t>(rhs_layout.offset());
-        const bool lhs_contiguous = lhs_layout.is_contiguous(output_shape);
-        const bool rhs_contiguous = rhs_layout.is_contiguous(output_shape);
-        //const bool lhs_single_value = is_single_value_layout(output_shape, lhs_layout);
-        //const bool rhs_single_value = is_single_value_layout(output_shape, rhs_layout);
-
-        //if (lhs_contiguous && rhs_contiguous)
-        //{
-        //    for (Shape::size_type i = 0; i < numel; ++i)
-        //    {
-        //        output_data[output_offset + i] = static_cast<T>(std::invoke(
-        //            operation,
-        //            lhs_data[lhs_offset + i],
-        //            rhs_data[rhs_offset + i]));
-        //    }
-        //    return;
-        //}
-
-        //if (lhs_single_value && rhs_single_value)
-        //{
-        //    const T value = static_cast<T>(std::invoke(
-        //        operation,
-        //        lhs_data[lhs_offset],
-        //        rhs_data[rhs_offset]));
-        //    std::fill_n(output_data + output_offset, numel, value);
-        //    return;
-        //}
-
-        //if (lhs_single_value && rhs_contiguous)
-        //{
-        //    const T lhs_value = lhs_data[lhs_offset];
-        //    for (Shape::size_type i = 0; i < numel; ++i)
-        //    {
-        //        output_data[output_offset + i] = static_cast<T>(std::invoke(
-        //            operation,
-        //            lhs_value,
-        //            rhs_data[rhs_offset + i]));
-        //    }
-        //    return;
-        //}
-
-        //if (lhs_contiguous && rhs_single_value)
-        //{
-        //    const T rhs_value = rhs_data[rhs_offset];
-        //    for (Shape::size_type i = 0; i < numel; ++i)
-        //    {
-        //        output_data[output_offset + i] = static_cast<T>(std::invoke(
-        //            operation,
-        //            lhs_data[lhs_offset + i],
-        //            rhs_value));
-        //    }
-        //    return;
-        //}
-
         const ElementwisePlan iteration(output_shape, layouts);
         iteration.for_each_run(
-            [&](Shape::size_type linear, 
-            std::span<const Layout::offset_type> offsets, 
-            std::span<const Layout::stride_type> strides,
-            Shape::size_type run_size)
+            [&](Shape::size_type linear,
+                std::span<const Layout::offset_type> offsets,
+                std::span<const Layout::stride_type> strides,
+                Shape::size_type run_size)
             {
                 Layout::offset_type lhs_offset = offsets[0];
                 Layout::offset_type rhs_offset = offsets[1];
                 const Layout::stride_type lhs_stride = strides[0];
                 const Layout::stride_type rhs_stride = strides[1];
                 T *run_output = output_data + output_offset + linear;
-
-                //if (lhs_stride == 1 && rhs_stride == 1)
-                //{
-                //    assert(lhs_offset >= 0);
-                //    assert(rhs_offset >= 0);
-                //    const T *lhs_run = lhs_data + static_cast<std::size_t>(lhs_offset);
-                //    const T *rhs_run = rhs_data + static_cast<std::size_t>(rhs_offset);
-                //    for (Shape::size_type i = 0; i < run_size; ++i)
-                //    {
-                //        run_output[i] = static_cast<T>(
-                //            std::invoke(operation, lhs_run[i], rhs_run[i]));
-                //    }
-                //    return;
-                //}
-
-                //if (lhs_stride == 0 && rhs_stride == 1)
-                //{
-                //    assert(lhs_offset >= 0);
-                //    assert(rhs_offset >= 0);
-                //    const T lhs_value = lhs_data[static_cast<std::size_t>(lhs_offset)];
-                //    const T *rhs_run = rhs_data + static_cast<std::size_t>(rhs_offset);
-                //    for (Shape::size_type i = 0; i < run_size; ++i)
-                //    {
-                //        run_output[i] = static_cast<T>(
-                //            std::invoke(operation, lhs_value, rhs_run[i]));
-                //    }
-                //    return;
-                //}
-
-                //if (lhs_stride == 1 && rhs_stride == 0)
-                //{
-                //    assert(lhs_offset >= 0);
-                //    assert(rhs_offset >= 0);
-                //    const T *lhs_run = lhs_data + static_cast<std::size_t>(lhs_offset);
-                //    const T rhs_value = rhs_data[static_cast<std::size_t>(rhs_offset)];
-                //    for (Shape::size_type i = 0; i < run_size; ++i)
-                //    {
-                //        run_output[i] = static_cast<T>(
-                //            std::invoke(operation, lhs_run[i], rhs_value));
-                //    }
-                //    return;
-                //}
-
                 for (Shape::size_type i = 0; i < run_size; ++i)
                 {
                     assert(lhs_offset >= 0);

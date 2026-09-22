@@ -50,7 +50,7 @@ target_sources(
         src/tensor/backend/cpu/kernels/creation/fill.cpp
         src/tensor/backend/cpu/kernels/elementwise/kernels.cpp
         src/tensor/backend/cpu/kernels/copy/contiguous.cpp
-        src/tensor/backend/cpu/kernels/reduction/sum.cpp
+        src/tensor/backend/cpu/kernels/reduction/kernels.cpp
         src/tensor/dispatch/kernel_registry.cpp
         src/tensor/dispatch/tensor_view.cpp
         src/tensor/execution/evaluator.cpp
