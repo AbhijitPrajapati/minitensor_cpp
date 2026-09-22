@@ -137,6 +137,57 @@ namespace minitensor::test
         expect(std::ranges::equal(to_vector(divided), expected_quotient),
                "elementwise division computes broadcasted quotients");
 
+        const std::array<float, 3> dot_lhs_values{1.0F, 2.0F, 3.0F};
+        const std::array<float, 3> dot_rhs_values{4.0F, 5.0F, 6.0F};
+        expect(item(matmul(
+                   from_data(dot_lhs_values, Shape{3}),
+                   from_data(dot_rhs_values, Shape{3}))) == 32.0F,
+               "vector-vector matmul computes a dot product");
+
+        const std::array<float, 3> vector_values{1.0F, 0.0F, -1.0F};
+        const std::array<float, 2> expected_matrix_vector{-2.0F, -2.0F};
+        expect(std::ranges::equal(
+                   to_vector(matmul(matrix, from_data(vector_values, Shape{3}))),
+                   expected_matrix_vector),
+               "matrix-vector matmul computes a GEMV product");
+
+        const std::array<float, 2> left_vector_values{1.0F, 2.0F};
+        const std::array<float, 3> expected_vector_matrix{9.0F, 12.0F, 15.0F};
+        expect(std::ranges::equal(
+                   to_vector(matmul(
+                       from_data(left_vector_values, Shape{2}),
+                       matrix)),
+                   expected_vector_matrix),
+               "vector-matrix matmul contracts the vector with matrix rows");
+
+        const std::array<float, 6> lhs_storage{1.0F, 4.0F, 2.0F, 5.0F, 3.0F, 6.0F};
+        const std::array<float, 6> rhs_storage{7.0F, 9.0F, 11.0F, 8.0F, 10.0F, 12.0F};
+        const Tensor strided_lhs = transpose(from_data(lhs_storage, Shape{3, 2}));
+        const Tensor strided_rhs = transpose(from_data(rhs_storage, Shape{2, 3}));
+        const std::array<float, 4> expected_matrix_matrix{58.0F, 64.0F, 139.0F, 154.0F};
+        expect(std::ranges::equal(
+                   to_vector(matmul(strided_lhs, strided_rhs)),
+                   expected_matrix_matrix),
+               "matrix-matrix matmul honors strides in both inputs");
+
+        const std::array<float, 2> expected_zero_matrix_vector{};
+        const std::array<float, 3> expected_zero_vector_matrix{};
+        const std::array<float, 6> expected_zero_matrix{};
+        expect(item(matmul(full(Shape{0}, 1.0F), full(Shape{0}, 1.0F))) == 0.0F,
+               "an empty dot product produces the additive identity");
+        expect(std::ranges::equal(
+                   to_vector(matmul(full(Shape{2, 0}, 1.0F), full(Shape{0}, 1.0F))),
+                   expected_zero_matrix_vector),
+               "matrix-vector matmul handles an empty contraction dimension");
+        expect(std::ranges::equal(
+                   to_vector(matmul(full(Shape{0}, 1.0F), full(Shape{0, 3}, 1.0F))),
+                   expected_zero_vector_matrix),
+               "vector-matrix matmul handles an empty contraction dimension");
+        expect(std::ranges::equal(
+                   to_vector(matmul(full(Shape{2, 0}, 1.0F), full(Shape{0, 3}, 1.0F))),
+                   expected_zero_matrix),
+               "matrix-matrix matmul handles an empty contraction dimension");
+
         constexpr std::array<Axis, 1> last_axis{-1};
         const std::array<float, 2> expected_row_sums{6.0F, 15.0F};
         expect(std::ranges::equal(to_vector(sum(matrix, last_axis)), expected_row_sums),

@@ -33,6 +33,34 @@ namespace minitensor::test
                    std::ranges::equal(to_vector(loss_gradients[1]), expected_rhs_gradient),
                "grad reduces a broadcasted multiply contribution to its input shape");
 
+        const std::array<float, 6> matmul_lhs_values{
+            1.0F, 2.0F, 3.0F,
+            4.0F, 5.0F, 6.0F};
+        const std::array<float, 6> matmul_rhs_values{
+            7.0F, 8.0F,
+            9.0F, 10.0F,
+            11.0F, 12.0F};
+        const Tensor matmul_lhs = from_data(matmul_lhs_values, Shape{2, 3});
+        const Tensor matmul_rhs = from_data(matmul_rhs_values, Shape{3, 2});
+        const std::array<Tensor, 2> matmul_inputs{matmul_lhs, matmul_rhs};
+        const std::vector<Tensor> matmul_gradients =
+            grad(sum(matmul(matmul_lhs, matmul_rhs)), matmul_inputs);
+        const std::array<float, 6> expected_matmul_lhs_gradient{
+            15.0F, 19.0F, 23.0F,
+            15.0F, 19.0F, 23.0F};
+        const std::array<float, 6> expected_matmul_rhs_gradient{
+            5.0F, 5.0F,
+            7.0F, 7.0F,
+            9.0F, 9.0F};
+        expect(std::ranges::equal(
+                   to_vector(matmul_gradients[0]),
+                   expected_matmul_lhs_gradient),
+               "matrix-matrix matmul propagates the lhs cotangent");
+        expect(std::ranges::equal(
+                   to_vector(matmul_gradients[1]),
+                   expected_matmul_rhs_gradient),
+               "matrix-matrix matmul propagates the rhs cotangent");
+
         const std::array<float, 2> dividend_values{2.0F, 4.0F};
         const std::array<float, 3> divisor_values{1.0F, 2.0F, 4.0F};
         const Tensor dividend = from_data(dividend_values, Shape{2, 1});
