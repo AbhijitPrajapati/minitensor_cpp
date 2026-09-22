@@ -10,5 +10,6 @@ namespace minitensor::detail::cpu
         register_elementwise_kernels(registry);
         register_copy_kernels(registry);
         register_reduction_kernels(registry);
+        register_linalg_kernels(registry);
     }
 }

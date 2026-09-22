@@ -210,6 +210,50 @@ namespace minitensor::test
         expect(sum(empty, empty_reduction_axis).shape() == Shape{2, 3},
                "sum removes a zero-length reduction axis while preserving the other axes");
 
+        expect(matmul(full(Shape{3}, 1.0F), full(Shape{3}, 1.0F)).shape().is_scalar(),
+               "vector-vector matmul produces a scalar");
+        expect(matmul(full(Shape{2, 3}, 1.0F), full(Shape{3}, 1.0F)).shape() == Shape{2},
+               "matrix-vector matmul produces a vector of matrix rows");
+        expect(matmul(full(Shape{3}, 1.0F), full(Shape{3, 4}, 1.0F)).shape() == Shape{4},
+               "vector-matrix matmul produces a vector of matrix columns");
+        const Tensor matrix_product =
+            matmul(full(Shape{2, 3}, 1.0F), full(Shape{3, 4}, 1.0F));
+        expect(matrix_product.shape() == Shape{2, 4} &&
+                   matrix_product.dtype() == DType::Float32 &&
+                   matrix_product.device() == Device::cpu(),
+               "matrix-matrix matmul infers its output specification");
+
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                (void)matmul(full(Shape{}, 1.0F), full(Shape{1}, 1.0F));
+            },
+            "matmul rejects a scalar input");
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                (void)matmul(full(Shape{1, 1, 1}, 1.0F), full(Shape{1}, 1.0F));
+            },
+            "matmul rejects batched inputs until batched kernels are supported");
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                (void)matmul(full(Shape{2, 3}, 1.0F), full(Shape{2, 4}, 1.0F));
+            },
+            "matmul rejects mismatched contraction dimensions");
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                const Tensor lhs = full(
+                    Shape{2, 2}, 1.0F,
+                    TensorOptions{DType::Float32, Device::cpu(0)});
+                const Tensor rhs = full(
+                    Shape{2, 2}, 1.0F,
+                    TensorOptions{DType::Float32, Device::cpu(1)});
+                (void)matmul(lhs, rhs);
+            },
+            "matmul rejects tensors on different devices");
+
         expect_throws<std::invalid_argument>(
             []
             {
