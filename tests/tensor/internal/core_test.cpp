@@ -5,7 +5,7 @@
 #include <stdexcept>
 
 #include "tensor/core/axis.hpp"
-#include "tensor/core/broadcast_shape.hpp"
+#include "tensor/core/shape_inference.hpp"
 #include "tensor/core/dense_size.hpp"
 #include "tensor/core/tensor_spec.hpp"
 
@@ -46,6 +46,39 @@ namespace minitensor::test
                 (void)detail::broadcast_shape(Shape{2, 3}, Shape{2, 2});
             },
             "broadcasting rejects incompatible shapes");
+
+        expect(detail::matmul_output_shape(Shape{3}, Shape{3}) == Shape{},
+               "vector-vector matmul produces a scalar");
+        expect(detail::matmul_output_shape(Shape{2, 3}, Shape{3}) == Shape{2},
+               "matrix-vector matmul removes the promoted rhs dimension");
+        expect(detail::matmul_output_shape(Shape{3}, Shape{3, 4}) == Shape{4},
+               "vector-matrix matmul removes the promoted lhs dimension");
+        expect(detail::matmul_output_shape(Shape{2, 3}, Shape{3, 4}) == Shape{2, 4},
+               "matrix-matrix matmul preserves both non-contracting dimensions");
+        expect(detail::matmul_output_shape(Shape{2, 1, 3, 4}, Shape{5, 4, 6}) == Shape{2, 5, 3, 6},
+               "batched matmul broadcasts its batch dimensions");
+        expect(detail::matmul_output_shape(Shape{4}, Shape{2, 5, 4, 6}) == Shape{2, 5, 6},
+               "vector-batched-matrix matmul broadcasts without retaining a promoted lhs dimension");
+        expect(detail::matmul_output_shape(Shape{2, 5, 3, 4}, Shape{4}) == Shape{2, 5, 3},
+               "batched-matrix-vector matmul broadcasts without retaining a promoted rhs dimension");
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                (void)detail::matmul_output_shape(Shape{}, Shape{2, 2});
+            },
+            "matmul output shape rejects scalar inputs");
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                (void)detail::matmul_output_shape(Shape{2, 3}, Shape{2, 4});
+            },
+            "matmul output shape rejects mismatched contraction dimensions");
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                (void)detail::matmul_output_shape(Shape{2, 3, 4}, Shape{5, 4, 6});
+            },
+            "matmul output shape rejects incompatible batch dimensions");
 
         const TensorSpec scalar_spec{Shape{}, DType::Float32, Device::cpu()};
         expect(detail::dense_size_bytes(scalar_spec) == sizeof(float),
