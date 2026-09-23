@@ -13,7 +13,7 @@ target_sources(
         src/tensor/types.cpp
         src/tensor/data.cpp
         src/tensor/evaluation.cpp
-        src/tensor/core/broadcast_shape.cpp
+        src/tensor/core/shape_inference.cpp
         src/tensor/core/dense_size.cpp
         src/tensor/core/axis.cpp
         src/tensor/graph/apply_operation.cpp

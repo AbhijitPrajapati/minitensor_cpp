@@ -7,7 +7,7 @@
 #include <minitensor/ops/elementwise.hpp>
 
 #include "tensor/autograd/reduce_to_shape.hpp"
-#include "tensor/core/broadcast_shape.hpp"
+#include "tensor/core/shape_inference.hpp"
 #include "tensor/core/tensor_spec.hpp"
 
 namespace minitensor::detail

@@ -9,6 +9,7 @@
 
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/autograd/reduce_to_shape.hpp"
+#include "tensor/core/shape_inference.hpp"
 
 namespace minitensor::detail
 {
@@ -36,34 +37,9 @@ namespace minitensor::detail
             throw std::invalid_argument{"matmul requires input tensors on the same device"};
         }
 
-        const Shape::size_type lhs_rank = lhs.shape.rank();
-        const Shape::size_type rhs_rank = rhs.shape.rank();
-        if (lhs_rank == 0 || lhs_rank > 2 || rhs_rank == 0 || rhs_rank > 2)
-        {
-            throw std::invalid_argument{
-                "matmul currently requires rank-1 or rank-2 input tensors"};
-        }
-
-        const Extent lhs_contraction_extent = lhs.shape[lhs_rank - 1];
-        const Extent rhs_contraction_extent = rhs.shape[rhs_rank == 1 ? 0 : rhs_rank - 2];
-        if (lhs_contraction_extent != rhs_contraction_extent)
-        {
-            throw std::invalid_argument{"matmul contraction dimensions must match"};
-        }
-
-        std::vector<Extent> output_dimensions;
-        output_dimensions.reserve(lhs_rank + rhs_rank - 2);
-        if (lhs_rank == 2)
-        {
-            output_dimensions.push_back(lhs.shape[0]);
-        }
-        if (rhs_rank == 2)
-        {
-            output_dimensions.push_back(rhs.shape[1]);
-        }
-
+        Shape output_shape = matmul_output_shape(lhs.shape, rhs.shape);
         return TensorSpec{
-            Shape{std::move(output_dimensions)},
+            std::move(output_shape),
             lhs.dtype,
             lhs.device};
     }
@@ -75,10 +51,44 @@ namespace minitensor::detail
             throw std::logic_error{"matmul VJP expects 2 inputs"};
         }
 
-        Tensor lhs_cotangent = matmul(output_cotangent, transpose(inputs[1], -1, -2));
-        Tensor rhs_cotangent = matmul(transpose(inputs[0], -1, -2), output_cotangent);
-        return {
-            reduce_to_shape(lhs_cotangent, inputs[0].shape()),
-            reduce_to_shape(rhs_cotangent, inputs[1].shape())};
+        const Tensor &lhs = inputs[0];
+        const Tensor &rhs = inputs[1];
+
+        // promote vectors to matrices
+        // lhs and rhs will have atleast two dimensions now
+        const bool lhs_was_vector = lhs.rank() == 1;
+        const bool rhs_was_vector = rhs.rank() == 1;
+        Tensor lhs_matrix = lhs_was_vector ? unsqueeze(lhs, -2) : lhs;
+        Tensor rhs_matrix = rhs_was_vector ? unsqueeze(rhs, -1) : rhs;
+
+        // add in synthetic dimensions from vector operands
+        Tensor cotangent_mat = output_cotangent;
+        if (rhs_was_vector)
+        {
+            cotangent_mat = unsqueeze(cotangent_mat, -1);
+        }
+        if (lhs_was_vector)
+        {
+            cotangent_mat = unsqueeze(cotangent_mat, -2);
+        }
+
+        Tensor lhs_cotangent = reduce_to_shape(
+            matmul(cotangent_mat, transpose(rhs_matrix, -1, -2)),
+            lhs_matrix.shape());
+        Tensor rhs_cotangent = reduce_to_shape(
+            matmul(transpose(lhs_matrix, -1, -2), cotangent_mat),
+            rhs_matrix.shape());
+
+        // remove synthetic dimensions from vector operands
+        if (lhs_was_vector)
+        {
+            lhs_cotangent = squeeze(lhs_cotangent, -2);
+        }
+        if (rhs_was_vector)
+        {
+            rhs_cotangent = squeeze(rhs_cotangent, -1);
+        }
+
+        return {lhs_cotangent, rhs_cotangent};
     }
 }
