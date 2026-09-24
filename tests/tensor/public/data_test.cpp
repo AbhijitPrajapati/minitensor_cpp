@@ -170,6 +170,87 @@ namespace minitensor::test
                    expected_matrix_matrix),
                "matrix-matrix matmul honors strides in both inputs");
 
+        const std::array<float, 12> batched_matrix_values{
+            1.0F, 2.0F, 3.0F,
+            4.0F, 5.0F, 6.0F,
+            -1.0F, 0.0F, 1.0F,
+            2.0F, -2.0F, 3.0F};
+        const Tensor batched_matrix = from_data(batched_matrix_values, Shape{2, 2, 3});
+        const std::array<float, 3> batched_gemv_vector_values{2.0F, -1.0F, 3.0F};
+        const std::array<float, 4> expected_batched_gemv{9.0F, 21.0F, 1.0F, 15.0F};
+        expect(std::ranges::equal(
+                   to_vector(matmul(
+                       batched_matrix,
+                       from_data(batched_gemv_vector_values, Shape{3}))),
+                   expected_batched_gemv),
+               "batched matrix-vector matmul reuses the vector across batches");
+
+        const std::array<float, 2> batched_vector_matrix_values{2.0F, -1.0F};
+        const std::array<float, 6> expected_batched_vector_matrix{
+            -2.0F, -1.0F, 0.0F,
+            -4.0F, 2.0F, -1.0F};
+        expect(std::ranges::equal(
+                   to_vector(matmul(
+                       from_data(batched_vector_matrix_values, Shape{2}),
+                       batched_matrix)),
+                   expected_batched_vector_matrix),
+               "batched vector-matrix matmul reuses the vector across batches");
+
+        const std::array<float, 8> batched_gemm_lhs_values{
+            1.0F, 2.0F,
+            3.0F, 4.0F,
+            -1.0F, 0.0F,
+            2.0F, 3.0F};
+        const std::array<float, 8> batched_gemm_rhs_values{
+            5.0F, 6.0F,
+            7.0F, 8.0F,
+            4.0F, -2.0F,
+            1.0F, 5.0F};
+        const std::array<float, 8> expected_batched_gemm{
+            19.0F, 22.0F,
+            43.0F, 50.0F,
+            -4.0F, 2.0F,
+            11.0F, 11.0F};
+        expect(std::ranges::equal(
+                   to_vector(matmul(
+                       from_data(batched_gemm_lhs_values, Shape{2, 2, 2}),
+                       from_data(batched_gemm_rhs_values, Shape{2, 2, 2}))),
+                   expected_batched_gemm),
+               "batched matrix-matrix matmul computes each corresponding batch");
+
+        const std::array<float, 4> broadcast_matmul_lhs_values{1.0F, 2.0F, 3.0F, 4.0F};
+        const std::array<float, 6> broadcast_matmul_rhs_values{
+            10.0F, 1.0F,
+            2.0F, 3.0F,
+            -1.0F, 5.0F};
+        const std::array<float, 6> expected_broadcast_matmul{
+            12.0F, 8.0F, 9.0F,
+            34.0F, 18.0F, 17.0F};
+        expect(std::ranges::equal(
+                   to_vector(matmul(
+                       from_data(broadcast_matmul_lhs_values, Shape{2, 1, 1, 2}),
+                       from_data(broadcast_matmul_rhs_values, Shape{3, 2, 1}))),
+                   expected_broadcast_matmul),
+               "batched matrix-matrix matmul broadcasts each operand independently");
+
+        constexpr std::array<Axis, 3> batched_matrix_permutation{1, 2, 0};
+        const std::array<float, 8> strided_batched_lhs_storage{
+            1.0F, 3.0F, -1.0F, 2.0F,
+            2.0F, 4.0F, 0.0F, 3.0F};
+        const std::array<float, 8> strided_batched_rhs_storage{
+            5.0F, 7.0F, 4.0F, 1.0F,
+            6.0F, 8.0F, -2.0F, 5.0F};
+        const Tensor strided_batched_lhs = permute(
+            from_data(strided_batched_lhs_storage, Shape{2, 2, 2}),
+            batched_matrix_permutation);
+        const Tensor strided_batched_rhs = permute(
+            from_data(strided_batched_rhs_storage, Shape{2, 2, 2}),
+            batched_matrix_permutation);
+        expect(std::ranges::equal(
+                   to_vector(matmul(strided_batched_lhs, strided_batched_rhs)),
+                   expected_batched_gemm),
+               "batched matrix-matrix matmul honors permuted batch and matrix strides");
+
         const std::array<float, 2> expected_zero_matrix_vector{};
         const std::array<float, 3> expected_zero_vector_matrix{};
         const std::array<float, 6> expected_zero_matrix{};
@@ -187,6 +268,26 @@ namespace minitensor::test
                    to_vector(matmul(full(Shape{2, 0}, 1.0F), full(Shape{0, 3}, 1.0F))),
                    expected_zero_matrix),
                "matrix-matrix matmul handles an empty contraction dimension");
+
+        const std::array<float, 4> expected_batched_zero_matrix_vector{};
+        const std::array<float, 6> expected_batched_zero_vector_matrix{};
+        const std::array<float, 12> expected_batched_zero_matrix{};
+        expect(std::ranges::equal(
+                   to_vector(matmul(full(Shape{2, 2, 0}, 1.0F), full(Shape{0}, 1.0F))),
+                   expected_batched_zero_matrix_vector),
+               "batched matrix-vector matmul writes zero for an empty contraction");
+        expect(std::ranges::equal(
+                   to_vector(matmul(full(Shape{0}, 1.0F), full(Shape{2, 0, 3}, 1.0F))),
+                   expected_batched_zero_vector_matrix),
+               "batched vector-matrix matmul writes zero for an empty contraction");
+        expect(std::ranges::equal(
+                   to_vector(matmul(full(Shape{2, 2, 0}, 1.0F), full(Shape{1, 0, 3}, 1.0F))),
+                   expected_batched_zero_matrix),
+               "batched matrix-matrix matmul writes zero for an empty contraction");
+        expect(to_vector(matmul(
+                   full(Shape{0, 2, 3}, 1.0F),
+                   full(Shape{3, 4}, 1.0F))).empty(),
+               "matmul accepts an empty batch without accessing storage");
 
         constexpr std::array<Axis, 1> last_axis{-1};
         const std::array<float, 2> expected_row_sums{6.0F, 15.0F};

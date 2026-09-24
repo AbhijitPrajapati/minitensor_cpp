@@ -233,12 +233,24 @@ namespace minitensor::test
                    full(Shape{1, 1, 1}, 1.0F),
                    full(Shape{1}, 1.0F)).shape() == Shape{1, 1},
                "matmul infers a batched matrix-vector output specification");
+        expect(matmul(
+                   full(Shape{2, 1, 3, 4}, 1.0F),
+                   full(Shape{5, 4, 6}, 1.0F)).shape() == Shape{2, 5, 3, 6},
+               "matmul broadcasts independently aligned batch dimensions");
         expect_throws<std::invalid_argument>(
             []
             {
                 (void)matmul(full(Shape{2, 3}, 1.0F), full(Shape{2, 4}, 1.0F));
             },
             "matmul rejects mismatched contraction dimensions");
+        expect_throws<std::invalid_argument>(
+            []
+            {
+                (void)matmul(
+                    full(Shape{2, 3, 4}, 1.0F),
+                    full(Shape{5, 4, 6}, 1.0F));
+            },
+            "matmul rejects incompatible batch dimensions");
         expect_throws<std::invalid_argument>(
             []
             {
