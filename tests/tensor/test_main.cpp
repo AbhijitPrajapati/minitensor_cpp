@@ -22,6 +22,7 @@ namespace minitensor::test
     void run_tensor_view_test();
     void run_kernel_registry_test();
     void run_cpu_kernels_test();
+    void run_matmul_plan_test();
     void run_runtime_registry_test();
     void run_evaluator_test();
     void run_autograd_engine_test();
@@ -57,6 +58,7 @@ int main()
         {"tensor views", run_tensor_view_test},
         {"kernel registry", run_kernel_registry_test},
         {"cpu kernels", run_cpu_kernels_test},
+        {"matmul iteration plan", run_matmul_plan_test},
         {"runtime registry", run_runtime_registry_test},
         {"evaluator", run_evaluator_test},
         {"autograd engine", run_autograd_engine_test},

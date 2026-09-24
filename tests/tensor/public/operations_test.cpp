@@ -229,12 +229,10 @@ namespace minitensor::test
                 (void)matmul(full(Shape{}, 1.0F), full(Shape{1}, 1.0F));
             },
             "matmul rejects a scalar input");
-        expect_throws<std::invalid_argument>(
-            []
-            {
-                (void)matmul(full(Shape{1, 1, 1}, 1.0F), full(Shape{1}, 1.0F));
-            },
-            "matmul rejects batched inputs until batched kernels are supported");
+        expect(matmul(
+                   full(Shape{1, 1, 1}, 1.0F),
+                   full(Shape{1}, 1.0F)).shape() == Shape{1, 1},
+               "matmul infers a batched matrix-vector output specification");
         expect_throws<std::invalid_argument>(
             []
             {
