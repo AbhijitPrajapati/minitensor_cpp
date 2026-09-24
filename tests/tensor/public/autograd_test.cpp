@@ -61,6 +61,115 @@ namespace minitensor::test
                    expected_matmul_rhs_gradient),
                "matrix-matrix matmul propagates the rhs cotangent");
 
+        const std::array<float, 3> dot_autograd_lhs_values{1.0F, 2.0F, 3.0F};
+        const std::array<float, 3> dot_autograd_rhs_values{4.0F, 5.0F, 6.0F};
+        const Tensor dot_autograd_lhs = from_data(dot_autograd_lhs_values, Shape{3});
+        const Tensor dot_autograd_rhs = from_data(dot_autograd_rhs_values, Shape{3});
+        const std::array<Tensor, 2> dot_autograd_inputs{
+            dot_autograd_lhs,
+            dot_autograd_rhs};
+        const std::vector<Tensor> dot_autograd_gradients = grad(
+            matmul(dot_autograd_lhs, dot_autograd_rhs),
+            dot_autograd_inputs);
+        expect(std::ranges::equal(
+                   to_vector(dot_autograd_gradients[0]),
+                   dot_autograd_rhs_values) &&
+                   std::ranges::equal(
+                       to_vector(dot_autograd_gradients[1]),
+                       dot_autograd_lhs_values),
+               "vector-vector matmul removes both synthetic VJP dimensions");
+
+        const std::array<float, 12> batched_matmul_matrix_values{
+            1.0F, 2.0F, 3.0F,
+            4.0F, 5.0F, 6.0F,
+            -1.0F, 0.0F, 1.0F,
+            2.0F, -2.0F, 3.0F};
+        const std::array<float, 3> batched_matmul_vector_values{2.0F, -1.0F, 3.0F};
+        const Tensor batched_matmul_matrix = from_data(
+            batched_matmul_matrix_values,
+            Shape{2, 2, 3});
+        const Tensor batched_matmul_vector = from_data(
+            batched_matmul_vector_values,
+            Shape{3});
+        const std::array<Tensor, 2> batched_matrix_vector_inputs{
+            batched_matmul_matrix,
+            batched_matmul_vector};
+        const std::vector<Tensor> batched_matrix_vector_gradients = grad(
+            sum(matmul(batched_matmul_matrix, batched_matmul_vector)),
+            batched_matrix_vector_inputs);
+        const std::array<float, 12> expected_batched_matrix_gradient{
+            2.0F, -1.0F, 3.0F,
+            2.0F, -1.0F, 3.0F,
+            2.0F, -1.0F, 3.0F,
+            2.0F, -1.0F, 3.0F};
+        const std::array<float, 3> expected_batched_vector_gradient{6.0F, 5.0F, 13.0F};
+        expect(std::ranges::equal(
+                   to_vector(batched_matrix_vector_gradients[0]),
+                   expected_batched_matrix_gradient),
+               "batched matrix-vector matmul restores the lhs VJP shape");
+        expect(std::ranges::equal(
+                   to_vector(batched_matrix_vector_gradients[1]),
+                   expected_batched_vector_gradient),
+               "batched matrix-vector matmul reduces the shared vector VJP across batches");
+
+        const std::array<float, 2> batched_left_vector_values{2.0F, -1.0F};
+        const Tensor batched_left_vector = from_data(batched_left_vector_values, Shape{2});
+        const std::array<Tensor, 2> batched_vector_matrix_inputs{
+            batched_left_vector,
+            batched_matmul_matrix};
+        const std::vector<Tensor> batched_vector_matrix_gradients = grad(
+            sum(matmul(batched_left_vector, batched_matmul_matrix)),
+            batched_vector_matrix_inputs);
+        const std::array<float, 2> expected_batched_left_vector_gradient{6.0F, 18.0F};
+        const std::array<float, 12> expected_batched_rhs_matrix_gradient{
+            2.0F, 2.0F, 2.0F,
+            -1.0F, -1.0F, -1.0F,
+            2.0F, 2.0F, 2.0F,
+            -1.0F, -1.0F, -1.0F};
+        expect(std::ranges::equal(
+                   to_vector(batched_vector_matrix_gradients[0]),
+                   expected_batched_left_vector_gradient),
+               "batched vector-matrix matmul reduces the shared vector VJP across batches");
+        expect(std::ranges::equal(
+                   to_vector(batched_vector_matrix_gradients[1]),
+                   expected_batched_rhs_matrix_gradient),
+               "batched vector-matrix matmul restores the rhs VJP shape");
+
+        const std::array<float, 4> broadcast_matmul_lhs_values{1.0F, 2.0F, 3.0F, 4.0F};
+        const std::array<float, 6> broadcast_matmul_rhs_values{
+            10.0F, 1.0F,
+            2.0F, 3.0F,
+            -1.0F, 5.0F};
+        const Tensor broadcast_matmul_lhs = from_data(
+            broadcast_matmul_lhs_values,
+            Shape{2, 1, 1, 2});
+        const Tensor broadcast_matmul_rhs = from_data(
+            broadcast_matmul_rhs_values,
+            Shape{3, 2, 1});
+        const std::array<Tensor, 2> broadcast_matmul_inputs{
+            broadcast_matmul_lhs,
+            broadcast_matmul_rhs};
+        const std::vector<Tensor> broadcast_matmul_gradients = grad(
+            sum(matmul(broadcast_matmul_lhs, broadcast_matmul_rhs)),
+            broadcast_matmul_inputs);
+        const std::array<float, 4> expected_broadcast_matmul_lhs_gradient{
+            11.0F, 9.0F,
+            11.0F, 9.0F};
+        const std::array<float, 6> expected_broadcast_matmul_rhs_gradient{
+            4.0F, 6.0F,
+            4.0F, 6.0F,
+            4.0F, 6.0F};
+        expect(broadcast_matmul_gradients[0].shape() == broadcast_matmul_lhs.shape() &&
+                   std::ranges::equal(
+                       to_vector(broadcast_matmul_gradients[0]),
+                       expected_broadcast_matmul_lhs_gradient),
+               "batched matmul reduces the lhs VJP over its broadcast batch axes");
+        expect(broadcast_matmul_gradients[1].shape() == broadcast_matmul_rhs.shape() &&
+                   std::ranges::equal(
+                       to_vector(broadcast_matmul_gradients[1]),
+                       expected_broadcast_matmul_rhs_gradient),
+               "batched matmul reduces the rhs VJP over its broadcast batch axes");
+
         const std::array<float, 2> dividend_values{2.0F, 4.0F};
         const std::array<float, 3> divisor_values{1.0F, 2.0F, 4.0F};
         const Tensor dividend = from_data(dividend_values, Shape{2, 1});
