@@ -40,7 +40,7 @@ namespace minitensor::detail::cpu
         {
             const size_type extent = static_cast<size_type>(input_shape[axis]);
             size_type &count = is_reduced[axis] ? reduction_size_ : output_size_;
-            count = checked_product(count, extent);
+            count *= extent;
 
             // Singleton axes do not affect offsets
             if (extent <= 1)
@@ -80,15 +80,6 @@ namespace minitensor::detail::cpu
     ReductionPlan::size_type ReductionPlan::reduction_size() const noexcept
     {
         return reduction_size_;
-    }
-
-    ReductionPlan::size_type ReductionPlan::checked_product(size_type lhs, size_type rhs)
-    {
-        if (rhs != 0 && lhs > std::numeric_limits<size_type>::max() / rhs)
-        {
-            throw std::overflow_error{"reduction iteration size overflow"};
-        }
-        return lhs * rhs;
     }
 
     void ReductionPlan::coalesce_reduction_suffix() noexcept

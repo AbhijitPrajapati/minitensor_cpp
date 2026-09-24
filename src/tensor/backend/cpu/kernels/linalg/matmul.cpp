@@ -243,25 +243,19 @@ namespace minitensor::detail::cpu
             if (lhs_rank == 1 && rhs_rank == 1)
             {
                 dot<T>(lhs, rhs, output);
-                return;
             }
-            if (lhs_rank == 2 && rhs_rank == 1)
+            else if (rhs_rank == 1)
             {
                 gemv<T>(lhs, rhs, output);
-                return;
             }
-            if (lhs_rank == 1 && rhs_rank == 2)
+            else if (lhs_rank == 1)
             {
                 vector_matrix<T>(lhs, rhs, output);
-                return;
             }
-            if (lhs_rank == 2 && rhs_rank == 2)
+            else
             {
                 gemm<T>(lhs, rhs, output);
-                return;
             }
-
-            throw std::logic_error{"unsupported tensor ranks reached the CPU matmul kernel"};
         }
 
         void run_matmul(

@@ -163,7 +163,6 @@ namespace minitensor::detail::cpu
             }
         }
 
-        [[nodiscard]] static size_type checked_product(size_type lhs, size_type rhs);
         void coalesce_reduction_suffix() noexcept;
 
         std::vector<Dimension> outer_dimensions_;

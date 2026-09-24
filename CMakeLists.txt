@@ -46,6 +46,7 @@ target_sources(
         src/tensor/backend/cpu/cpu_runtime.cpp
         src/tensor/backend/cpu/register_kernels.cpp
         src/tensor/backend/cpu/iteration/elementwise.cpp
+        src/tensor/backend/cpu/iteration/matmul.cpp
         src/tensor/backend/cpu/iteration/reduction.cpp
         src/tensor/backend/cpu/kernels/creation/fill.cpp
         src/tensor/backend/cpu/kernels/elementwise/kernels.cpp
@@ -112,6 +113,7 @@ if(BUILD_TESTING)
     tests/tensor/internal/kernel_registry_test.cpp
     tests/tensor/internal/tensor_view_test.cpp
     tests/tensor/internal/cpu_kernels_test.cpp
+    tests/tensor/internal/matmul_plan_test.cpp
     tests/tensor/internal/evaluator_test.cpp
     tests/tensor/internal/runtime_registry_test.cpp
     tests/tensor/internal/reduce_to_shape_test.cpp
