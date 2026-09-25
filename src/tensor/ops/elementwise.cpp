@@ -1,4 +1,5 @@
 #include <minitensor/ops/elementwise.hpp>
+#include <minitensor/ops/creation.hpp>
 
 #include <memory>
 
@@ -15,14 +16,27 @@
 
 namespace minitensor
 {
+    namespace
+    {
+        Tensor scalar_like(float value, const Tensor &tensor)
+        {
+            return full(Shape{}, value, TensorOptions{tensor.dtype(), tensor.device()});
+        }
+    }
+
     Tensor operator+(const Tensor &lhs, const Tensor &rhs)
     {
         return detail::apply_primitive(std::make_unique<detail::AddPrimitive>(), lhs, rhs);
     }
 
-    Tensor operator-(const Tensor &input)
+    Tensor operator+(const Tensor &tensor, float scalar)
     {
-        return detail::apply_primitive(std::make_unique<detail::NegatePrimitive>(), input);
+        return tensor + scalar_like(scalar, tensor);
+    }
+
+    Tensor operator+(float scalar, const Tensor &tensor)
+    {
+        return tensor + scalar;
     }
 
     Tensor operator-(const Tensor &lhs, const Tensor &rhs)
@@ -30,14 +44,49 @@ namespace minitensor
         return detail::apply_primitive(std::make_unique<detail::SubtractPrimitive>(), lhs, rhs);
     }
 
+    Tensor operator-(const Tensor &tensor, float scalar)
+    {
+        return tensor - scalar_like(scalar, tensor);
+    }
+
+    Tensor operator-(float scalar, const Tensor &tensor)
+    {
+        return scalar_like(scalar, tensor) - tensor;
+    }
+
     Tensor operator*(const Tensor &lhs, const Tensor &rhs)
     {
         return detail::apply_primitive(std::make_unique<detail::MultiplyPrimitive>(), lhs, rhs);
     }
 
+    Tensor operator*(const Tensor &tensor, float scalar)
+    {
+        return tensor * scalar_like(scalar, tensor);
+    }
+
+    Tensor operator*(float scalar, const Tensor &tensor)
+    {
+        return tensor * scalar;
+    }
+
     Tensor operator/(const Tensor &lhs, const Tensor &rhs)
     {
         return detail::apply_primitive(std::make_unique<detail::DividePrimitive>(), lhs, rhs);
+    }
+
+    Tensor operator/(const Tensor &tensor, float scalar)
+    {
+        return tensor / scalar_like(scalar, tensor);
+    }
+
+    Tensor operator/(float scalar, const Tensor &tensor)
+    {
+        return scalar_like(scalar, tensor) / tensor;
+    }
+
+    Tensor operator-(const Tensor &input)
+    {
+        return detail::apply_primitive(std::make_unique<detail::NegatePrimitive>(), input);
     }
 
     Tensor exp(const Tensor &input)

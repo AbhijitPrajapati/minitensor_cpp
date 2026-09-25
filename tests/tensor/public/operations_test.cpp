@@ -67,6 +67,12 @@ namespace minitensor::test
         const Tensor scalar_sum = scalar + full(Shape{2, 3}, 1.0F);
         expect(scalar_sum.shape() == Shape{2, 3}, "addition broadcasts a scalar to a ranked tensor");
 
+        const Tensor configured_scalar_result = 2.0F - configured;
+        expect(configured_scalar_result.shape() == configured.shape() &&
+                   configured_scalar_result.dtype() == configured.dtype() &&
+                   configured_scalar_result.device() == configured.device(),
+               "scalar overloads preserve the tensor specification");
+
         const Tensor empty_sum = full(Shape{2, 0, 3}, 1.0F) + full(Shape{1, 3}, 2.0F);
         expect(empty_sum.shape() == Shape{2, 0, 3}, "addition broadcasts compatible empty shapes");
         expect(empty_sum.numel() == 0, "a broadcasted empty result remains empty");
