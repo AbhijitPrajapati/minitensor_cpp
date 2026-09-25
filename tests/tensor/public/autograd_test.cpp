@@ -239,6 +239,12 @@ namespace minitensor::test
         const Tensor unary_input = from_data(unary_values, Shape{2});
         const std::array<Tensor, 1> unary_target{unary_input};
 
+        const std::array<float, 2> expected_scalar_divide_gradient{-4.0F, -1.0F};
+        expect(std::ranges::equal(
+                   to_vector(grad(sum(4.0F / unary_input), unary_target).front()),
+                   expected_scalar_divide_gradient),
+               "a scalar-left division overload preserves its tensor VJP");
+
         const std::array<float, 2> expected_exp_gradient{std::exp(1.0F), std::exp(2.0F)};
         expect_near(
             to_vector(grad(sum(exp(unary_input)), unary_target).front()),

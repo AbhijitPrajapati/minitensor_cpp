@@ -137,6 +137,27 @@ namespace minitensor::test
         expect(std::ranges::equal(to_vector(divided), expected_quotient),
                "elementwise division computes broadcasted quotients");
 
+        const std::array<float, 3> scalar_operand_values{1.0F, 2.0F, 4.0F};
+        const Tensor scalar_operand = from_data(scalar_operand_values, Shape{3});
+        const std::array<float, 3> expected_scalar_add{3.0F, 4.0F, 6.0F};
+        const std::array<float, 3> expected_tensor_subtract{-1.0F, 0.0F, 2.0F};
+        const std::array<float, 3> expected_scalar_subtract{1.0F, 0.0F, -2.0F};
+        const std::array<float, 3> expected_scalar_product{2.0F, 4.0F, 8.0F};
+        const std::array<float, 3> expected_tensor_divide{0.5F, 1.0F, 2.0F};
+        const std::array<float, 3> expected_scalar_divide{8.0F, 4.0F, 2.0F};
+        expect(std::ranges::equal(to_vector(scalar_operand + 2.0F), expected_scalar_add) &&
+                   std::ranges::equal(to_vector(2.0F + scalar_operand), expected_scalar_add),
+               "addition supports a scalar on either side");
+        expect(std::ranges::equal(to_vector(scalar_operand - 2.0F), expected_tensor_subtract) &&
+                   std::ranges::equal(to_vector(2.0F - scalar_operand), expected_scalar_subtract),
+               "subtraction preserves scalar operand order");
+        expect(std::ranges::equal(to_vector(scalar_operand * 2.0F), expected_scalar_product) &&
+                   std::ranges::equal(to_vector(2.0F * scalar_operand), expected_scalar_product),
+               "multiplication supports a scalar on either side");
+        expect(std::ranges::equal(to_vector(scalar_operand / 2.0F), expected_tensor_divide) &&
+                   std::ranges::equal(to_vector(8.0F / scalar_operand), expected_scalar_divide),
+               "division preserves scalar operand order");
+
         const std::array<float, 3> dot_lhs_values{1.0F, 2.0F, 3.0F};
         const std::array<float, 3> dot_rhs_values{4.0F, 5.0F, 6.0F};
         expect(item(matmul(
