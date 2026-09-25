@@ -8,15 +8,6 @@
 
 namespace minitensor::detail
 {
-
-    std::size_t DeviceHash::operator()(const Device &device) const noexcept
-    {
-        std::size_t result = 0;
-        combine_hash(result, device.type());
-        combine_hash(result, device.index());
-        return result;
-    }
-
     void RuntimeRegistry::register_runtime(std::unique_ptr<DeviceRuntime> runtime)
     {
         if (!runtime)

@@ -24,6 +24,7 @@ namespace minitensor::test
     void run_cpu_kernels_test();
     void run_matmul_plan_test();
     void run_runtime_registry_test();
+    void run_random_test();
     void run_evaluator_test();
     void run_autograd_engine_test();
 }
@@ -60,6 +61,7 @@ int main()
         {"cpu kernels", run_cpu_kernels_test},
         {"matmul iteration plan", run_matmul_plan_test},
         {"runtime registry", run_runtime_registry_test},
+        {"random state", run_random_test},
         {"evaluator", run_evaluator_test},
         {"autograd engine", run_autograd_engine_test},
     };

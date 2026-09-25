@@ -25,6 +25,16 @@ namespace minitensor::detail
         return runtimes_.get(device);
     }
 
+    RandomKey ExecutionEnvironment::reserve_random_key(const Device &device)
+    {
+        return generators_.reserve_key(device);
+    }
+
+    void ExecutionEnvironment::manual_seed(std::uint64_t seed)
+    {
+        generators_.manual_seed(seed);
+    }
+
     ExecutionEnvironment &environment()
     {
         static ExecutionEnvironment environment;
