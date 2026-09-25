@@ -13,9 +13,11 @@ target_sources(
         src/tensor/types.cpp
         src/tensor/data.cpp
         src/tensor/evaluation.cpp
+        src/tensor/random.cpp
         src/tensor/core/shape_inference.cpp
         src/tensor/core/dense_size.cpp
         src/tensor/core/axis.cpp
+        src/tensor/core/random.cpp
         src/tensor/graph/apply_operation.cpp
         src/tensor/graph/node.cpp
         src/tensor/graph/value.cpp
@@ -25,6 +27,8 @@ target_sources(
         src/tensor/ops/manipulation.cpp
         src/tensor/ops/reduction.cpp
         src/tensor/primitives/creation/full.cpp
+        src/tensor/primitives/creation/uniform.cpp
+        src/tensor/primitives/creation/normal.cpp
         src/tensor/primitives/elementwise/add.cpp
         src/tensor/primitives/elementwise/divide.cpp
         src/tensor/primitives/elementwise/exponential.cpp
@@ -56,6 +60,7 @@ target_sources(
         src/tensor/dispatch/kernel_registry.cpp
         src/tensor/dispatch/tensor_view.cpp
         src/tensor/execution/evaluator.cpp
+        src/tensor/execution/generator_registry.cpp
         src/tensor/execution/runtime_registry.cpp
         src/tensor/execution/environment.cpp
         src/tensor/autograd/engine.cpp
@@ -116,6 +121,7 @@ if(BUILD_TESTING)
     tests/tensor/internal/matmul_plan_test.cpp
     tests/tensor/internal/evaluator_test.cpp
     tests/tensor/internal/runtime_registry_test.cpp
+    tests/tensor/internal/random_test.cpp
     tests/tensor/internal/reduce_to_shape_test.cpp
     tests/tensor/internal/autograd_engine_test.cpp
     )
