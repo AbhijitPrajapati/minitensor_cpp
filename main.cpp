@@ -8,16 +8,16 @@
 
 int main()
 {
-    const auto f = std::array<float, 8>{ 1.0F, 5.0F, 2.0F, 3.0F, 7.0F, 1.0F, 3.0F, 2.0F };
-    const minitensor::Tensor a = minitensor::from_data(f, minitensor::Shape{ 2, 2, 2 });
+    //const auto f = std::array<float, 8>{ 1.0F, 5.0F, 2.0F, 3.0F, 7.0F, 1.0F, 3.0F, 2.0F };
+    //const minitensor::Tensor a = minitensor::from_data(f, minitensor::Shape{ 2, 2, 2 });
 
-    const auto yt = std::array<float, 4>{ 8.0F, 10.0F, 3.0F, 3.0F };
-    const minitensor::Tensor b = minitensor::from_data(yt, minitensor::Shape{ 2, 2 });
+    //const auto yt = std::array<float, 4>{ 8.0F, 10.0F, 3.0F, 3.0F };
+    //const minitensor::Tensor b = minitensor::from_data(yt, minitensor::Shape{ 2, 2 });
 
-
+    const auto c = minitensor::normal(minitensor::Shape{ 200 }, 5.0F, 1.5F);
     //const minitensor::Tensor b = minitensor::reshape(a, minitensor::Shape{ 2, 2 });
     //const auto hg = std::array<minitensor::Axis, 1>{ -1 };
-    const auto c = minitensor::matmul(a, b);
+    //const auto c = minitensor::matmul(a, b);
     //const auto g = std::array<float, 2>{ 10.0F, -3.0F };
     //const minitensor::Tensor b = minitensor::from_data(g, minitensor::Shape{ 2 });
     //const minitensor::Tensor c = a + b;

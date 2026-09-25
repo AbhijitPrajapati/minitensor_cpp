@@ -19,6 +19,7 @@ namespace minitensor::test
     void run_apply_operation_test();
     void run_ownership_test();
     void run_cpu_runtime_test();
+    void run_cpu_random_test();
     void run_tensor_view_test();
     void run_kernel_registry_test();
     void run_cpu_kernels_test();
@@ -56,6 +57,7 @@ int main()
         {"apply operation", run_apply_operation_test},
         {"ownership", run_ownership_test},
         {"cpu runtime", run_cpu_runtime_test},
+        {"cpu random", run_cpu_random_test},
         {"tensor views", run_tensor_view_test},
         {"kernel registry", run_kernel_registry_test},
         {"cpu kernels", run_cpu_kernels_test},

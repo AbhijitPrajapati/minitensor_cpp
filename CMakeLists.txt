@@ -49,10 +49,11 @@ target_sources(
         src/tensor/backend/cpu/cpu_buffer.cpp
         src/tensor/backend/cpu/cpu_runtime.cpp
         src/tensor/backend/cpu/register_kernels.cpp
+        src/tensor/backend/cpu/detail/random_engine.cpp
         src/tensor/backend/cpu/iteration/elementwise.cpp
         src/tensor/backend/cpu/iteration/matmul.cpp
         src/tensor/backend/cpu/iteration/reduction.cpp
-        src/tensor/backend/cpu/kernels/creation/fill.cpp
+        src/tensor/backend/cpu/kernels/creation/kernels.cpp
         src/tensor/backend/cpu/kernels/elementwise/kernels.cpp
         src/tensor/backend/cpu/kernels/copy/contiguous.cpp
         src/tensor/backend/cpu/kernels/reduction/kernels.cpp
@@ -115,6 +116,7 @@ if(BUILD_TESTING)
     tests/tensor/internal/materialization_test.cpp
     tests/tensor/internal/ownership_test.cpp
     tests/tensor/internal/cpu_runtime_test.cpp
+    tests/tensor/internal/cpu_random_test.cpp
     tests/tensor/internal/kernel_registry_test.cpp
     tests/tensor/internal/tensor_view_test.cpp
     tests/tensor/internal/cpu_kernels_test.cpp

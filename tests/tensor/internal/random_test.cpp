@@ -1,7 +1,9 @@
+#include <minitensor/data.hpp>
 #include <minitensor/ops/creation.hpp>
 #include <minitensor/random.hpp>
 #include <minitensor/types.hpp>
 
+#include <algorithm>
 #include <limits>
 #include <stdexcept>
 
@@ -131,7 +133,33 @@ namespace minitensor::test
 
         const Tensor equal_bounds = uniform(Shape{1}, 3.0F, 3.0F);
         const Tensor zero_deviation = normal(Shape{1}, -2.0F, 0.0F);
-        expect(equal_bounds.shape() == Shape{1} && zero_deviation.shape() == Shape{1},
-               "degenerate random distributions remain valid graph operations");
+        expect(item(equal_bounds) == 3.0F && item(zero_deviation) == -2.0F,
+               "degenerate random distributions materialize their constant values");
+
+        manual_seed(83);
+        const Tensor ordered_uniform = uniform(Shape{9}, -3.0F, 4.0F);
+        const Tensor ordered_normal = normal(Shape{9}, 2.0F, 0.5F);
+        const auto normal_evaluated_first = to_vector(ordered_normal);
+        const auto uniform_evaluated_second = to_vector(ordered_uniform);
+
+        manual_seed(83);
+        const Tensor repeated_uniform = uniform(Shape{9}, -3.0F, 4.0F);
+        const Tensor repeated_normal = normal(Shape{9}, 2.0F, 0.5F);
+        const auto uniform_evaluated_first = to_vector(repeated_uniform);
+        const auto normal_evaluated_second = to_vector(repeated_normal);
+
+        expect(uniform_evaluated_second == uniform_evaluated_first &&
+                   normal_evaluated_first == normal_evaluated_second,
+               "seeded random values depend on graph construction order, not evaluation order");
+        expect(std::all_of(
+                   uniform_evaluated_first.begin(),
+                   uniform_evaluated_first.end(),
+                   [](float value)
+                   {
+                       return value >= -3.0F && value < 4.0F;
+                   }),
+               "public uniform evaluation preserves its half-open bounds");
+        expect(to_vector(uniform(Shape{0}, 0.0F, 1.0F)).empty(),
+               "public random evaluation supports empty tensors");
     }
 }
