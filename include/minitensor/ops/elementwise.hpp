@@ -4,22 +4,22 @@
 
 namespace minitensor
 {
-    [[nodiscard]] Tensor operator+(const Tensor &lhs, const Tensor &rhs);
-    [[nodiscard]] Tensor operator+(const Tensor &tensor, float scalar);
-    [[nodiscard]] Tensor operator+(float scalar, const Tensor &tensor);
-    [[nodiscard]] Tensor operator-(const Tensor &lhs, const Tensor &rhs);
-    [[nodiscard]] Tensor operator-(const Tensor &tensor, float scalar);
-    [[nodiscard]] Tensor operator-(float scalar, const Tensor &tensor);
-    [[nodiscard]] Tensor operator*(const Tensor &lhs, const Tensor &rhs);
-    [[nodiscard]] Tensor operator*(const Tensor &tensor, float scalar);
-    [[nodiscard]] Tensor operator*(float scalar, const Tensor &tensor);
-    [[nodiscard]] Tensor operator/(const Tensor &lhs, const Tensor &rhs);
-    [[nodiscard]] Tensor operator/(const Tensor &tensor, float scalar);
-    [[nodiscard]] Tensor operator/(float scalar, const Tensor &tensor);
+	[[nodiscard]] Tensor operator+(const Tensor& lhs, const Tensor& rhs);
+	[[nodiscard]] Tensor operator+(const Tensor& tensor, float scalar);
+	[[nodiscard]] Tensor operator+(float scalar, const Tensor& tensor);
+	[[nodiscard]] Tensor operator-(const Tensor& lhs, const Tensor& rhs);
+	[[nodiscard]] Tensor operator-(const Tensor& tensor, float scalar);
+	[[nodiscard]] Tensor operator-(float scalar, const Tensor& tensor);
+	[[nodiscard]] Tensor operator*(const Tensor& lhs, const Tensor& rhs);
+	[[nodiscard]] Tensor operator*(const Tensor& tensor, float scalar);
+	[[nodiscard]] Tensor operator*(float scalar, const Tensor& tensor);
+	[[nodiscard]] Tensor operator/(const Tensor& lhs, const Tensor& rhs);
+	[[nodiscard]] Tensor operator/(const Tensor& tensor, float scalar);
+	[[nodiscard]] Tensor operator/(float scalar, const Tensor& tensor);
 
-    [[nodiscard]] Tensor operator-(const Tensor &input);
-    [[nodiscard]] Tensor exp(const Tensor &input);
-    [[nodiscard]] Tensor log(const Tensor &input);
-    [[nodiscard]] Tensor sqrt(const Tensor &input);
-    [[nodiscard]] Tensor tanh(const Tensor &input);
+	[[nodiscard]] Tensor operator-(const Tensor& input);
+	[[nodiscard]] Tensor exp(const Tensor& input);
+	[[nodiscard]] Tensor log(const Tensor& input);
+	[[nodiscard]] Tensor sqrt(const Tensor& input);
+	[[nodiscard]] Tensor tanh(const Tensor& input);
 }

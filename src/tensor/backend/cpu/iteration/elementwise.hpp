@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstddef>
 #include <concepts>
 #include <functional>
 #include <limits>
@@ -13,8 +12,8 @@
 
 namespace minitensor::detail::cpu
 {
-    class ElementwisePlan final
-    {
+	class ElementwisePlan final
+	{
 	public:
 		using offset_type = Layout::offset_type;
 		using stride_type = Layout::stride_type;
@@ -31,10 +30,10 @@ namespace minitensor::detail::cpu
 		template <typename Function>
 			requires std::invocable<
 				Function&,
-				Shape::size_type,
-				std::span<const Layout::offset_type>,
-				std::span<const Layout::stride_type>,
-				Shape::size_type>
+					Shape::size_type,
+					std::span<const Layout::offset_type>,
+					std::span<const Layout::stride_type>,
+					Shape::size_type>
 		void for_each_run(Function&& function) const
 		{
 			if (numel_ == 0)
@@ -135,5 +134,5 @@ namespace minitensor::detail::cpu
 		Shape::size_type numel_;
 		std::vector<offset_type> initial_offsets_;
 		std::vector<Axis> axes_;
-    };
+	};
 }

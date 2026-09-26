@@ -2,7 +2,6 @@
 
 #include <span>
 #include <stdexcept>
-#include <cstddef>
 #include <utility>
 
 #include <minitensor/types.hpp>
