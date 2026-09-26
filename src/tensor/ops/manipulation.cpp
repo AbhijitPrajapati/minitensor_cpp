@@ -20,6 +20,7 @@
 #include "tensor/primitives/manipulation/contiguous.hpp"
 #include "tensor/primitives/manipulation/permute.hpp"
 #include "tensor/primitives/manipulation/reshape.hpp"
+#include "tensor/primitives/manipulation/slice.hpp"
 
 namespace minitensor
 {
@@ -226,5 +227,18 @@ namespace minitensor
 		}
 		return detail::apply_primitive(
 			std::make_unique<detail::ConcatenatePrimitive>(axis, inputs.front().rank()), inputs);
+	}
+
+	Tensor slice(
+		const Tensor& input,
+		Axis axis,
+		std::optional<Extent> start,
+		std::optional<Extent> stop,
+		Extent step)
+	{
+		return detail::apply_primitive(
+			std::make_unique<detail::SlicePrimitive>(
+				axis, start, stop, step, input.shape()),
+			input);
 	}
 }

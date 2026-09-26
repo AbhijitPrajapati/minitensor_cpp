@@ -5,8 +5,8 @@
 #include <string_view>
 #include <vector>
 
-#include <minitensor/types.hpp>
 #include <minitensor/tensor.hpp>
+#include <minitensor/types.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/graph/primitive.hpp"

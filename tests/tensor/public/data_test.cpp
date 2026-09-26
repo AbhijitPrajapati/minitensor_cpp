@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <optional>
 #include <span>
 #include <stdexcept>
 
@@ -44,6 +45,17 @@ namespace minitensor::test
 			   "flatten preserves the logical order of a noncontiguous input");
 		expect(std::ranges::equal(to_vector(transpose(matrix)), expected_permuted),
 			   "transpose reverses matrix axes through permutation");
+
+		const std::array<float, 4> expected_strided_slice{ 1.0F, 3.0F, 4.0F, 6.0F };
+		expect(std::ranges::equal(
+			to_vector(slice(matrix, 1, 0, 3, 2)), expected_strided_slice),
+			   "slice exposes a positive-step strided view");
+		const std::array<float, 6> expected_reversed_rows{
+			3.0F, 2.0F, 1.0F, 6.0F, 5.0F, 4.0F };
+		expect(std::ranges::equal(
+			to_vector(slice(matrix, -1, std::nullopt, std::nullopt, -1)),
+			expected_reversed_rows),
+			   "slice exposes a negative-step strided view");
 		expect(std::ranges::equal(
 			to_vector(squeeze(unsqueeze(matrix, -1))), expected_source),
 			   "squeeze and unsqueeze preserve element order through reshape");

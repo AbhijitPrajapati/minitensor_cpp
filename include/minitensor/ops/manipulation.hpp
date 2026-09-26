@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <span>
 
 #include <minitensor/tensor.hpp>
@@ -20,4 +21,6 @@ namespace minitensor
 	[[nodiscard]] Tensor unsqueeze(const Tensor& input, Axis axis);
 	[[nodiscard]] Tensor broadcast_to(const Tensor& input, Shape shape);
 	[[nodiscard]] Tensor concatenate(std::span<const Tensor> inputs, Axis axis = 0);
+	[[nodiscard]] Tensor slice(const Tensor& input, Axis axis, std::optional<Extent> start = std::nullopt, std::optional<Extent> stop = std::nullopt, Extent step = 1);
+	[[nodiscard]] Tensor select(const Tensor& input, Axis axis, Extent index);
 }
