@@ -5,16 +5,21 @@
 #include <cstdint>
 #include <vector>
 #include <array>
+#include <span>
 
 int main()
 {
-    //const auto f = std::array<float, 8>{ 1.0F, 5.0F, 2.0F, 3.0F, 7.0F, 1.0F, 3.0F, 2.0F };
-    //const minitensor::Tensor a = minitensor::from_data(f, minitensor::Shape{ 2, 2, 2 });
+    const auto f = std::array<float, 8>{ 1.0F, 5.0F, 2.0F, 3.0F, 7.0F, 1.0F, 3.0F, 2.0F };
+    const minitensor::Tensor a = minitensor::from_data(f, minitensor::Shape{ 2, 2, 2 });
+
 
     const auto yt = std::array<float, 4>{ 8.0F, 10.0F, 3.0F, 3.0F };
-    const minitensor::Tensor b = minitensor::from_data(yt, minitensor::Shape{ 2, 2 });
+    const minitensor::Tensor b = minitensor::from_data(yt, minitensor::Shape{ 2, 1, 2 });
 
     const auto c = 4.0F + b;
+
+    const auto ghs = std::array<minitensor::Tensor, 2>{ a, c };
+    const auto d = minitensor::concatenate(ghs, 1);
 
     //const auto c = minitensor::normal(minitensor::Shape{ 200 }, 5.0F, 1.5F);
     //const minitensor::Tensor b = minitensor::reshape(a, minitensor::Shape{ 2, 2 });
@@ -33,7 +38,7 @@ int main()
     //const auto c = minitensor::sum(b);
     //std::vector<minitensor::Tensor> tr{ a };
     //const auto d = minitensor::grad(c, tr).front();
-    const auto v = minitensor::to_vector(c);
+    const auto v = minitensor::to_vector(d);
     for (auto el : v)
     {
         std::cout << el << " ";

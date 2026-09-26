@@ -225,6 +225,25 @@ namespace minitensor::test
 				   std::ranges::equal(to_vector(broadcast_vjp.front()), expected_broadcast_vjp),
 			   "broadcast_to VJP sums cotangents along expanded dimensions");
 
+		const Tensor concatenated_lhs = full(Shape{ 2, 1 }, 0.0F);
+		const Tensor concatenated_rhs = full(Shape{ 2, 2 }, 0.0F);
+		const std::array<Tensor, 2> concatenated_inputs{
+			concatenated_lhs, concatenated_rhs };
+		const Tensor concatenated = concatenate(concatenated_inputs, 1);
+		const Tensor concatenated_seed = from_data(matrix_values, Shape{ 2, 3 });
+		const std::vector<Tensor> concatenated_vjp = vjp(
+			concatenated, concatenated_inputs, concatenated_seed);
+		const std::array<float, 2> expected_concatenated_lhs_vjp{ 1.0F, 4.0F };
+		const std::array<float, 4> expected_concatenated_rhs_vjp{ 2.0F, 3.0F, 5.0F, 6.0F };
+		expect(concatenated_vjp.size() == 2 &&
+				   concatenated_vjp[0].shape() == concatenated_lhs.shape() &&
+				   concatenated_vjp[1].shape() == concatenated_rhs.shape() &&
+				   std::ranges::equal(
+			to_vector(concatenated_vjp[0]), expected_concatenated_lhs_vjp) &&
+				   std::ranges::equal(
+			to_vector(concatenated_vjp[1]), expected_concatenated_rhs_vjp),
+			   "concatenate VJP splits the output cotangent at input boundaries");
+
 		constexpr std::array<Axis, 1> last_axis{ 1 };
 		const Tensor kept_sum = sum(matrix, last_axis, true);
 		const std::array<float, 2> kept_sum_seed_values{ 2.0F, 4.0F };

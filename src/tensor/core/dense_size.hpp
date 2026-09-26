@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 namespace minitensor::detail
 {
 	struct TensorSpec;

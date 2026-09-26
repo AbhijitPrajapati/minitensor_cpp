@@ -40,7 +40,9 @@ target_sources(
         src/tensor/primitives/elementwise/subtract.cpp
         src/tensor/primitives/linalg/matmul.cpp
         src/tensor/primitives/manipulation/broadcast_to.cpp
+        src/tensor/primitives/manipulation/concatenate.cpp
         src/tensor/primitives/manipulation/contiguous.cpp
+        src/tensor/primitives/manipulation/narrow.cpp
         src/tensor/primitives/manipulation/permute.cpp
         src/tensor/primitives/manipulation/reshape.cpp
         src/tensor/primitives/reduction/sum.cpp
@@ -55,7 +57,7 @@ target_sources(
         src/tensor/backend/cpu/iteration/reduction.cpp
         src/tensor/backend/cpu/kernels/creation/kernels.cpp
         src/tensor/backend/cpu/kernels/elementwise/kernels.cpp
-        src/tensor/backend/cpu/kernels/copy/contiguous.cpp
+        src/tensor/backend/cpu/kernels/copy/kernels.cpp
         src/tensor/backend/cpu/kernels/reduction/kernels.cpp
         src/tensor/backend/cpu/kernels/linalg/matmul.cpp
         src/tensor/dispatch/kernel_registry.cpp

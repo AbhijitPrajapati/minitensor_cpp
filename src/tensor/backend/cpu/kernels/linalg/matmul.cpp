@@ -12,6 +12,7 @@
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/dispatch/tensor_view.hpp"
+#include "tensor/graph/primitive.hpp"
 #include "tensor/primitives/linalg/matmul.hpp"
 #include "tensor/storage/layout.hpp"
 
