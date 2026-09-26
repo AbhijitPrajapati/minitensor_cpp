@@ -191,6 +191,13 @@ namespace minitensor::test
 		expect(broadcast_to(empty, Shape{ 4, 2, 0, 3 }).shape() == Shape{ 4, 2, 0, 3 },
 			   "broadcast_to supports compatible empty shapes and leading dimensions");
 
+		const std::array<Tensor, 3> concatenation_inputs{
+			full(Shape{2, 1}, 1.0F),
+			full(Shape{2, 0}, 2.0F),
+			full(Shape{2, 3}, 3.0F) };
+		expect(concatenate(concatenation_inputs, -1).shape() == Shape{ 2, 4 },
+			   "concatenate joins extents along a normalized axis and accepts empty inputs");
+
 		constexpr std::array<Axis, 1> last_axis{ 1 };
 		const Tensor row_sums = sum(matrix, last_axis);
 		expect(row_sums.shape() == Shape{ 2 },
@@ -237,11 +244,13 @@ namespace minitensor::test
 			"matmul rejects a scalar input");
 		expect(matmul(
 			full(Shape{ 1, 1, 1 }, 1.0F),
-			full(Shape{ 1 }, 1.0F)).shape() == Shape{ 1, 1 },
+			full(Shape{ 1 }, 1.0F))
+					   .shape() == Shape{ 1, 1 },
 			   "matmul infers a batched matrix-vector output specification");
 		expect(matmul(
 			full(Shape{ 2, 1, 3, 4 }, 1.0F),
-			full(Shape{ 5, 4, 6 }, 1.0F)).shape() == Shape{ 2, 5, 3, 6 },
+			full(Shape{ 5, 4, 6 }, 1.0F))
+					   .shape() == Shape{ 2, 5, 3, 6 },
 			   "matmul broadcasts independently aligned batch dimensions");
 		expect_throws<std::invalid_argument>(
 			[]
@@ -402,6 +411,27 @@ namespace minitensor::test
 				(void)broadcast_to(matrix, Shape{ 3 });
 			},
 			"broadcast_to rejects a target with fewer dimensions");
+		expect_throws<std::invalid_argument>(
+			[]
+			{
+				(void)concatenate(std::span<const Tensor>{});
+			},
+			"concatenate rejects an empty input sequence");
+		expect_throws<std::out_of_range>(
+			[&scalar]
+			{
+				const std::array<Tensor, 2> inputs{ scalar, scalar };
+				(void)concatenate(inputs);
+			},
+			"concatenate rejects scalar tensors because they have no axis");
+		expect_throws<std::invalid_argument>(
+			[&matrix]
+			{
+				const std::array<Tensor, 2> inputs{
+					matrix, full(Shape{3, 3}, 1.0F) };
+				(void)concatenate(inputs, 1);
+			},
+			"concatenate rejects mismatched non-concatenated extents");
 		expect_throws<std::invalid_argument>(
 			[&matrix]
 			{

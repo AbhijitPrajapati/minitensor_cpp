@@ -16,6 +16,7 @@
 #include "apply_primitive.hpp"
 #include "tensor/core/axis.hpp"
 #include "tensor/primitives/manipulation/broadcast_to.hpp"
+#include "tensor/primitives/manipulation/concatenate.hpp"
 #include "tensor/primitives/manipulation/contiguous.hpp"
 #include "tensor/primitives/manipulation/permute.hpp"
 #include "tensor/primitives/manipulation/reshape.hpp"
@@ -211,5 +212,19 @@ namespace minitensor
 	{
 		return detail::apply_primitive(
 			std::make_unique<detail::BroadcastToPrimitive>(std::move(shape)), input);
+	}
+
+	Tensor concatenate(std::span<const Tensor> inputs, Axis axis)
+	{
+		if (inputs.empty())
+		{
+			throw std::invalid_argument{ "concatenate requires at least one input tensor" };
+		}
+		if (inputs.size() == 1)
+		{
+			return inputs.front();
+		}
+		return detail::apply_primitive(
+			std::make_unique<detail::ConcatenatePrimitive>(axis, inputs.front().rank()), inputs);
 	}
 }

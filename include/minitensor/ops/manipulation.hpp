@@ -19,4 +19,5 @@ namespace minitensor
 	[[nodiscard]] Tensor squeeze(const Tensor& input, std::span<const Axis> axes);
 	[[nodiscard]] Tensor unsqueeze(const Tensor& input, Axis axis);
 	[[nodiscard]] Tensor broadcast_to(const Tensor& input, Shape shape);
+	[[nodiscard]] Tensor concatenate(std::span<const Tensor> inputs, Axis axis = 0);
 }
