@@ -1,37 +1,41 @@
 #include "logarithm.hpp"
 
+#include <optional>
+#include <span>
 #include <stdexcept>
+#include <string_view>
 #include <vector>
 
 #include <minitensor/ops/elementwise.hpp>
+#include <minitensor/tensor.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
 
 namespace minitensor::detail
 {
-    std::string_view LogarithmPrimitive::name() const noexcept
-    {
-        return "log";
-    }
+	std::string_view LogarithmPrimitive::name() const noexcept
+	{
+		return "log";
+	}
 
-    TensorSpec LogarithmPrimitive::infer(std::span<const TensorSpec> inputs) const
-    {
-        if (inputs.size() != 1)
-        {
-            throw std::invalid_argument{"log expects 1 input tensor"};
-        }
-        return inputs.front();
-    }
+	TensorSpec LogarithmPrimitive::infer(std::span<const TensorSpec> inputs) const
+	{
+		if (inputs.size() != 1)
+		{
+			throw std::invalid_argument{ "log expects 1 input tensor" };
+		}
+		return inputs.front();
+	}
 
-    std::vector<std::optional<Tensor>> LogarithmPrimitive::vjp(
-        std::span<const Tensor> inputs,
-        const Tensor &,
-        const Tensor &output_cotangent) const
-    {
-        if (inputs.size() != 1)
-        {
-            throw std::logic_error{"log VJP expects 1 input"};
-        }
-        return {output_cotangent / inputs.front()};
-    }
+	std::vector<std::optional<Tensor>> LogarithmPrimitive::vjp(
+		std::span<const Tensor> inputs,
+		const Tensor&,
+		const Tensor& output_cotangent) const
+	{
+		if (inputs.size() != 1)
+		{
+			throw std::logic_error{ "log VJP expects 1 input" };
+		}
+		return { output_cotangent / inputs.front() };
+	}
 }

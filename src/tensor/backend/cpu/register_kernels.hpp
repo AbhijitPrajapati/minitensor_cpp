@@ -2,9 +2,9 @@
 
 namespace minitensor::detail
 {
-    class KernelRegistry;
-    namespace cpu
-    {
-        void register_kernels(KernelRegistry &registry);
-    }
+	class KernelRegistry;
+	namespace cpu
+	{
+		void register_kernels(KernelRegistry& registry);
+	}
 }

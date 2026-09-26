@@ -1,10 +1,15 @@
 #include "multiply.hpp"
 
+#include <optional>
+#include <span>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 #include <minitensor/ops/elementwise.hpp>
+#include <minitensor/tensor.hpp>
+#include <minitensor/types.hpp>
 
 #include "tensor/autograd/reduce_to_shape.hpp"
 #include "tensor/core/shape_inference.hpp"
@@ -12,45 +17,45 @@
 
 namespace minitensor::detail
 {
-    std::string_view MultiplyPrimitive::name() const noexcept
-    {
-        return "multiply";
-    }
+	std::string_view MultiplyPrimitive::name() const noexcept
+	{
+		return "multiply";
+	}
 
-    TensorSpec MultiplyPrimitive::infer(std::span<const TensorSpec> inputs) const
-    {
-        if (inputs.size() != 2)
-        {
-            throw std::invalid_argument{"multiply expects 2 input tensors"};
-        }
+	TensorSpec MultiplyPrimitive::infer(std::span<const TensorSpec> inputs) const
+	{
+		if (inputs.size() != 2)
+		{
+			throw std::invalid_argument{ "multiply expects 2 input tensors" };
+		}
 
-        const TensorSpec &lhs = inputs[0];
-        const TensorSpec &rhs = inputs[1];
+		const TensorSpec& lhs = inputs[0];
+		const TensorSpec& rhs = inputs[1];
 
-        if (lhs.dtype != rhs.dtype)
-        {
-            throw std::invalid_argument{"multiply requires matching dtypes"};
-        }
-        if (lhs.device != rhs.device)
-        {
-            throw std::invalid_argument{"multiply requires input tensors on the same device"};
-        }
+		if (lhs.dtype != rhs.dtype)
+		{
+			throw std::invalid_argument{ "multiply requires matching dtypes" };
+		}
+		if (lhs.device != rhs.device)
+		{
+			throw std::invalid_argument{ "multiply requires input tensors on the same device" };
+		}
 
-        Shape output_shape = broadcast_shape(lhs.shape, rhs.shape);
-        return TensorSpec{std::move(output_shape), lhs.dtype, lhs.device};
-    }
+		Shape output_shape = broadcast_shape(lhs.shape, rhs.shape);
+		return TensorSpec{ std::move(output_shape), lhs.dtype, lhs.device };
+	}
 
-    std::vector<std::optional<Tensor>> MultiplyPrimitive::vjp(std::span<const Tensor> inputs, const Tensor &, const Tensor &output_cotangent) const
-    {
-        if (inputs.size() != 2)
-        {
-            throw std::logic_error{"multiply VJP expects 2 inputs"};
-        }
+	std::vector<std::optional<Tensor>> MultiplyPrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const
+	{
+		if (inputs.size() != 2)
+		{
+			throw std::logic_error{ "multiply VJP expects 2 inputs" };
+		}
 
-        Tensor lhs_cotangent = output_cotangent * inputs[1];
-        Tensor rhs_cotangent = output_cotangent * inputs[0];
-        return {
-            reduce_to_shape(lhs_cotangent, inputs[0].shape()),
-            reduce_to_shape(rhs_cotangent, inputs[1].shape())};
-    }
+		Tensor lhs_cotangent = output_cotangent * inputs[1];
+		Tensor rhs_cotangent = output_cotangent * inputs[0];
+		return {
+			reduce_to_shape(lhs_cotangent, inputs[0].shape()),
+			reduce_to_shape(rhs_cotangent, inputs[1].shape()) };
+	}
 }

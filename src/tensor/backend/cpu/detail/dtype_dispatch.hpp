@@ -9,14 +9,14 @@
 
 namespace minitensor::detail::cpu
 {
-    template <typename Function>
-    decltype(auto) dispatch_dtype(DType dtype, Function &&function)
-    {
-        switch (dtype)
-        {
-        case DType::Float32:
-            return std::invoke(std::forward<Function>(function), std::type_identity<float>{});
-        }
-        throw std::logic_error{"unsupported CPU dtype"};
-    }
+	template <typename Function>
+	decltype(auto) dispatch_dtype(DType dtype, Function&& function)
+	{
+		switch (dtype)
+		{
+		case DType::Float32:
+			return std::invoke(std::forward<Function>(function), std::type_identity<float>{});
+		}
+		throw std::logic_error{ "unsupported CPU dtype" };
+	}
 }

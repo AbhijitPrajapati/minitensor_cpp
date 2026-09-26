@@ -4,36 +4,38 @@
 #include <stdexcept>
 #include <utility>
 
+#include <minitensor/types.hpp>
+
 #include "tensor/backend/device_runtime.hpp"
 
 namespace minitensor::detail
 {
-    void RuntimeRegistry::register_runtime(std::unique_ptr<DeviceRuntime> runtime)
-    {
-        if (!runtime)
-        {
-            throw std::invalid_argument{"cannot register an empty runtime"};
-        }
-        const Device device = runtime->device();
-        auto [iterator, inserted] = runtimes_.try_emplace(device, std::move(runtime));
-        if (!inserted)
-        {
-            throw std::logic_error{"a runtime is already registered for this device"};
-        }
-    }
+	void RuntimeRegistry::register_runtime(std::unique_ptr<DeviceRuntime> runtime)
+	{
+		if (!runtime)
+		{
+			throw std::invalid_argument{ "cannot register an empty runtime" };
+		}
+		const Device device = runtime->device();
+		auto [iterator, inserted] = runtimes_.try_emplace(device, std::move(runtime));
+		if (!inserted)
+		{
+			throw std::logic_error{ "a runtime is already registered for this device" };
+		}
+	}
 
-    DeviceRuntime &RuntimeRegistry::get(const Device &device) const
-    {
-        const auto iterator = runtimes_.find(device);
-        if (iterator == runtimes_.end())
-        {
-            throw std::runtime_error{"no runtime is registered for this device"};
-        }
-        return *(iterator->second);
-    }
+	DeviceRuntime& RuntimeRegistry::get(const Device& device) const
+	{
+		const auto iterator = runtimes_.find(device);
+		if (iterator == runtimes_.end())
+		{
+			throw std::runtime_error{ "no runtime is registered for this device" };
+		}
+		return *(iterator->second);
+	}
 
-    bool RuntimeRegistry::contains(const Device &device) const
-    {
-        return runtimes_.contains(device);
-    }
+	bool RuntimeRegistry::contains(const Device& device) const
+	{
+		return runtimes_.contains(device);
+	}
 }

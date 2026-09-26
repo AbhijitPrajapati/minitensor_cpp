@@ -4,5 +4,5 @@
 
 namespace minitensor
 {
-    [[nodiscard]] Tensor matmul(const Tensor &lhs, const Tensor &rhs);
+	[[nodiscard]] Tensor matmul(const Tensor& lhs, const Tensor& rhs);
 }

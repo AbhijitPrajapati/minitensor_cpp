@@ -1,43 +1,42 @@
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <vector>
-#include <optional>
 
 namespace minitensor
 {
-    class Shape;
+	class Shape;
 }
 
 namespace minitensor::detail
 {
-    class Layout final
-    {
-    public:
-        using stride_type = std::int64_t;
-        using offset_type = std::int64_t;
-        using size_type = std::size_t;
+	class Layout final
+	{
+	public:
+		using stride_type = std::int64_t;
+		using offset_type = std::int64_t;
+		using size_type = std::size_t;
 
-        // scalar layout
-        Layout() = default;
-        Layout(std::vector<stride_type> strides, offset_type offset = 0);
+		// Scalar layout
+		Layout() = default;
+		Layout(std::vector<stride_type> strides, offset_type offset = 0);
 
-        [[nodiscard]] static Layout contiguous(const Shape &shape, offset_type offset = 0);
-        [[nodiscard]] size_type rank() const noexcept;
-        [[nodiscard]] stride_type stride(size_type axis) const noexcept;
-        [[nodiscard]] std::span<const stride_type> strides() const noexcept;
-        [[nodiscard]] offset_type offset() const noexcept;
-        [[nodiscard]] bool is_contiguous(const Shape &shape) const noexcept;
-        [[nodiscard]] Layout broadcasted_to(const Shape &source_shape, const Shape &target_shape) const;
-        [[nodiscard]] Layout permuted(std::span<const size_type> permutation) const;
-        [[nodiscard]] std::optional<Layout> try_reshape(const Shape& source_shape, const Shape& target_shape) const;
+		[[nodiscard]] static Layout contiguous(const Shape& shape, offset_type offset = 0);
+		[[nodiscard]] size_type rank() const noexcept;
+		[[nodiscard]] stride_type stride(size_type axis) const noexcept;
+		[[nodiscard]] std::span<const stride_type> strides() const noexcept;
+		[[nodiscard]] offset_type offset() const noexcept;
+		[[nodiscard]] bool is_contiguous(const Shape& shape) const noexcept;
+		[[nodiscard]] Layout broadcasted_to(const Shape& source_shape, const Shape& target_shape) const;
+		[[nodiscard]] Layout permuted(std::span<const size_type> permutation) const;
+		[[nodiscard]] std::optional<Layout> try_reshape(const Shape& source_shape, const Shape& target_shape) const;
 
-        friend bool operator==(const Layout &, const Layout &) = default;
+		friend bool operator==(const Layout&, const Layout&) = default;
 
-    private:
-        std::vector<stride_type> strides_;
-        offset_type offset_{0};
-    };
+	private:
+		std::vector<stride_type> strides_;
+		offset_type offset_{ 0 };
+	};
 }

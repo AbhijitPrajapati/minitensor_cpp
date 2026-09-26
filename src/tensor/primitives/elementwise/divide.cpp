@@ -1,10 +1,15 @@
 #include "divide.hpp"
 
+#include <optional>
+#include <span>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 #include <minitensor/ops/elementwise.hpp>
+#include <minitensor/tensor.hpp>
+#include <minitensor/types.hpp>
 
 #include "tensor/autograd/reduce_to_shape.hpp"
 #include "tensor/core/shape_inference.hpp"
@@ -12,45 +17,45 @@
 
 namespace minitensor::detail
 {
-    std::string_view DividePrimitive::name() const noexcept
-    {
-        return "divide";
-    }
+	std::string_view DividePrimitive::name() const noexcept
+	{
+		return "divide";
+	}
 
-    TensorSpec DividePrimitive::infer(std::span<const TensorSpec> inputs) const
-    {
-        if (inputs.size() != 2)
-        {
-            throw std::invalid_argument{"divide expects 2 input tensors"};
-        }
+	TensorSpec DividePrimitive::infer(std::span<const TensorSpec> inputs) const
+	{
+		if (inputs.size() != 2)
+		{
+			throw std::invalid_argument{ "divide expects 2 input tensors" };
+		}
 
-        const TensorSpec &lhs = inputs[0];
-        const TensorSpec &rhs = inputs[1];
+		const TensorSpec& lhs = inputs[0];
+		const TensorSpec& rhs = inputs[1];
 
-        if (lhs.dtype != rhs.dtype)
-        {
-            throw std::invalid_argument{"divide requires matching dtypes"};
-        }
-        if (lhs.device != rhs.device)
-        {
-            throw std::invalid_argument{"divide requires input tensors on the same device"};
-        }
+		if (lhs.dtype != rhs.dtype)
+		{
+			throw std::invalid_argument{ "divide requires matching dtypes" };
+		}
+		if (lhs.device != rhs.device)
+		{
+			throw std::invalid_argument{ "divide requires input tensors on the same device" };
+		}
 
-        Shape output_shape = broadcast_shape(lhs.shape, rhs.shape);
-        return TensorSpec{std::move(output_shape), lhs.dtype, lhs.device};
-    }
+		Shape output_shape = broadcast_shape(lhs.shape, rhs.shape);
+		return TensorSpec{ std::move(output_shape), lhs.dtype, lhs.device };
+	}
 
-    std::vector<std::optional<Tensor>> DividePrimitive::vjp(std::span<const Tensor> inputs, const Tensor &output, const Tensor &output_cotangent) const
-    {
-        if (inputs.size() != 2)
-        {
-            throw std::logic_error{"divide VJP expects 2 inputs"};
-        }
+	std::vector<std::optional<Tensor>> DividePrimitive::vjp(std::span<const Tensor> inputs, const Tensor& output, const Tensor& output_cotangent) const
+	{
+		if (inputs.size() != 2)
+		{
+			throw std::logic_error{ "divide VJP expects 2 inputs" };
+		}
 
-        Tensor lhs_cotangent = output_cotangent / inputs[1];
-        Tensor rhs_cotangent = -(output_cotangent * output / inputs[1]);
-        return {
-            reduce_to_shape(lhs_cotangent, inputs[0].shape()),
-            reduce_to_shape(rhs_cotangent, inputs[1].shape())};
-    }
+		Tensor lhs_cotangent = output_cotangent / inputs[1];
+		Tensor rhs_cotangent = -(output_cotangent * output / inputs[1]);
+		return {
+			reduce_to_shape(lhs_cotangent, inputs[0].shape()),
+			reduce_to_shape(rhs_cotangent, inputs[1].shape()) };
+	}
 }

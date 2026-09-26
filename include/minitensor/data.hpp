@@ -8,7 +8,7 @@
 
 namespace minitensor
 {
-    [[nodiscard]] std::vector<float> to_vector(const Tensor &tensor);
-    [[nodiscard]] float item(const Tensor &tensor);
-    [[nodiscard]] Tensor from_data(std::span<const float> data, Shape shape, TensorOptions options = {});
+	[[nodiscard]] std::vector<float> to_vector(const Tensor& tensor);
+	[[nodiscard]] float item(const Tensor& tensor);
+	[[nodiscard]] Tensor from_data(std::span<const float> data, Shape shape, TensorOptions options = {});
 }

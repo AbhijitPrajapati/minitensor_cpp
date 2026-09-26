@@ -1,7 +1,6 @@
 #pragma once
 
 #include <typeindex>
-#include <cstddef>
 
 #include <minitensor/types.hpp>
 
@@ -9,22 +8,22 @@
 
 namespace minitensor::detail
 {
-    using PrimitiveTypeId = std::type_index;
+	using PrimitiveTypeId = std::type_index;
 
-    struct KernelKey final
-    {
-        PrimitiveTypeId primitive_type;
-        DeviceType device_type;
-        friend bool operator==(const KernelKey &, const KernelKey &) = default;
-    };
+	struct KernelKey final
+	{
+		PrimitiveTypeId primitive_type;
+		DeviceType device_type;
+		friend bool operator==(const KernelKey&, const KernelKey&) = default;
+	};
 
-    struct KernelKeyHash final
-    {
-        [[nodiscard]] std::size_t operator()(const KernelKey &key) const noexcept
-        {
-            std::size_t result = key.primitive_type.hash_code();
-            combine_hash(result, key.device_type);
-            return result;
-        }
-    };
+	struct KernelKeyHash final
+	{
+		[[nodiscard]] std::size_t operator()(const KernelKey& key) const noexcept
+		{
+			std::size_t result = key.primitive_type.hash_code();
+			combine_hash(result, key.device_type);
+			return result;
+		}
+	};
 }

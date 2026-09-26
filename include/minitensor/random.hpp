@@ -4,5 +4,5 @@
 
 namespace minitensor
 {
-    void manual_seed(std::uint64_t seed);
+	void manual_seed(std::uint64_t seed);
 }

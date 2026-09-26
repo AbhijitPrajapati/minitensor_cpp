@@ -3,50 +3,56 @@
 #include <stdexcept>
 #include <utility>
 
+#include <tensor/core/tensor_spec.hpp>
+#include <tensor/storage/materialization.hpp>
+
+#include "fwd.hpp"
+
+
 namespace minitensor::detail
 {
-    Value::Value(TensorSpec spec) : spec_(std::move(spec)) {}
+	Value::Value(TensorSpec spec) : spec_(std::move(spec)) {}
 
-    Value::Value(TensorSpec spec, NodeRef producer) : spec_(std::move(spec)), producer_(std::move(producer))
-    {
-        if (!producer_)
-        {
-            throw std::invalid_argument{"a produced value require a producer node"};
-        }
-    }
+	Value::Value(TensorSpec spec, NodeRef producer) : spec_(std::move(spec)), producer_(std::move(producer))
+	{
+		if (!producer_)
+		{
+			throw std::invalid_argument{ "a produced value require a producer node" };
+		}
+	}
 
-    const TensorSpec &Value::spec() const noexcept
-    {
-        return spec_;
-    }
+	const TensorSpec& Value::spec() const noexcept
+	{
+		return spec_;
+	}
 
-    const Materialization *Value::materialization() const noexcept
-    {
-        return materialization_ ? (&*materialization_) : nullptr;
-    }
+	const Materialization* Value::materialization() const noexcept
+	{
+		return materialization_ ? (&*materialization_) : nullptr;
+	}
 
-    void Value::materialize(Materialization materialization) const
-    {
-        if (materialization_)
-        {
-            throw std::logic_error{"value has already been materialized"};
-        }
-        materialization.validate(spec_);
-        materialization_.emplace(std::move(materialization));
-    }
+	void Value::materialize(Materialization materialization) const
+	{
+		if (materialization_)
+		{
+			throw std::logic_error{ "value has already been materialized" };
+		}
+		materialization.validate(spec_);
+		materialization_.emplace(std::move(materialization));
+	}
 
-    bool Value::is_leaf() const noexcept
-    {
-        return !producer_;
-    }
+	bool Value::is_leaf() const noexcept
+	{
+		return !producer_;
+	}
 
-    const Node *Value::producer() const noexcept
-    {
-        return producer_.get();
-    }
+	const Node* Value::producer() const noexcept
+	{
+		return producer_.get();
+	}
 
-    const NodeRef &Value::producer_ref() const noexcept
-    {
-        return producer_;
-    }
+	const NodeRef& Value::producer_ref() const noexcept
+	{
+		return producer_;
+	}
 }
