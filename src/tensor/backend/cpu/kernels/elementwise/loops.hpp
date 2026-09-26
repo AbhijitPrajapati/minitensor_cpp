@@ -151,10 +151,6 @@ namespace minitensor::detail::cpu
 			lhs.layout().broadcasted_to(lhs.shape(), output_shape),
 			rhs.layout().broadcasted_to(rhs.shape(), output_shape) };
 
-		const Layout& lhs_layout = layouts[0];
-		const Layout& rhs_layout = layouts[1];
-		const auto lhs_offset = static_cast<std::size_t>(lhs_layout.offset());
-		const auto rhs_offset = static_cast<std::size_t>(rhs_layout.offset());
 		const ElementwisePlan iteration(output_shape, layouts);
 		iteration.for_each_run(
 			[&](Shape::size_type linear,

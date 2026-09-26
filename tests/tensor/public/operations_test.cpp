@@ -1,6 +1,7 @@
 #include <minitensor/ops.hpp>
 
 #include <array>
+#include <optional>
 #include <span>
 #include <stdexcept>
 #include <utility>
@@ -197,6 +198,10 @@ namespace minitensor::test
 			full(Shape{2, 3}, 3.0F) };
 		expect(concatenate(concatenation_inputs, -1).shape() == Shape{ 2, 4 },
 			   "concatenate joins extents along a normalized axis and accepts empty inputs");
+		expect(slice(volume, 1, 3, 3).shape() == Shape{ 2, 0, 4 },
+			   "slice preserves rank for an empty half-open interval");
+		expect(slice(volume, -1, std::nullopt, std::nullopt, -1).shape() == volume.shape(),
+			   "slice supports omitted bounds and a negative step");
 
 		constexpr std::array<Axis, 1> last_axis{ 1 };
 		const Tensor row_sums = sum(matrix, last_axis);
@@ -417,6 +422,12 @@ namespace minitensor::test
 				(void)concatenate(std::span<const Tensor>{});
 			},
 			"concatenate rejects an empty input sequence");
+		expect_throws<std::invalid_argument>(
+			[&matrix]
+			{
+				(void)slice(matrix, 0, std::nullopt, std::nullopt, 0);
+			},
+			"slice rejects a zero step");
 		expect_throws<std::out_of_range>(
 			[&scalar]
 			{

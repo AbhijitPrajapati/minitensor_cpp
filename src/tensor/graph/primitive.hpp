@@ -27,7 +27,7 @@ namespace minitensor::detail
 		{
 			return true;
 		}
-		[[nodiscard]] virtual std::vector<std::optional<Tensor>> vjp(std::span<const Tensor> inputs, const Tensor& output, const Tensor& output_cotangent) const
+		[[nodiscard]] virtual std::vector<std::optional<Tensor>> vjp(std::span<const Tensor>, const Tensor&, const Tensor&) const
 		{
 			throw std::logic_error{ "VJP not implemented for this primitive" };
 		}

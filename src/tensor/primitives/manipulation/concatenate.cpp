@@ -1,7 +1,6 @@
 #include "concatenate.hpp"
 
 #include <limits>
-#include <memory>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -9,13 +8,13 @@
 #include <utility>
 #include <vector>
 
+#include <minitensor/ops/manipulation.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
-#include "narrow.hpp"
-#include "tensor/ops/apply_primitive.hpp"
 #include "tensor/core/axis.hpp"
 #include "tensor/core/tensor_spec.hpp"
+#include "tensor/ops/apply_primitive.hpp"
 
 namespace minitensor::detail
 {
@@ -112,9 +111,8 @@ namespace minitensor::detail
 		for (const Tensor& input : inputs)
 		{
 			const Extent length = input.shape()[axis_];
-			contributions.emplace_back(apply_primitive(
-				std::make_unique<NarrowPrimitive>(axis_, start, length, input_rank_),
-				output_cotangent));
+			contributions.emplace_back(
+				slice(output_cotangent, axis_, start, start + length, 1));
 			start += length;
 		}
 		return contributions;

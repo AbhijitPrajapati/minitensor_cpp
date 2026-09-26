@@ -42,9 +42,9 @@ target_sources(
         src/tensor/primitives/manipulation/broadcast_to.cpp
         src/tensor/primitives/manipulation/concatenate.cpp
         src/tensor/primitives/manipulation/contiguous.cpp
-        src/tensor/primitives/manipulation/narrow.cpp
         src/tensor/primitives/manipulation/permute.cpp
         src/tensor/primitives/manipulation/reshape.cpp
+        src/tensor/primitives/manipulation/slice.cpp
         src/tensor/primitives/reduction/sum.cpp
         src/tensor/storage/layout.cpp
         src/tensor/storage/materialization.cpp
