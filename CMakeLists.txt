@@ -102,37 +102,99 @@ target_link_libraries(minitensor_demo PRIVATE minitensor)
 # Enable testing with CTest
 include(CTest)
 if(BUILD_TESTING)
-    # Add test executable
-    add_executable(
-    tensor_tests 
-    tests/tensor/test_main.cpp
-    tests/tensor/public/operations_test.cpp
-    tests/tensor/public/types_test.cpp
-    tests/tensor/public/evaluation_test.cpp
-    tests/tensor/public/data_test.cpp
-    tests/tensor/public/autograd_test.cpp
-    tests/tensor/internal/core_test.cpp
-    tests/tensor/internal/apply_operation_test.cpp
-    tests/tensor/internal/graph_objects_test.cpp
-    tests/tensor/internal/layout_test.cpp
-    tests/tensor/internal/materialization_test.cpp
-    tests/tensor/internal/ownership_test.cpp
-    tests/tensor/internal/cpu_runtime_test.cpp
-    tests/tensor/internal/cpu_random_test.cpp
-    tests/tensor/internal/kernel_registry_test.cpp
-    tests/tensor/internal/tensor_view_test.cpp
-    tests/tensor/internal/cpu_kernels_test.cpp
-    tests/tensor/internal/matmul_plan_test.cpp
-    tests/tensor/internal/evaluator_test.cpp
-    tests/tensor/internal/runtime_registry_test.cpp
-    tests/tensor/internal/random_test.cpp
-    tests/tensor/internal/reduce_to_shape_test.cpp
-    tests/tensor/internal/autograd_engine_test.cpp
+    # Fetch GoogleTest
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
-    # Link test executable to library
-    target_link_libraries(tensor_tests PRIVATE minitensor)
-    # Allow the tests to access internal headers
-    target_include_directories(tensor_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-    # Add test w/ command to run
-    add_test(NAME minitensor.tensor COMMAND tensor_tests)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+    include(GoogleTest)
+    
+    # Declare function to add a test executable
+    function(minitensor_add_test_executable target label)
+        # Add executable
+        add_executable(${target} ${ARGN})
+        # Link to library and set include directories
+        target_link_libraries(${target} PRIVATE minitensor GTest::gtest_main)
+        target_include_directories(${target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+        target_compile_features(${target} PRIVATE cxx_std_20)
+        set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
+
+        if(MSVC)
+            target_compile_options(${target} PRIVATE /W4 /permissive-)
+        else()
+            target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+        endif()
+
+        # Register with GoogleTest
+        gtest_discover_tests(
+            ${target}
+            TEST_PREFIX "${label}."
+            PROPERTIES LABELS "${label}"
+        )
+    endfunction()
+
+    # Public tests
+    minitensor_add_test_executable(
+        minitensor_tensor_public_tests
+        public
+        tests/tensor/public/types_test.cpp
+        tests/tensor/public/tensor_test.cpp
+        tests/tensor/public/creation_test.cpp
+        tests/tensor/public/elementwise_test.cpp
+        tests/tensor/public/manipulation_test.cpp
+        tests/tensor/public/reduction_test.cpp
+        tests/tensor/public/linalg_test.cpp
+        tests/tensor/public/data_test.cpp
+        tests/tensor/public/evaluation_test.cpp
+        tests/tensor/public/random_test.cpp
+        tests/tensor/public/autograd_test.cpp
+        tests/tensor/public/autograd_elementwise_test.cpp
+        tests/tensor/public/autograd_manipulation_test.cpp
+        tests/tensor/public/autograd_linalg_test.cpp
+    )
+
+    # Internal algorithm tests
+    minitensor_add_test_executable(
+        minitensor_tensor_internal_tests
+        internal
+        tests/tensor/internal/core/axis_test.cpp
+        tests/tensor/internal/core/dense_size_test.cpp
+        tests/tensor/internal/core/random_test.cpp
+        tests/tensor/internal/core/shape_inference_test.cpp
+        tests/tensor/internal/graph/graph_test.cpp
+        tests/tensor/internal/graph/ownership_test.cpp
+        tests/tensor/internal/storage/layout_test.cpp
+        tests/tensor/internal/storage/materialization_test.cpp
+        tests/tensor/internal/dispatch/kernel_registry_test.cpp
+        tests/tensor/internal/dispatch/tensor_view_test.cpp
+        tests/tensor/internal/execution/evaluator_test.cpp
+        tests/tensor/internal/execution/runtime_registry_test.cpp
+        tests/tensor/internal/autograd/engine_test.cpp
+        tests/tensor/internal/autograd/reduce_to_shape_test.cpp
+    )
+    # Allow inclusion of internal source
+    target_include_directories(
+        minitensor_tensor_internal_tests
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+
+    # CPU-specific backend tests
+    minitensor_add_test_executable(
+        minitensor_tensor_cpu_tests
+        cpu
+        tests/tensor/cpu/runtime_test.cpp
+        tests/tensor/cpu/registration_test.cpp
+        tests/tensor/cpu/kernels_test.cpp
+        tests/tensor/cpu/random_kernels_test.cpp
+    )
+    # Allow inclusion of internal source
+    target_include_directories(
+        minitensor_tensor_cpu_tests
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
 endif()

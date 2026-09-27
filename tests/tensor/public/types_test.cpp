@@ -6,95 +6,97 @@
 #include <stdexcept>
 #include <vector>
 
-#include "../support/test.hpp"
+#include <gtest/gtest.h>
+
+#include "tensor/support/tensor_assertions.hpp"
 
 namespace minitensor::test
 {
-    void run_types_test()
-    {
-        const Shape scalar;
-        expect(scalar.rank() == 0, "a default shape has rank zero");
-        expect(scalar.is_scalar(), "a default shape represents a scalar");
-        expect(scalar.dimensions().empty(), "a scalar shape has no dimensions");
-        expect(scalar.numel() == 1, "a scalar shape contains one element");
+	TEST(ShapeTest, RepresentsScalars)
+	{
+		const Shape shape;
 
-        const Shape from_list{2, 3, 4};
-        const std::array<Extent, 3> expected_dimensions{2, 3, 4};
-        expect(from_list.rank() == expected_dimensions.size(), "initializer-list construction preserves rank");
-        expect(std::ranges::equal(from_list.dimensions(), expected_dimensions),
-               "initializer-list construction preserves dimensions");
-        expect(from_list[1] == 3, "shape indexing returns the selected extent");
-        expect(from_list.numel() == 24, "shape element count is the product of its extents");
-        expect(!from_list.is_scalar(), "a ranked shape is not a scalar");
+		EXPECT_EQ(shape.rank(), 0);
+		EXPECT_TRUE(shape.is_scalar());
+		EXPECT_TRUE(shape.dimensions().empty());
+		EXPECT_EQ(shape.numel(), 1);
+	}
 
-        const std::vector<Extent> dimensions{5, 2, 3};
-        const Shape from_vector{dimensions};
-        expect(std::ranges::equal(from_vector.dimensions(), dimensions),
-               "vector construction preserves dimensions");
-        expect(from_vector.numel() == 30, "vector construction computes the element count");
+	TEST(ShapeTest, PreservesDimensionsAndCountsElements)
+	{
+		const Shape from_list{ 2, 3, 4 };
+		const std::array<Extent, 3> expected{ 2, 3, 4 };
+		EXPECT_EQ(from_list.rank(), expected.size());
+		EXPECT_TRUE(std::ranges::equal(from_list.dimensions(), expected));
+		EXPECT_EQ(from_list[1], 3);
+		EXPECT_EQ(from_list.numel(), 24);
 
-        const Shape empty{2, 0, std::numeric_limits<Extent>::max()};
-        expect(empty.numel() == 0, "any zero extent makes the tensor empty without overflow");
+		const std::vector<Extent> dimensions{ 5, 2, 3 };
+		const Shape from_vector{ dimensions };
+		EXPECT_TRUE(std::ranges::equal(from_vector.dimensions(), dimensions));
+		EXPECT_EQ(from_vector.numel(), 30);
+	}
 
-        expect(Shape{2, 3} == Shape{2, 3}, "equal shapes compare equal");
-        expect(Shape{2, 3} != Shape{3, 2}, "dimension order participates in shape equality");
+	TEST(ShapeTest, HandlesEmptyShapesWithoutSpuriousOverflow)
+	{
+		const Shape shape{ 2, 0, std::numeric_limits<Extent>::max() };
+		EXPECT_EQ(shape.numel(), 0);
+		EXPECT_FALSE(shape.is_scalar());
+	}
 
-        expect_throws<std::invalid_argument>(
-            []
-            {
-                const Shape invalid{3, -2, 1};
-                (void)invalid;
-            },
-            "initializer-list construction rejects negative extents");
-        expect_throws<std::invalid_argument>(
-            []
-            {
-                const Shape invalid{std::vector<Extent>{1, -1}};
-                (void)invalid;
-            },
-            "vector construction rejects negative extents");
-        expect_throws<std::overflow_error>(
-            []
-            {
-                const Shape invalid{std::numeric_limits<Extent>::max(), 3};
-                (void)invalid;
-            },
-            "shape construction rejects an overflowing element count");
+	TEST(ShapeTest, ComparesDimensionSequences)
+	{
+		EXPECT_EQ((Shape{ 2, 3 }), (Shape{ 2, 3 }));
+		EXPECT_NE((Shape{ 2, 3 }), (Shape{ 3, 2 }));
+	}
 
-        expect(dtype_size(DType::Float32) == sizeof(float), "Float32 reports the size of float");
-        expect(dtype_name(DType::Float32) == "float32", "Float32 reports its public name");
+	TEST(ShapeTest, RejectsNegativeExtents)
+	{
+		EXPECT_THROW((void)(Shape{ 3, -2, 1 }), std::invalid_argument);
+		EXPECT_THROW((void)(Shape{ std::vector<Extent>{ 1, -1 } }), std::invalid_argument);
+	}
 
-        const auto invalid_dtype = static_cast<DType>(255);
-        expect_throws<std::invalid_argument>(
-            [invalid_dtype]
-            {
-                (void)dtype_size(invalid_dtype);
-            },
-            "dtype_size rejects unknown values");
-        expect_throws<std::invalid_argument>(
-            [invalid_dtype]
-            {
-                (void)dtype_name(invalid_dtype);
-            },
-            "dtype_name rejects unknown values");
+	TEST(ShapeTest, RejectsElementCountOverflow)
+	{
+		EXPECT_THROW(
+			(void)(Shape{ std::numeric_limits<Extent>::max(), 3 }),
+			std::overflow_error);
+	}
 
-        const Device default_device;
-        expect(default_device == Device::cpu(), "a default device is CPU zero");
-        expect(default_device.type() == DeviceType::Cpu, "the default device type is CPU");
-        expect(default_device.index() == 0, "the default device index is zero");
+	TEST(DTypeTest, ExposesFloat32Properties)
+	{
+		EXPECT_EQ(dtype_size(DType::Float32), sizeof(float));
+		EXPECT_EQ(dtype_name(DType::Float32), "float32");
+	}
 
-        const Device indexed_cpu = Device::cpu(3);
-        expect(indexed_cpu.type() == DeviceType::Cpu, "cpu constructs a CPU device");
-        expect(indexed_cpu.index() == 3, "cpu preserves a nonzero device index");
-        expect(indexed_cpu != default_device, "device indices participate in equality");
+	TEST(DTypeTest, RejectsUnknownValues)
+	{
+		const auto unknown = static_cast<DType>(255);
+		EXPECT_THROW((void)dtype_size(unknown), std::invalid_argument);
+		EXPECT_THROW((void)dtype_name(unknown), std::invalid_argument);
+	}
 
-        const TensorOptions defaults;
-        expect(defaults.dtype == DType::Float32, "tensor options default to Float32");
-        expect(defaults.device == Device::cpu(), "tensor options default to CPU zero");
+	TEST(DeviceTest, DefaultsToCpuZeroAndPreservesIndices)
+	{
+		const Device default_device;
+		EXPECT_EQ(default_device, Device::cpu());
+		EXPECT_EQ(default_device.type(), DeviceType::Cpu);
+		EXPECT_EQ(default_device.index(), 0);
 
-        const TensorOptions customized{DType::Float32, Device::cpu(4)};
-        expect(customized == TensorOptions{DType::Float32, Device::cpu(4)},
-               "tensor option equality compares all fields");
-        expect(customized != defaults, "different tensor options compare unequal");
-    }
+		const Device indexed = Device::cpu(3);
+		EXPECT_EQ(indexed.type(), DeviceType::Cpu);
+		EXPECT_EQ(indexed.index(), 3);
+		EXPECT_NE(indexed, default_device);
+	}
+
+	TEST(TensorOptionsTest, HasValueSemantics)
+	{
+		const TensorOptions defaults;
+		EXPECT_EQ(defaults.dtype, DType::Float32);
+		EXPECT_EQ(defaults.device, Device::cpu());
+
+		const TensorOptions customized{ DType::Float32, Device::cpu(4) };
+		EXPECT_EQ(customized, (TensorOptions{ DType::Float32, Device::cpu(4) }));
+		EXPECT_NE(customized, defaults);
+	}
 }
