@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <optional>
 #include <stdexcept>
 #include <vector>
 
@@ -224,6 +225,28 @@ namespace minitensor::test
 				   broadcast_vjp.front().shape() == row.shape() &&
 				   std::ranges::equal(to_vector(broadcast_vjp.front()), expected_broadcast_vjp),
 			   "broadcast_to VJP sums cotangents along expanded dimensions");
+
+		const Tensor reversed_matrix = slice(
+			matrix, -1, std::nullopt, std::nullopt, -1);
+		const std::vector<Tensor> reversed_slice_vjp = vjp(
+			reversed_matrix, matrix_target, transform_seed);
+		const std::array<float, 6> expected_reversed_slice_vjp{
+			3.0F, 2.0F, 1.0F, 6.0F, 5.0F, 4.0F };
+		expect(reversed_slice_vjp.size() == 1 &&
+				   std::ranges::equal(
+			to_vector(reversed_slice_vjp.front()), expected_reversed_slice_vjp),
+			   "slice VJP scatters a cotangent through a negative step");
+
+		const Tensor empty_matrix_slice = slice(matrix, 1, 1, 1);
+		const std::vector<Tensor> empty_slice_vjp = vjp(
+			empty_matrix_slice,
+			matrix_target,
+			full(Shape{2, 0}, 1.0F));
+		const std::array<float, 6> expected_empty_slice_vjp{};
+		expect(empty_slice_vjp.size() == 1 &&
+				   std::ranges::equal(
+			to_vector(empty_slice_vjp.front()), expected_empty_slice_vjp),
+			   "an empty slice VJP zero-fills the original input shape");
 
 		const Tensor concatenated_lhs = full(Shape{ 2, 1 }, 0.0F);
 		const Tensor concatenated_rhs = full(Shape{ 2, 2 }, 0.0F);

@@ -22,6 +22,7 @@
 #include "tensor/primitives/manipulation/concatenate.hpp"
 #include "tensor/primitives/manipulation/contiguous.hpp"
 #include "tensor/primitives/manipulation/reshape.hpp"
+#include "tensor/primitives/manipulation/slice.hpp"
 #include "tensor/primitives/reduction/sum.hpp"
 #include "tensor/storage/layout.hpp"
 #include "tensor/storage/materialization.hpp"
@@ -58,6 +59,8 @@ namespace minitensor::test
 		using detail::MutableTensorView;
 		using detail::NegatePrimitive;
 		using detail::ReshapePrimitive;
+		using detail::SliceParameters;
+		using detail::SliceScatterPrimitive;
 		using detail::SubtractPrimitive;
 		using detail::SumPrimitive;
 		using detail::TensorSpec;
@@ -76,6 +79,7 @@ namespace minitensor::test
 		KernelKey reshape_key{ typeid(ReshapePrimitive), DeviceType::Cpu };
 		KernelKey contiguous_key{ typeid(ContiguousPrimitive), DeviceType::Cpu };
 		KernelKey concatenate_key{ typeid(ConcatenatePrimitive), DeviceType::Cpu };
+		KernelKey slice_scatter_key{ typeid(SliceScatterPrimitive), DeviceType::Cpu };
 		KernelKey sum_key{ typeid(SumPrimitive), DeviceType::Cpu };
 		expect(registry.contains(full_key), "cpu kernel registration installs the full kernel");
 		expect(registry.contains(add_key), "cpu kernel registration installs the add kernel");
@@ -86,6 +90,7 @@ namespace minitensor::test
 		expect(registry.contains(reshape_key), "cpu kernel registration installs the reshape kernel");
 		expect(registry.contains(contiguous_key), "cpu kernel registration installs the contiguous kernel");
 		expect(registry.contains(concatenate_key), "cpu kernel registration installs the concatenate kernel");
+		expect(registry.contains(slice_scatter_key), "cpu kernel registration installs the slice scatter kernel");
 		expect(registry.contains(sum_key), "cpu kernel registration installs the sum kernel");
 
 		CpuRuntime runtime;
@@ -93,6 +98,7 @@ namespace minitensor::test
 		const KernelFn& add_kernel = registry.get(add_key);
 		const KernelFn& reshape_kernel = registry.get(reshape_key);
 		const KernelFn& concatenate_kernel = registry.get(concatenate_key);
+		const KernelFn& slice_scatter_kernel = registry.get(slice_scatter_key);
 
 		const TensorSpec full_spec{ Shape{2, 3}, DType::Float32, Device::cpu() };
 		const BufferRef full_buffer = runtime.allocate(7 * sizeof(float));
@@ -267,5 +273,53 @@ namespace minitensor::test
 			expected_concatenate.end(),
 			concatenate_output_data),
 			"the concatenate kernel copies strided and empty inputs into output sections");
+
+		const TensorSpec slice_scatter_input_spec{
+			Shape{2, 3}, DType::Float32, Device::cpu() };
+		const TensorSpec slice_scatter_output_spec{
+			Shape{2, 5}, DType::Float32, Device::cpu() };
+		const BufferRef slice_scatter_input_buffer = runtime.allocate(6 * sizeof(float));
+		const BufferRef slice_scatter_output_buffer = runtime.allocate(11 * sizeof(float));
+		auto& slice_scatter_input_cpu_buffer = as_cpu_buffer(slice_scatter_input_buffer);
+		auto& slice_scatter_output_cpu_buffer = as_cpu_buffer(slice_scatter_output_buffer);
+		const std::array<float, 6> slice_scatter_input_physical_values{
+			1.0F, 4.0F, 2.0F, 5.0F, 3.0F, 6.0F };
+		std::copy(
+			slice_scatter_input_physical_values.begin(),
+			slice_scatter_input_physical_values.end(),
+			reinterpret_cast<float*>(slice_scatter_input_cpu_buffer.data()));
+		auto* slice_scatter_output_data =
+			reinterpret_cast<float*>(slice_scatter_output_cpu_buffer.data());
+		std::fill_n(slice_scatter_output_data, 11, -1.0F);
+
+		const Materialization slice_scatter_input_materialization{
+			slice_scatter_input_buffer, Layout{{1, 2}} };
+		const Materialization slice_scatter_output_materialization{
+			slice_scatter_output_buffer,
+			Layout::contiguous(slice_scatter_output_spec.shape, 1) };
+		const TensorView slice_scatter_input{
+			slice_scatter_input_spec, slice_scatter_input_materialization };
+		const std::array<TensorView, 1> slice_scatter_inputs{ slice_scatter_input };
+		const MutableTensorView slice_scatter_output{
+			slice_scatter_output_spec, slice_scatter_output_materialization };
+		const SliceParameters slice_parameters{
+			1, 0, 5, 2, slice_scatter_output_spec.shape };
+		const SliceScatterPrimitive slice_scatter_primitive{
+			slice_scatter_output_spec.shape, slice_parameters };
+		slice_scatter_kernel(
+			runtime,
+			slice_scatter_primitive,
+			slice_scatter_inputs,
+			slice_scatter_output);
+
+		const std::array<float, 11> expected_slice_scatter{
+			-1.0F,
+			1.0F, 0.0F, 2.0F, 0.0F, 3.0F,
+			4.0F, 0.0F, 5.0F, 0.0F, 6.0F };
+		expect(std::equal(
+			expected_slice_scatter.begin(),
+			expected_slice_scatter.end(),
+			slice_scatter_output_data),
+			"the slice scatter kernel zero-fills gaps and copies a strided cotangent");
 	}
 }
