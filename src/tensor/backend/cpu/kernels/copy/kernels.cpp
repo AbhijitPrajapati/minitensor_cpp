@@ -15,6 +15,7 @@
 #include "tensor/primitives/manipulation/concatenate.hpp"
 #include "tensor/primitives/manipulation/contiguous.hpp"
 #include "tensor/primitives/manipulation/reshape.hpp"
+#include "tensor/primitives/manipulation/slice.hpp"
 
 namespace minitensor::detail::cpu
 {
@@ -55,6 +56,27 @@ namespace minitensor::detail::cpu
 				concatenate_copy<T>(inputs, output, concatenate_primitive.axis());
 			});
 		}
+
+		void run_slice_scatter(
+			DeviceRuntime&,
+			const Primitive& primitive,
+			std::span<const TensorView> inputs,
+			MutableTensorView output)
+		{
+			assert(inputs.size() == 1);
+			const auto& slice_scatter = dynamic_cast<const SliceScatterPrimitive&>(primitive);
+
+			dispatch_dtype(
+				output.dtype(), [&]<typename T>(std::type_identity<T>)
+			{
+				slice_scatter_copy<T>(
+					inputs.front(),
+					output,
+					slice_scatter.axis(),
+					slice_scatter.start(),
+					slice_scatter.step());
+			});
+		}
 	}
 
 	void register_copy_kernels(KernelRegistry& registry)
@@ -68,5 +90,8 @@ namespace minitensor::detail::cpu
 		registry.register_kernel(
 			KernelKey{ typeid(ConcatenatePrimitive), DeviceType::Cpu },
 			run_concatenate);
+		registry.register_kernel(
+			KernelKey{ typeid(SliceScatterPrimitive), DeviceType::Cpu },
+			run_slice_scatter);
 	}
 }

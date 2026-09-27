@@ -155,4 +155,57 @@ namespace minitensor::detail::cpu
 
 		assert(axis_start == output.shape()[axis]);
 	}
+
+	template <CpuElement T>
+	void slice_scatter_copy(
+		const TensorView& input,
+		MutableTensorView output,
+		Shape::size_type axis,
+		Extent start,
+		Extent step)
+	{
+		assert(input.dtype() == ElementDType<T>::value);
+		assert(output.dtype() == ElementDType<T>::value);
+		assert(output.layout().is_contiguous(output.shape()));
+		assert(input.shape().rank() == output.shape().rank());
+		assert(axis < output.shape().rank());
+		assert(step != 0);
+
+		if (output.shape().numel() == 0)
+		{
+			return;
+		}
+
+		T* output_data = data<T>(output);
+		assert(output.layout().offset() >= 0);
+		const auto output_offset =
+			static_cast<std::size_t>(output.layout().offset());
+		std::fill_n(output_data + output_offset, output.shape().numel(), T{ 0 });
+
+		if (input.shape().numel() == 0)
+		{
+			return;
+		}
+
+		std::vector<Layout::stride_type> destination_strides(
+			output.layout().strides().begin(),
+			output.layout().strides().end());
+		const Layout::stride_type output_axis_stride =
+			output.layout().stride(axis);
+		const Layout::offset_type destination_offset =
+			output.layout().offset() + start * output_axis_stride;
+		if (input.shape()[axis] > 1)
+		{
+			destination_strides[axis] = output_axis_stride * step;
+		}
+		const Layout destination_layout{
+			std::move(destination_strides), destination_offset };
+
+		copy_strided(
+			input.shape(),
+			data<T>(input),
+			input.layout(),
+			output_data,
+			destination_layout);
+	}
 }
