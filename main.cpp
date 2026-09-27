@@ -38,11 +38,10 @@ int main()
     //std::vector<minitensor::Tensor> tr{ a };
     //const auto d = minitensor::grad(c, tr).front();
 
-    const auto ftrs = std::array<float, 12>{ 
-        1.0F, 5.0F, 2.0F, 3.0F, 
+    const minitensor::Tensor gdfs = minitensor::from_data({
+        1.0F, 5.0F, 2.0F, 3.0F,
         7.0F, 1.0F, 3.0F, 2.0F,
-        0.5F, 4.0F, 45.0F, 3.0F };
-    const minitensor::Tensor gdfs = minitensor::from_data(ftrs, minitensor::Shape{ 3, 4 });
+        0.5F, 4.0F, 45.0F, 3.0F }, minitensor::Shape{ 3, 4 });
     const auto d = minitensor::slice(gdfs, 1, 6, 2, -1);
 
     const auto v = minitensor::to_vector(d);

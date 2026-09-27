@@ -1,5 +1,6 @@
 #include <minitensor/autograd.hpp>
 
+#include <initializer_list>
 #include <span>
 #include <stdexcept>
 #include <vector>
@@ -25,6 +26,16 @@ namespace minitensor
 		return detail::reverse_vjp(detail::TensorAccess::value(output), targets, output_cotangent);
 	}
 
+	std::vector<Tensor> vjp(const Tensor& output, std::initializer_list<Tensor> inputs, const Tensor& output_cotangent)
+	{
+		return vjp(output, std::span<const Tensor>(inputs.begin(), inputs.size()), output_cotangent);
+	}
+
+	std::vector<Tensor> vjp(const Tensor& output, const Tensor& input, const Tensor& output_cotangent)
+	{
+		return vjp(output, { input }, output_cotangent);
+	}
+
 	std::vector<Tensor> grad(const Tensor& output, std::span<const Tensor> inputs)
 	{
 		if (output.rank() != 0)
@@ -33,5 +44,15 @@ namespace minitensor
 		}
 		Tensor seed = full(Shape{}, 1.0F, TensorOptions{ output.dtype(), output.device() });
 		return vjp(output, inputs, seed);
+	}
+
+	std::vector<Tensor> grad(const Tensor& output, std::initializer_list<Tensor> inputs)
+	{
+		return grad(output, std::span<const Tensor>(inputs.begin(), inputs.size()));
+	}
+
+	std::vector<Tensor> grad(const Tensor& output, const Tensor& input)
+	{
+		return grad(output, {input});
 	}
 }

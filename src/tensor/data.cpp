@@ -1,6 +1,7 @@
 #include <minitensor/data.hpp>
 
 #include <cassert>
+#include <initializer_list>
 #include <memory>
 #include <span>
 #include <stdexcept>
@@ -44,6 +45,11 @@ namespace minitensor
 		auto value = std::make_shared<detail::Value>(std::move(spec));
 		value->materialize(std::move(materialization));
 		return detail::TensorAccess::make(std::move(value));
+	}
+
+	Tensor from_data(std::initializer_list<float> data, Shape shape, TensorOptions options)
+	{
+		return from_data(std::span<const float>(data.begin(), data.size()), std::move(shape), options);
 	}
 
 	std::vector<float> to_vector(const Tensor& tensor)
