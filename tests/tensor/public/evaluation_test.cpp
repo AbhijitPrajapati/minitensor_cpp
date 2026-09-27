@@ -1,48 +1,54 @@
+#include <minitensor/data.hpp>
 #include <minitensor/evaluation.hpp>
-#include <minitensor/ops.hpp>
+#include <minitensor/ops/creation.hpp>
+#include <minitensor/ops/elementwise.hpp>
+#include <minitensor/tensor.hpp>
+#include <minitensor/types.hpp>
 
 #include <array>
 #include <span>
 #include <stdexcept>
 
-#include "../support/test.hpp"
+#include <gtest/gtest.h>
+
+#include "tensor/support/tensor_assertions.hpp"
 
 namespace minitensor::test
 {
-	void run_evaluation_test()
+	TEST(EvaluationTest, AcceptsNoRoots)
 	{
-		eval(std::span<const Tensor>{});
+		EXPECT_NO_THROW(eval(std::span<const Tensor>{}));
+	}
 
-		const Tensor scalar = full(Shape{}, 3.5F);
-		eval(scalar);
-		eval(scalar);
-		expect(scalar.shape().is_scalar(),
-			   "single-tensor evaluation preserves a cached tensor handle");
-
+	TEST(EvaluationTest, EvaluatesSingleAndSharedRoots)
+	{
 		const Tensor lhs = full(Shape{ 2, 1 }, 1.5F);
 		const Tensor rhs = full(Shape{ 1, 3 }, 2.5F);
 		const Tensor sum = lhs + rhs;
-		const Tensor result = sum + full(Shape{ 2, 3 }, 4.0F);
-		const std::array<Tensor, 3> roots{ lhs, sum, result };
-		eval(roots);
-		expect(result.shape() == Shape{ 2, 3 },
-			   "multi-root evaluation executes a shared broadcasted computation graph");
+		const Tensor result = sum + 4.0F;
+		const std::array<Tensor, 4> roots{ lhs, sum, result, result };
 
-		eval(result);
-		expect(result.numel() == 6,
-			   "re-evaluating a materialized public tensor reuses its cached result");
+		EXPECT_NO_THROW(eval(roots));
+		const std::array<float, 6> expected{ 8.0F, 8.0F, 8.0F, 8.0F, 8.0F, 8.0F };
+		expect_tensor_eq(result, expected);
+		EXPECT_NO_THROW(eval(result));
+	}
 
+	TEST(EvaluationTest, SupportsInitializerListsAndEmptyStorage)
+	{
+		const Tensor scalar = full(Shape{}, 3.5F);
 		const Tensor empty = full(Shape{ 2, 0, 3 }, 7.0F);
-		eval(empty);
-		expect(empty.numel() == 0, "evaluation supports tensors with zero-byte storage");
 
-		expect_throws<std::runtime_error>(
-			[]
-			{
-				const Tensor unsupported = full(
-					Shape{ 1 }, 1.0F, TensorOptions{ DType::Float32, Device::cpu(1) });
-				eval(unsupported);
-			},
-			"public evaluation reports a device with no registered runtime");
+		EXPECT_NO_THROW(eval({ scalar, empty }));
+		EXPECT_FLOAT_EQ(item(scalar), 3.5F);
+		EXPECT_TRUE(to_vector(empty).empty());
+	}
+
+	TEST(EvaluationTest, ReportsUnavailableDevices)
+	{
+		const Tensor unsupported = full(
+			Shape{ 1 }, 1.0F,
+			TensorOptions{ DType::Float32, Device::cpu(1) });
+		EXPECT_THROW(eval(unsupported), std::runtime_error);
 	}
 }

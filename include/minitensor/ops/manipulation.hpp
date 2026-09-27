@@ -26,5 +26,4 @@ namespace minitensor
 	[[nodiscard]] Tensor concatenate(std::span<const Tensor> inputs, Axis axis = 0);
 	[[nodiscard]] Tensor concatenate(std::initializer_list<Tensor> inputs, Axis axis = 0);
 	[[nodiscard]] Tensor slice(const Tensor& input, Axis axis, std::optional<Extent> start = std::nullopt, std::optional<Extent> stop = std::nullopt, Extent step = 1);
-	[[nodiscard]] Tensor select(const Tensor& input, Axis axis, Extent index);
 }
