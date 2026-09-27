@@ -1,6 +1,6 @@
 #include <minitensor/evaluation.hpp>
 
-#include <array>
+#include <initializer_list>
 #include <span>
 #include <vector>
 
@@ -23,9 +23,13 @@ namespace minitensor
 		detail::environment().evaluate(roots);
 	}
 
+	void eval(std::initializer_list<Tensor> tensors)
+	{
+		eval(std::span<const Tensor>(tensors.begin(), tensors.size()));
+	}
+
 	void eval(const Tensor& tensor)
 	{
-		const std::array<Tensor, 1> tensors{ tensor };
-		eval(tensors);
+		eval({ tensor });
 	}
 }

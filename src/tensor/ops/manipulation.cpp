@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <array>
+#include <initializer_list>
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <span>
 #include <stdexcept>
 #include <utility>
@@ -63,6 +65,11 @@ namespace minitensor
 	{
 		return detail::apply_primitive(
 			std::make_unique<detail::PermutePrimitive>(permutation, input.rank()), input);
+	}
+
+	Tensor permute(const Tensor& input, std::initializer_list<Axis> permutation)
+	{
+		return permute(input, std::span<const Axis>(permutation.begin(), permutation.size()));
 	}
 
 	Tensor transpose(const Tensor& input)
@@ -154,8 +161,7 @@ namespace minitensor
 
 	Tensor squeeze(const Tensor& input, Axis axis)
 	{
-		const std::array<Axis, 1> axes{ axis };
-		return squeeze(input, axes);
+		return squeeze(input, { axis });
 	}
 
 	Tensor squeeze(const Tensor& input, std::span<const Axis> axes)
@@ -191,6 +197,11 @@ namespace minitensor
 			}
 		}
 		return reshape(input, Shape{ std::move(output_dimensions) });
+	}
+
+	Tensor squeeze(const Tensor& input, std::initializer_list<Axis> axes)
+	{
+		return squeeze(input, std::span<const Axis>(axes.begin(), axes.size()));
 	}
 
 	Tensor unsqueeze(const Tensor& input, Axis axis)
@@ -229,6 +240,11 @@ namespace minitensor
 			std::make_unique<detail::ConcatenatePrimitive>(axis, inputs.front().rank()), inputs);
 	}
 
+	Tensor concatenate(std::initializer_list<Tensor> inputs, Axis axis)
+	{
+		return concatenate(std::span<const Tensor>(inputs.begin(), inputs.size()), axis);
+	}
+
 	Tensor slice(
 		const Tensor& input,
 		Axis axis,
@@ -238,7 +254,7 @@ namespace minitensor
 	{
 		return detail::apply_primitive(
 			std::make_unique<detail::SlicePrimitive>(
-				axis, start, stop, step, input.shape()),
+			axis, start, stop, step, input.shape()),
 			input);
 	}
 }
