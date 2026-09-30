@@ -3,6 +3,7 @@
 #include "autograd.hpp"
 #include "data.hpp"
 #include "evaluation.hpp"
+#include "nn.hpp"
 #include "ops.hpp"
 #include "random.hpp"
 #include "tensor.hpp"
