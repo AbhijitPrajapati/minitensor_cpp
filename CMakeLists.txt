@@ -69,6 +69,7 @@ target_sources(
         src/tensor/autograd/engine.cpp
         src/tensor/autograd/reduce_to_shape.cpp
         src/tensor/autograd.cpp
+        src/nn/parameter.cpp
 )
 
 # Specify all header files the library needs
@@ -115,7 +116,7 @@ if(BUILD_TESTING)
     include(GoogleTest)
     
     # Declare function to add a test executable
-    function(minitensor_add_test_executable target label)
+    function(minitensor_add_test_executable target prefix label)
         # Add executable
         add_executable(${target} ${ARGN})
         # Link to library and set include directories
@@ -133,14 +134,15 @@ if(BUILD_TESTING)
         # Register with GoogleTest
         gtest_discover_tests(
             ${target}
-            TEST_PREFIX "${label}."
+            TEST_PREFIX "${prefix}."
             PROPERTIES LABELS "${label}"
         )
     endfunction()
 
-    # Public tests
+    # Public tensor tests
     minitensor_add_test_executable(
         minitensor_tensor_public_tests
+        public
         public
         tests/tensor/public/types_test.cpp
         tests/tensor/public/tensor_test.cpp
@@ -158,9 +160,18 @@ if(BUILD_TESTING)
         tests/tensor/public/autograd_linalg_test.cpp
     )
 
+    # Public neural-network tests
+    minitensor_add_test_executable(
+        minitensor_nn_public_tests
+        nn
+        public
+        tests/nn/public/parameter_test.cpp
+    )
+
     # Internal algorithm tests
     minitensor_add_test_executable(
         minitensor_tensor_internal_tests
+        internal
         internal
         tests/tensor/internal/core/axis_test.cpp
         tests/tensor/internal/core/dense_size_test.cpp
@@ -186,6 +197,7 @@ if(BUILD_TESTING)
     # CPU-specific backend tests
     minitensor_add_test_executable(
         minitensor_tensor_cpu_tests
+        cpu
         cpu
         tests/tensor/cpu/runtime_test.cpp
         tests/tensor/cpu/registration_test.cpp
