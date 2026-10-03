@@ -70,6 +70,7 @@ target_sources(
         src/tensor/autograd/reduce_to_shape.cpp
         src/tensor/autograd.cpp
         src/nn/parameter.cpp
+        src/nn/modules/linear.cpp
 )
 
 # Specify all header files the library needs
@@ -166,6 +167,8 @@ if(BUILD_TESTING)
         nn
         public
         tests/nn/public/parameter_test.cpp
+        tests/nn/public/module_test.cpp
+        tests/nn/public/linear_test.cpp
     )
 
     # Internal algorithm tests
