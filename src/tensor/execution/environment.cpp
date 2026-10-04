@@ -1,6 +1,5 @@
 #include "environment.hpp"
 
-#include <cstdint>
 #include <memory>
 #include <span>
 
@@ -10,7 +9,6 @@
 #include "tensor/backend/cpu/cpu_runtime.hpp"
 #include "tensor/backend/cpu/register_kernels.hpp"
 #include "tensor/backend/device_runtime.hpp"
-#include "tensor/core/random.hpp"
 #include "tensor/graph/fwd.hpp"
 
 namespace minitensor::detail
@@ -30,16 +28,6 @@ namespace minitensor::detail
 	DeviceRuntime& ExecutionEnvironment::runtime_for(const Device& device)
 	{
 		return runtimes_.get(device);
-	}
-
-	RandomKey ExecutionEnvironment::reserve_random_key(const Device& device)
-	{
-		return generators_.reserve_key(device);
-	}
-
-	void ExecutionEnvironment::manual_seed(std::uint64_t seed)
-	{
-		generators_.manual_seed(seed);
 	}
 
 	ExecutionEnvironment& environment()

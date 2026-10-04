@@ -6,6 +6,8 @@
 #include <type_traits>
 
 #include <minitensor/nn/parameter.hpp>
+#include <unordered_map>
+#include <vector>
 
 
 namespace minitensor::nn
@@ -73,5 +75,30 @@ namespace minitensor::nn
 		using FunctionType = std::remove_reference_t<Function>;
 		detail::ConstParameterTraversal<FunctionType> traversal{ function };
 		traversal.visit(module);
+	}
+
+	template <typename Module, typename Function>
+	void for_each_unique_parameter(const Module& module, Function&& function)
+	{
+		std::unordered_map<ParameterId, Parameter*> seen;
+		std::vector<const Parameter*> ordered;
+
+		for_each_parameter(module, [&](const Parameter& parameter)
+ {
+	 auto [position, inserted] = seen.try_emplace(parameter.id(), &parameter);
+	 if (inserted)
+	 {
+		 ordered.push_back(&parameter);
+	 }
+	 else
+	 {
+
+	 }
+		});
+
+		for (const Parameter* parameter : ordered)
+		{
+			std::invoke(function, *parameter);
+		}
 	}
 }

@@ -3,6 +3,7 @@
 #include <optional>
 
 #include <minitensor/nn/parameter.hpp>
+#include <minitensor/random.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
@@ -14,6 +15,7 @@ namespace minitensor::nn
 		Linear(
 			Extent input_features,
 			Extent output_features,
+			RandomKey key,
 			bool use_bias = true,
 			TensorOptions options = {});
 
@@ -34,6 +36,7 @@ namespace minitensor::nn
 		[[nodiscard]] static InitializedParameters initialize_parameters(
 			Extent input_features,
 			Extent output_features,
+			RandomKey key,
 			bool use_bias,
 			TensorOptions options);
 

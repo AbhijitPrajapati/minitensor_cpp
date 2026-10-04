@@ -8,16 +8,15 @@
 #include <utility>
 #include <vector>
 
+#include <minitensor/random.hpp>
 #include <minitensor/tensor.hpp>
 
-#include "tensor/core/random.hpp"
 #include "tensor/core/tensor_spec.hpp"
-
 
 namespace minitensor::detail
 {
-	UniformParameters::UniformParameters(float low, float high)
-		: low_(low), high_(high)
+	UniformPrimitive::UniformPrimitive(TensorSpec output_spec, float low, float high, RandomKey key)
+		: output_spec_(std::move(output_spec)), low_(low), high_(high), key_(key)
 	{
 		if (!std::isfinite(low_) || !std::isfinite(high_))
 		{
@@ -28,20 +27,6 @@ namespace minitensor::detail
 			throw std::invalid_argument{ "uniform lower bound cannot exceed upper bound" };
 		}
 	}
-
-	float UniformParameters::low() const noexcept
-	{
-		return low_;
-	}
-
-	float UniformParameters::high() const noexcept
-	{
-		return high_;
-	}
-
-	UniformPrimitive::UniformPrimitive(TensorSpec output_spec, UniformParameters parameters, RandomKey key)
-		: output_spec_(std::move(output_spec)), parameters_(parameters), key_(key)
-	{}
 
 	std::string_view UniformPrimitive::name() const noexcept
 	{
@@ -59,12 +44,12 @@ namespace minitensor::detail
 
 	float UniformPrimitive::low() const noexcept
 	{
-		return parameters_.low();
+		return low_;
 	}
 
 	float UniformPrimitive::high() const noexcept
 	{
-		return parameters_.high();
+		return high_;
 	}
 
 	const RandomKey& UniformPrimitive::key() const noexcept

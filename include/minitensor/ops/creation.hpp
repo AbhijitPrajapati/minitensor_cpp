@@ -1,5 +1,6 @@
 #pragma once
 
+#include <minitensor/random.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
@@ -14,10 +15,10 @@ namespace minitensor
 	[[nodiscard]] Tensor zeros_like(const Tensor& input, TensorOptions options);
 	[[nodiscard]] Tensor ones_like(const Tensor& input);
 	[[nodiscard]] Tensor ones_like(const Tensor& input, TensorOptions options);
-	[[nodiscard]] Tensor uniform(Shape shape, float low, float high, TensorOptions options = {});
-	[[nodiscard]] Tensor normal(Shape shape, float mean, float std_dev, TensorOptions options = {});
-	[[nodiscard]] Tensor uniform_like(const Tensor& input, float low, float high);
-	[[nodiscard]] Tensor uniform_like(const Tensor& input, float low, float high, TensorOptions options);
-	[[nodiscard]] Tensor normal_like(const Tensor& input, float mean, float std_dev);
-	[[nodiscard]] Tensor normal_like(const Tensor& input, float mean, float std_dev, TensorOptions options);
+	[[nodiscard]] Tensor uniform(Shape shape, float low, float high, RandomKey key, TensorOptions options = {});
+	[[nodiscard]] Tensor normal(Shape shape, float mean, float std_dev, RandomKey key, TensorOptions options = {});
+	[[nodiscard]] Tensor uniform_like(const Tensor& input, float low, float high, RandomKey key);
+	[[nodiscard]] Tensor uniform_like(const Tensor& input, float low, float high, RandomKey key, TensorOptions options);
+	[[nodiscard]] Tensor normal_like(const Tensor& input, float mean, float std_dev, RandomKey key);
+	[[nodiscard]] Tensor normal_like(const Tensor& input, float mean, float std_dev, RandomKey key, TensorOptions options);
 }

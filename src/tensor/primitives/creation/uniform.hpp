@@ -5,30 +5,18 @@
 #include <string_view>
 #include <vector>
 
+#include <minitensor/random.hpp>
 #include <minitensor/tensor.hpp>
 
-#include "tensor/core/random.hpp"
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/graph/primitive.hpp"
 
 namespace minitensor::detail
 {
-	class UniformParameters final
-	{
-	public:
-		UniformParameters(float low, float high);
-		[[nodiscard]] float low() const noexcept;
-		[[nodiscard]] float high() const noexcept;
-
-	private:
-		float low_;
-		float high_;
-	};
-
 	class UniformPrimitive final : public Primitive
 	{
 	public:
-		explicit UniformPrimitive(TensorSpec output_spec, UniformParameters parameters, RandomKey key);
+		explicit UniformPrimitive(TensorSpec output_spec, float low, float high, RandomKey key);
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;
 		[[nodiscard]] float low() const noexcept;
@@ -38,7 +26,8 @@ namespace minitensor::detail
 
 	private:
 		TensorSpec output_spec_;
-		UniformParameters parameters_;
+		float low_;
+		float high_;
 		RandomKey key_;
 	};
 }

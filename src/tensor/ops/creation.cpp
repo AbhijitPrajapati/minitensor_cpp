@@ -3,13 +3,12 @@
 #include <memory>
 #include <utility>
 
+#include <minitensor/random.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "apply_primitive.hpp"
-#include "tensor/core/random.hpp"
 #include "tensor/core/tensor_spec.hpp"
-#include "tensor/execution/environment.hpp"
 #include "tensor/primitives/creation/full.hpp"
 #include "tensor/primitives/creation/normal.hpp"
 #include "tensor/primitives/creation/uniform.hpp"
@@ -75,41 +74,37 @@ namespace minitensor
 		return full_like(input, 1.0F, options);
 	}
 
-	Tensor uniform(Shape shape, float low, float high, TensorOptions options)
+	Tensor uniform(Shape shape, float low, float high, RandomKey key, TensorOptions options)
 	{
-		const detail::UniformParameters parameters = detail::UniformParameters(low, high);
 		detail::TensorSpec spec = output_spec(std::move(shape), options);
-		const detail::RandomKey key = detail::environment().reserve_random_key(spec.device);
 		return detail::apply_primitive(
-			std::make_unique<detail::UniformPrimitive>(std::move(spec), parameters, key));
+			std::make_unique<detail::UniformPrimitive>(std::move(spec), low, high, key));
 	}
 
-	Tensor normal(Shape shape, float mean, float std_dev, TensorOptions options)
+	Tensor normal(Shape shape, float mean, float std_dev, RandomKey key, TensorOptions options)
 	{
-		const detail::NormalParameters parameters = detail::NormalParameters(mean, std_dev);
 		detail::TensorSpec spec = output_spec(std::move(shape), options);
-		const detail::RandomKey key = detail::environment().reserve_random_key(spec.device);
 		return detail::apply_primitive(
-			std::make_unique<detail::NormalPrimitive>(std::move(spec), parameters, key));
+			std::make_unique<detail::NormalPrimitive>(std::move(spec), mean, std_dev, key));
 	}
 
-	Tensor uniform_like(const Tensor& input, float low, float high)
+	Tensor uniform_like(const Tensor& input, float low, float high, RandomKey key)
 	{
-		return uniform(input.shape(), low, high, options_like(input));
+		return uniform(input.shape(), low, high, key, options_like(input));
 	}
 
-	Tensor uniform_like(const Tensor& input, float low, float high, TensorOptions options)
+	Tensor uniform_like(const Tensor& input, float low, float high, RandomKey key, TensorOptions options)
 	{
-		return uniform(input.shape(), low, high, options);
+		return uniform(input.shape(), low, high, key, options);
 	}
 
-	Tensor normal_like(const Tensor& input, float mean, float std_dev)
+	Tensor normal_like(const Tensor& input, float mean, float std_dev, RandomKey key)
 	{
-		return normal(input.shape(), mean, std_dev, options_like(input));
+		return normal(input.shape(), mean, std_dev, key, options_like(input));
 	}
 
-	Tensor normal_like(const Tensor& input, float mean, float std_dev, TensorOptions options)
+	Tensor normal_like(const Tensor& input, float mean, float std_dev, RandomKey key, TensorOptions options)
 	{
-		return normal(input.shape(), mean, std_dev, options);
+		return normal(input.shape(), mean, std_dev, key, options);
 	}
 }

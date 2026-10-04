@@ -3,7 +3,7 @@
 #include <array>
 #include <cstdint>
 
-#include "tensor/core/random.hpp"
+#include <minitensor/random.hpp>
 
 namespace minitensor::detail::cpu
 {

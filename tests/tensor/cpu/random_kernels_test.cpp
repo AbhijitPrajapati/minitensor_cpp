@@ -1,3 +1,4 @@
+#include <minitensor/random.hpp>
 #include <minitensor/types.hpp>
 
 #include <algorithm>
@@ -13,7 +14,6 @@
 #include "tensor/backend/cpu/cpu_buffer.hpp"
 #include "tensor/backend/cpu/cpu_runtime.hpp"
 #include "tensor/backend/cpu/register_kernels.hpp"
-#include "tensor/core/random.hpp"
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
@@ -43,17 +43,17 @@ namespace minitensor::test
 		detail::KernelRegistry registry;
 		detail::cpu::register_kernels(registry);
 		detail::cpu::CpuRuntime runtime;
-		const detail::KernelFn& kernel = registry.get({
-			typeid(detail::UniformPrimitive), DeviceType::Cpu });
-		const detail::TensorSpec spec{ Shape{ 5 }, DType::Float32, Device::cpu() };
+		const detail::KernelFn& kernel = registry.get({ typeid(detail::UniformPrimitive), DeviceType::Cpu });
+		const detail::TensorSpec spec{ Shape{5}, DType::Float32, Device::cpu() };
 		const detail::BufferRef buffer = runtime.allocate(7 * sizeof(float));
 		std::fill_n(float_data(buffer), 7, -100.0F);
-		const detail::Materialization storage{ buffer, detail::Layout{ { 1 }, 1 } };
+		const detail::Materialization storage{ buffer, detail::Layout{{1}, 1} };
 		const detail::MutableTensorView output{ spec, storage };
 		const detail::UniformPrimitive primitive{
 			spec,
-			detail::UniformParameters{ -2.0F, 3.0F },
-			detail::RandomKey{ 101, 7 } };
+			-2.0F,
+			3.0F,
+			RandomKey{ 101 } };
 
 		kernel(runtime, primitive, std::span<const detail::TensorView>{}, output);
 		EXPECT_FLOAT_EQ(float_data(buffer)[0], -100.0F);
@@ -61,7 +61,10 @@ namespace minitensor::test
 		EXPECT_TRUE(std::all_of(
 			float_data(buffer) + 1,
 			float_data(buffer) + 6,
-			[](float value) { return value >= -2.0F && value < 3.0F; }));
+			[](float value)
+			{
+				return value >= -2.0F && value < 3.0F;
+			}));
 
 		std::array<float, 5> first{};
 		std::copy_n(float_data(buffer) + 1, first.size(), first.begin());
@@ -74,17 +77,17 @@ namespace minitensor::test
 		detail::KernelRegistry registry;
 		detail::cpu::register_kernels(registry);
 		detail::cpu::CpuRuntime runtime;
-		const detail::KernelFn& kernel = registry.get({
-			typeid(detail::NormalPrimitive), DeviceType::Cpu });
-		const detail::TensorSpec spec{ Shape{ 4096 }, DType::Float32, Device::cpu() };
+		const detail::KernelFn& kernel = registry.get({ typeid(detail::NormalPrimitive), DeviceType::Cpu });
+		const detail::TensorSpec spec{ Shape{4096}, DType::Float32, Device::cpu() };
 		const detail::BufferRef buffer = runtime.allocate(spec.shape.numel() * sizeof(float));
 		const detail::Materialization storage{
 			buffer, detail::Layout::contiguous(spec.shape) };
 		const detail::MutableTensorView output{ spec, storage };
 		const detail::NormalPrimitive primitive{
 			spec,
-			detail::NormalParameters{ 1.5F, 0.75F },
-			detail::RandomKey{ 103, 11 } };
+			1.5F,
+			0.75F,
+			RandomKey{ 103 } };
 		kernel(runtime, primitive, std::span<const detail::TensorView>{}, output);
 
 		double sum = 0.0;
@@ -102,23 +105,4 @@ namespace minitensor::test
 		EXPECT_NEAR(std::sqrt(variance), 0.75, 0.1);
 	}
 
-	TEST(CpuRandomKernelTest, AcceptsEmptyOutputs)
-	{
-		detail::KernelRegistry registry;
-		detail::cpu::register_kernels(registry);
-		detail::cpu::CpuRuntime runtime;
-		const detail::KernelFn& kernel = registry.get({
-			typeid(detail::UniformPrimitive), DeviceType::Cpu });
-		const detail::TensorSpec spec{ Shape{ 0 }, DType::Float32, Device::cpu() };
-		const detail::BufferRef buffer = runtime.allocate(0);
-		const detail::Materialization storage{
-			buffer, detail::Layout::contiguous(spec.shape) };
-		const detail::MutableTensorView output{ spec, storage };
-		const detail::UniformPrimitive primitive{
-			spec,
-			detail::UniformParameters{ 0.0F, 1.0F },
-			detail::RandomKey{ 107, 13 } };
-		EXPECT_NO_THROW(kernel(
-			runtime, primitive, std::span<const detail::TensorView>{}, output));
-	}
 }

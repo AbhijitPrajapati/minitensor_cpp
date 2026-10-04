@@ -8,16 +8,15 @@
 #include <utility>
 #include <vector>
 
+#include <minitensor/random.hpp>
 #include <minitensor/tensor.hpp>
 
-#include "tensor/core/random.hpp"
 #include "tensor/core/tensor_spec.hpp"
-
 
 namespace minitensor::detail
 {
-	NormalParameters::NormalParameters(float mean, float std_dev)
-		: mean_(mean), std_dev_(std_dev)
+	NormalPrimitive::NormalPrimitive(TensorSpec output_spec, float mean, float std_dev, RandomKey key)
+		: output_spec_(std::move(output_spec)), mean_(mean), std_dev_(std_dev), key_(key)
 	{
 		if (!std::isfinite(mean_) || !std::isfinite(std_dev_))
 		{
@@ -28,20 +27,6 @@ namespace minitensor::detail
 			throw std::invalid_argument{ "normal standard deviation cannot be negative" };
 		}
 	}
-
-	float NormalParameters::mean() const noexcept
-	{
-		return mean_;
-	}
-
-	float NormalParameters::std_dev() const noexcept
-	{
-		return std_dev_;
-	}
-
-	NormalPrimitive::NormalPrimitive(TensorSpec output_spec, NormalParameters parameters, RandomKey key)
-		: output_spec_(std::move(output_spec)), parameters_(parameters), key_(key)
-	{}
 
 	std::string_view NormalPrimitive::name() const noexcept
 	{
@@ -59,12 +44,12 @@ namespace minitensor::detail
 
 	float NormalPrimitive::mean() const noexcept
 	{
-		return parameters_.mean();
+		return mean_;
 	}
 
 	float NormalPrimitive::std_dev() const noexcept
 	{
-		return parameters_.std_dev();
+		return std_dev_;
 	}
 
 	const RandomKey& NormalPrimitive::key() const noexcept
