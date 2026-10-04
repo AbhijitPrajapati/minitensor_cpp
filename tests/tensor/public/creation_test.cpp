@@ -1,4 +1,5 @@
 #include <minitensor/ops/creation.hpp>
+#include <minitensor/random.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
@@ -39,6 +40,7 @@ namespace minitensor::test
 
 	TEST(CreationTest, LikeOperationsInheritSpecificationByDefault)
 	{
+		const RandomKey key{ 11 };
 		const Tensor input = full(
 			Shape{ 2, 3 }, 0.0F,
 			TensorOptions{ DType::Float32, Device::cpu(4) });
@@ -47,8 +49,8 @@ namespace minitensor::test
 			full_like(input, 1.0F),
 			zeros_like(input),
 			ones_like(input),
-			uniform_like(input, -1.0F, 1.0F),
-			normal_like(input, 0.0F, 1.0F)
+			uniform_like(input, -1.0F, 1.0F, key),
+			normal_like(input, 0.0F, 1.0F, key)
 		};
 
 		for (const Tensor& output : outputs)
@@ -61,6 +63,7 @@ namespace minitensor::test
 
 	TEST(CreationTest, LikeOperationsHonorExplicitOptions)
 	{
+		const RandomKey key{ 13 };
 		const Tensor input = full(
 			Shape{ 2, 3 }, 0.0F,
 			TensorOptions{ DType::Float32, Device::cpu(4) });
@@ -70,8 +73,8 @@ namespace minitensor::test
 			full_like(input, 1.0F, options),
 			zeros_like(input, options),
 			ones_like(input, options),
-			uniform_like(input, -1.0F, 1.0F, options),
-			normal_like(input, 0.0F, 1.0F, options)
+			uniform_like(input, -1.0F, 1.0F, key, options),
+			normal_like(input, 0.0F, 1.0F, key, options)
 		};
 
 		for (const Tensor& output : outputs)

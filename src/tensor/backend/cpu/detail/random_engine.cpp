@@ -3,7 +3,9 @@
 #include <array>
 #include <cstdint>
 
-#include "tensor/core/random.hpp"
+#include <minitensor/random.hpp>
+
+#include "tensor/random_key_access.hpp"
 
 namespace minitensor::detail::cpu
 {
@@ -35,14 +37,15 @@ namespace minitensor::detail::cpu
 
 	RandomBlock random_block(RandomKey key, std::uint64_t block_idx) noexcept
 	{
+		const auto& key_words = RandomKeyAccess::words(key);
 		std::array<std::uint32_t, 4> counter{
 			static_cast<std::uint32_t>(block_idx),
 			static_cast<std::uint32_t>(block_idx >> 32),
-			static_cast<std::uint32_t>(key.second),
-			static_cast<std::uint32_t>(key.second >> 32) };
+			static_cast<std::uint32_t>(key_words[1]),
+			static_cast<std::uint32_t>(key_words[1] >> 32) };
 
-		auto key0 = static_cast<std::uint32_t>(key.first);
-		auto key1 = static_cast<std::uint32_t>(key.first >> 32);
+		auto key0 = static_cast<std::uint32_t>(key_words[0]);
+		auto key1 = static_cast<std::uint32_t>(key_words[0] >> 32);
 
 		for (std::uint32_t round = 0; round < round_count; ++round)
 		{

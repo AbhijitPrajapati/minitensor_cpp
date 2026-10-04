@@ -7,11 +7,11 @@
 #include <numbers>
 #include <type_traits>
 
+#include <minitensor/random.hpp>
 #include <minitensor/types.hpp>
 
 #include "tensor/backend/cpu/detail/buffer_access.hpp"
 #include "tensor/backend/cpu/detail/random_engine.hpp"
-#include <tensor/core/random.hpp>
 #include "tensor/dispatch/tensor_view.hpp"
 #include "tensor/storage/layout.hpp"
 

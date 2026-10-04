@@ -7,6 +7,7 @@
 
 #include <minitensor/nn/modules/linear.hpp>
 #include <minitensor/nn/parameter.hpp>
+#include <minitensor/random.hpp>
 
 namespace minitensor::nn::test
 {
@@ -43,7 +44,7 @@ namespace minitensor::nn::test
 
 	TEST(ModuleTest, EnumeratesLeafParameters)
 	{
-		const Linear with_bias{ 3, 2 };
+		const Linear with_bias{ 3, 2, RandomKey{ 19 } };
 		std::vector<ParameterId> ids;
 
 		for_each_parameter(with_bias, [&](const Parameter& parameter)
@@ -60,8 +61,8 @@ namespace minitensor::nn::test
 	TEST(ModuleTest, RecursivelyEnumeratesChildModules)
 	{
 		const LinearPair pair{
-			Linear{ 3, 4 },
-			Linear{ 4, 2, false }
+			Linear{ 3, 4, RandomKey{ 23 } },
+			Linear{ 4, 2, RandomKey{ 29 }, false }
 		};
 		std::vector<ParameterId> ids;
 

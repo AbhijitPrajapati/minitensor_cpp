@@ -14,7 +14,7 @@ namespace minitensor::nn::test
 {
 	TEST(LinearTest, InitializesExpectedParameterShapes)
 	{
-		const Linear linear{ 3, 2 };
+		const Linear linear{ 3, 2, RandomKey{ 11 } };
 
 		EXPECT_EQ(linear.input_features(), 3);
 		EXPECT_EQ(linear.output_features(), 2);
@@ -25,7 +25,7 @@ namespace minitensor::nn::test
 
 	TEST(LinearTest, CanOmitBias)
 	{
-		const Linear linear{ 3, 2, false };
+		const Linear linear{ 3, 2, RandomKey{ 13 }, false };
 
 		EXPECT_EQ(linear.weight().value().shape(), (Shape{ 2, 3 }));
 		EXPECT_EQ(linear.bias(), nullptr);
@@ -33,35 +33,32 @@ namespace minitensor::nn::test
 
 	TEST(LinearTest, RejectsNonPositiveFeatureCounts)
 	{
-		EXPECT_THROW((void)Linear(0, 2), std::invalid_argument);
-		EXPECT_THROW((void)Linear(3, 0), std::invalid_argument);
-		EXPECT_THROW((void)Linear(-1, 2), std::invalid_argument);
-		EXPECT_THROW((void)Linear(3, -1), std::invalid_argument);
+		const RandomKey key{ 15 };
+		EXPECT_THROW((void)Linear(0, 2, key), std::invalid_argument);
+		EXPECT_THROW((void)Linear(3, 0, key), std::invalid_argument);
+		EXPECT_THROW((void)Linear(-1, 2, key), std::invalid_argument);
+		EXPECT_THROW((void)Linear(3, -1, key), std::invalid_argument);
 	}
 
-	TEST(LinearTest, ValidatesBeforeConsumingRandomStreams)
+	TEST(LinearTest, SameKeyReproducesInitialValues)
 	{
-		manual_seed(17);
-		const Linear expected{ 3, 2 };
-		const std::vector<float> expected_weight =
-			to_vector(expected.weight().value());
-		ASSERT_NE(expected.bias(), nullptr);
-		const std::vector<float> expected_bias =
-			to_vector(expected.bias()->value());
+		const RandomKey key{ 17 };
+		const Linear first{ 3, 2, key };
+		const Linear second{ 3, 2, key };
 
-		manual_seed(17);
-		EXPECT_THROW((void)Linear(0, 2), std::invalid_argument);
-		const Linear actual{ 3, 2 };
-
-		EXPECT_EQ(to_vector(actual.weight().value()), expected_weight);
-		ASSERT_NE(actual.bias(), nullptr);
-		EXPECT_EQ(to_vector(actual.bias()->value()), expected_bias);
+		EXPECT_EQ(
+			to_vector(first.weight().value()),
+			to_vector(second.weight().value()));
+		ASSERT_NE(first.bias(), nullptr);
+		ASSERT_NE(second.bias(), nullptr);
+		EXPECT_EQ(
+			to_vector(first.bias()->value()),
+			to_vector(second.bias()->value()));
 	}
 
 	TEST(LinearTest, AppliesWeightAndBias)
 	{
-		manual_seed(42);
-		const Linear linear{ 3, 2 };
+		const Linear linear{ 3, 2, RandomKey{ 42 } };
 		const std::vector<float> input_values{
 			1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F
 		};

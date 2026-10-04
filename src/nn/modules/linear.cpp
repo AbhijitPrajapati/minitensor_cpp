@@ -10,6 +10,7 @@
 #include <minitensor/ops/elementwise.hpp>
 #include <minitensor/ops/linalg.hpp>
 #include <minitensor/ops/manipulation.hpp>
+#include <minitensor/random.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
@@ -18,6 +19,7 @@ namespace minitensor::nn
 	Linear::InitializedParameters Linear::initialize_parameters(
 		Extent input_features,
 		Extent output_features,
+		RandomKey key,
 		bool use_bias,
 		TensorOptions options)
 	{
@@ -30,16 +32,17 @@ namespace minitensor::nn
 			throw std::invalid_argument{ "linear output features must be positive" };
 		}
 
-		const float bound = 1.0F
-			/ std::sqrt(static_cast<float>(input_features));
+		auto [weight_key, bias_key] = split(key);
+
+		const float bound = 1.0F / std::sqrt(static_cast<float>(input_features));
 		Parameter weight{ uniform(
-			Shape{ output_features, input_features }, -bound, bound, options) };
+			Shape{output_features, input_features}, -bound, bound, weight_key, options) };
 
 		std::optional<Parameter> bias;
 		if (use_bias)
 		{
 			bias.emplace(uniform(
-				Shape{ output_features }, -bound, bound, options));
+				Shape{ output_features }, -bound, bound, bias_key, options));
 		}
 
 		return InitializedParameters{ std::move(weight), std::move(bias) };
@@ -48,10 +51,10 @@ namespace minitensor::nn
 	Linear::Linear(
 		Extent input_features,
 		Extent output_features,
+		RandomKey key,
 		bool use_bias,
 		TensorOptions options)
-		: Linear{ input_features, output_features, initialize_parameters(
-			input_features, output_features, use_bias, options) }
+		: Linear{ input_features, output_features, initialize_parameters(input_features, output_features, key, use_bias, options) }
 	{}
 
 	Linear::Linear(

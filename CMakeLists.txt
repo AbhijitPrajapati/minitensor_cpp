@@ -17,7 +17,6 @@ target_sources(
         src/tensor/core/shape_inference.cpp
         src/tensor/core/dense_size.cpp
         src/tensor/core/axis.cpp
-        src/tensor/core/random.cpp
         src/tensor/graph/apply_operation.cpp
         src/tensor/graph/node.cpp
         src/tensor/graph/value.cpp
@@ -63,7 +62,6 @@ target_sources(
         src/tensor/dispatch/kernel_registry.cpp
         src/tensor/dispatch/tensor_view.cpp
         src/tensor/execution/evaluator.cpp
-        src/tensor/execution/generator_registry.cpp
         src/tensor/execution/runtime_registry.cpp
         src/tensor/execution/environment.cpp
         src/tensor/autograd/engine.cpp
@@ -178,7 +176,6 @@ if(BUILD_TESTING)
         internal
         tests/tensor/internal/core/axis_test.cpp
         tests/tensor/internal/core/dense_size_test.cpp
-        tests/tensor/internal/core/random_test.cpp
         tests/tensor/internal/core/shape_inference_test.cpp
         tests/tensor/internal/graph/graph_test.cpp
         tests/tensor/internal/graph/ownership_test.cpp
