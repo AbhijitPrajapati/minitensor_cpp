@@ -7,47 +7,41 @@
 #include <array>
 #include <span>
 
+namespace mt = minitensor;
+
+void print_params(mt::nn::Linear& module)
+{
+	auto we = mt::to_vector(module.weight().value());
+	auto bi = mt::to_vector(module.bias()->value());
+
+	for (auto i = 0; i < 12; ++i)
+	{
+		std::cout << we[i] << " ";
+	}
+
+	std::cout << "\n";
+
+	for (auto i = 0; i < 4; ++i)
+	{
+		std::cout << bi[i] << " ";
+	}
+
+	std::cout << "\n";
+}
+
 int main()
 {
-	//const auto f = std::array<float, 8>{ 1.0F, 5.0F, 2.0F, 3.0F, 7.0F, 1.0F, 3.0F, 2.0F };
-	//const minitensor::Tensor a = minitensor::from_data(f, minitensor::Shape{ 2, 2, 2 });
+	auto key = mt::RandomKey(45);
+	auto mod = mt::nn::Linear(3, 4, key);
 
-	//const auto yt = std::array<float, 4>{ 8.0F, 10.0F, 3.0F, 3.0F };
-	//const minitensor::Tensor b = minitensor::from_data(yt, minitensor::Shape{ 2, 1, 2 });
+	print_params(mod);
 
-	//const auto c = 4.0F + b;
+	mod = mt::nn::transform_parameter_values(
+			std::move(mod),
+			[&](const mt::nn::Parameter& parameter)
+			{
+				return mt::full_like(parameter.value(), 5.0F);
+			});
 
-	//const auto ghs = std::array<minitensor::Tensor, 2>{ a, c };
-	//const auto d = minitensor::concatenate(ghs, 1);
-
-	//const auto c = minitensor::normal(
-	//    minitensor::Shape{ 200 }, 5.0F, 1.5F, minitensor::RandomKey{ 0 });
-	//const minitensor::Tensor b = minitensor::reshape(a, minitensor::Shape{ 2, 2 });
-	//const auto hg = std::array<minitensor::Axis, 1>{ -1 };
-	//const auto c = minitensor::matmul(a, b);
-	//const auto g = std::array<float, 2>{ 10.0F, -3.0F };
-	//const minitensor::Tensor b = minitensor::from_data(g, minitensor::Shape{ 2 });
-	//const minitensor::Tensor c = a + b;
-	//const auto perm = std::array<minitensor::Axis, 2>{ 1, 0 };
-	//const minitensor::Tensor transposed = minitensor::permute(c, perm);
-	//const minitensor::Shape s = c.shape();
-	//for (auto i = 0; i < c.rank(); ++i)
-	//{
-	//    std::cout << s[i] << " ";
-	//}
-	//const auto c = minitensor::sum(b);
-	//std::vector<minitensor::Tensor> tr{ a };
-	//const auto d = minitensor::grad(c, tr).front();
-
-	const minitensor::Tensor gdfs = minitensor::from_data({
-		1.0F, 5.0F, 2.0F, 3.0F,
-		7.0F, 1.0F, 3.0F, 2.0F,
-		0.5F, 4.0F, 45.0F, 3.0F }, minitensor::Shape{ 3, 4 });
-	const auto d = minitensor::slice(gdfs, 1, 6, 2, -1);
-
-	const auto v = minitensor::to_vector(d);
-	for (auto el : v)
-	{
-		std::cout << el << " ";
-	}
+	print_params(mod);
 }
