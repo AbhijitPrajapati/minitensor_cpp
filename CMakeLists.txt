@@ -165,7 +165,7 @@ if(BUILD_TESTING)
         nn
         public
         tests/nn/public/parameter_test.cpp
-        tests/nn/public/module_test.cpp
+        tests/nn/public/parameter_tree_test.cpp
         tests/nn/public/gradients_test.cpp
         tests/nn/public/linear_test.cpp
     )
