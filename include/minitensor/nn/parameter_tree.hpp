@@ -139,7 +139,7 @@ namespace minitensor::nn
 		traversal.visit(tree);
 	}
 
-	// Visits every unique parameter in depth-first hook order
+	// Visits every unique parameter.
 	template <typename Tree, ParameterCallback Function>
 	void for_each_unique_parameter(const Tree& tree, Function&& function)
 	{
@@ -154,6 +154,7 @@ namespace minitensor::nn
 		});
 	}
 
+	// Takes parameter tree by value and transforms every unique parameter.
 	template <typename Tree, ParameterValueTransform Function>
 	Tree transform_parameter_values(Tree tree, Function&& function)
 	{
