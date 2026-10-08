@@ -4,11 +4,13 @@
 #include <functional>
 #include <string_view>
 #include <type_traits>
-#include <unordered_set>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 #include <minitensor/nn/parameter.hpp>
+#include <minitensor/tensor.hpp>
+
 namespace minitensor::nn
 {
 	namespace detail
@@ -40,6 +42,7 @@ namespace minitensor::nn
 	};
 
 	// Specific parameter traversal methods. These use ModuleAccess to visit parameters.
+	// Each must implement the visit, parameter, and child functions
 	namespace detail
 	{
 		template <typename Function>
@@ -119,9 +122,17 @@ namespace minitensor::nn
 		};
 	}
 
+	template <typename Function>
+	concept ParameterCallback = std::invocable<Function&, const Parameter&>;
+
+	template <typename Function>
+	concept ParameterValueTransform =
+		ParameterCallback<Function> && std::convertible_to<
+		std::invoke_result_t<Function&, const Parameter&>,
+		Tensor>;
+
 	// Visits every parameter in depth-first hook order.
-	template <typename Module, typename Function>
-		requires std::invocable<Function&, const Parameter&>
+	template <typename Module, ParameterCallback Function>
 	void for_each_parameter(const Module& module, Function&& function)
 	{
 		using FunctionType = std::remove_reference_t<Function>;
@@ -130,7 +141,7 @@ namespace minitensor::nn
 	}
 
 	// Visits every unique parameter in depth-first hook order
-	template <typename Module, typename Function>
+	template <typename Module, ParameterCallback Function>
 	void for_each_unique_parameter(const Module& module, Function&& function)
 	{
 		std::unordered_set<ParameterId> seen;
@@ -144,8 +155,7 @@ namespace minitensor::nn
  });
 	}
 
-	template <typename Module, typename Function>
-		requires std::invocable<Function&, const Parameter&>&& std::convertible_to<std::invoke_result_t<Function&, const Parameter&>, Tensor>
+	template <typename Module, ParameterValueTransform Function>
 	Module transform_parameter_values(Module module, Function&& function)
 	{
 		using FunctionType = std::remove_reference_t<Function>;
