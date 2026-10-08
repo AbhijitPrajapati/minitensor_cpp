@@ -69,12 +69,41 @@ namespace minitensor::nn
 		const Parameters& parameters,
 		const Tensor& input) const
 	{
+		validate_parameters(parameters);
 		Tensor output = matmul(input, transpose(parameters.weight().value(), 0, 1));
 		if (const Parameter* bias = parameters.bias())
 		{
 			output = output + bias->value();
 		}
 		return output;
+	}
+
+	void Linear::validate_parameters(const Parameters& parameters) const
+	{
+		const Tensor& weight = parameters.weight().value();
+		if (weight.rank() != 2)
+		{
+			throw std::invalid_argument{ "linear weight must be rank 2" };
+		}
+		const Shape& weight_shape = weight.shape();
+		if (weight_shape[0] != output_features_ || weight_shape[1] != input_features_)
+		{
+			throw std::invalid_argument{ "linear weight has incompatible shape" };
+		}
+
+		const Parameter* bias = parameters.bias();
+		if ((bias != nullptr) != use_bias_)
+		{
+			throw std::invalid_argument{ "linear bias presence is incompatible" };
+		}
+		if (bias != nullptr)
+		{
+			const Tensor& bias_value = bias->value();
+			if (bias_value.rank() != 1 || bias_value.shape()[0] != output_features_)
+			{
+				throw std::invalid_argument{ "linear bias has incompatible shape" };
+			}
+		}
 	}
 
 	Extent Linear::input_features() const noexcept

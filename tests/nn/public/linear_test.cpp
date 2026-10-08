@@ -89,4 +89,22 @@ namespace minitensor::nn::test
 			}
 		}
 	}
+
+	TEST(LinearTest, RejectsIncompatibleParameterTrees)
+	{
+		const Linear linear{ 3, 2 };
+		const Linear different_output{ 3, 4 };
+		const Linear without_bias{ 3, 2, false };
+		const Tensor input = from_data({ 1.0F, 2.0F, 3.0F }, Shape{ 1, 3 });
+
+		EXPECT_THROW(
+			(void)linear(different_output.initialize(RandomKey{ 43 }), input),
+			std::invalid_argument);
+		EXPECT_THROW(
+			(void)linear(without_bias.initialize(RandomKey{ 47 }), input),
+			std::invalid_argument);
+		EXPECT_THROW(
+			(void)without_bias(linear.initialize(RandomKey{ 53 }), input),
+			std::invalid_argument);
+	}
 }
