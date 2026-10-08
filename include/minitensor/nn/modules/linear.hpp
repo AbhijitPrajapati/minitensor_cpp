@@ -56,6 +56,8 @@ namespace minitensor::nn
 		[[nodiscard]] bool use_bias() const noexcept;
 
 	private:
+		void validate_parameters(const Parameters& parameters) const;
+
 		Extent input_features_;
 		Extent output_features_;
 		bool use_bias_;
