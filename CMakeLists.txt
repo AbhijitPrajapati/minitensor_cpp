@@ -69,6 +69,7 @@ target_sources(
         src/tensor/autograd.cpp
         src/nn/parameter.cpp
         src/nn/modules/linear.cpp
+        src/nn/optimizers/sgd.cpp
 )
 
 # Specify all header files the library needs
@@ -168,6 +169,7 @@ if(BUILD_TESTING)
         tests/nn/public/parameter_tree_test.cpp
         tests/nn/public/gradients_test.cpp
         tests/nn/public/linear_test.cpp
+        tests/nn/public/sgd_test.cpp
     )
 
     # Internal algorithm tests
