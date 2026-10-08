@@ -14,37 +14,41 @@ namespace minitensor::nn::test
 {
 	TEST(LinearTest, InitializesExpectedParameterShapes)
 	{
-		const Linear linear{ 3, 2, RandomKey{ 11 } };
+		const Linear linear{ 3, 2 };
+		const Linear::Parameters parameters = linear.initialize(RandomKey{ 11 });
 
 		EXPECT_EQ(linear.input_features(), 3);
 		EXPECT_EQ(linear.output_features(), 2);
-		EXPECT_EQ(linear.weight().value().shape(), (Shape{ 2, 3 }));
-		ASSERT_NE(linear.bias(), nullptr);
-		EXPECT_EQ(linear.bias()->value().shape(), (Shape{ 2 }));
+		EXPECT_TRUE(linear.use_bias());
+		EXPECT_EQ(parameters.weight().value().shape(), (Shape{ 2, 3 }));
+		ASSERT_NE(parameters.bias(), nullptr);
+		EXPECT_EQ(parameters.bias()->value().shape(), (Shape{ 2 }));
 	}
 
 	TEST(LinearTest, CanOmitBias)
 	{
-		const Linear linear{ 3, 2, RandomKey{ 13 }, false };
+		const Linear linear{ 3, 2, false };
+		const Linear::Parameters parameters = linear.initialize(RandomKey{ 13 });
 
-		EXPECT_EQ(linear.weight().value().shape(), (Shape{ 2, 3 }));
-		EXPECT_EQ(linear.bias(), nullptr);
+		EXPECT_FALSE(linear.use_bias());
+		EXPECT_EQ(parameters.weight().value().shape(), (Shape{ 2, 3 }));
+		EXPECT_EQ(parameters.bias(), nullptr);
 	}
 
 	TEST(LinearTest, RejectsNonPositiveFeatureCounts)
 	{
-		const RandomKey key{ 15 };
-		EXPECT_THROW((void)Linear(0, 2, key), std::invalid_argument);
-		EXPECT_THROW((void)Linear(3, 0, key), std::invalid_argument);
-		EXPECT_THROW((void)Linear(-1, 2, key), std::invalid_argument);
-		EXPECT_THROW((void)Linear(3, -1, key), std::invalid_argument);
+		EXPECT_THROW((void)Linear(0, 2), std::invalid_argument);
+		EXPECT_THROW((void)Linear(3, 0), std::invalid_argument);
+		EXPECT_THROW((void)Linear(-1, 2), std::invalid_argument);
+		EXPECT_THROW((void)Linear(3, -1), std::invalid_argument);
 	}
 
 	TEST(LinearTest, SameKeyReproducesInitialValues)
 	{
 		const RandomKey key{ 17 };
-		const Linear first{ 3, 2, key };
-		const Linear second{ 3, 2, key };
+		const Linear linear{ 3, 2 };
+		const Linear::Parameters first = linear.initialize(key);
+		const Linear::Parameters second = linear.initialize(key);
 
 		EXPECT_EQ(
 			to_vector(first.weight().value()),
@@ -58,16 +62,17 @@ namespace minitensor::nn::test
 
 	TEST(LinearTest, AppliesWeightAndBias)
 	{
-		const Linear linear{ 3, 2, RandomKey{ 42 } };
+		const Linear linear{ 3, 2 };
+		const Linear::Parameters parameters = linear.initialize(RandomKey{ 42 });
 		const std::vector<float> input_values{
 			1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F
 		};
 		const Tensor input = from_data(input_values, Shape{ 2, 3 });
 
-		const std::vector<float> weight = to_vector(linear.weight().value());
-		ASSERT_NE(linear.bias(), nullptr);
-		const std::vector<float> bias = to_vector(linear.bias()->value());
-		const std::vector<float> output = to_vector(linear(input));
+		const std::vector<float> weight = to_vector(parameters.weight().value());
+		ASSERT_NE(parameters.bias(), nullptr);
+		const std::vector<float> bias = to_vector(parameters.bias()->value());
+		const std::vector<float> output = to_vector(linear(parameters, input));
 
 		ASSERT_EQ(output.size(), 4);
 		for (std::size_t row = 0; row < 2; ++row)

@@ -1,4 +1,4 @@
-#include <minitensor/nn/module.hpp>
+#include <minitensor/nn/parameter_tree.hpp>
 
 #include <cstddef>
 #include <utility>
@@ -14,19 +14,19 @@
 
 namespace minitensor::nn::test
 {
-	class LinearPair final
+	class LinearParameterPair final
 	{
 	public:
-		LinearPair(Linear first, Linear second)
+		LinearParameterPair(Linear::Parameters first, Linear::Parameters second)
 			: first_{ std::move(first) }, second_{ std::move(second) }
 		{}
 
-		[[nodiscard]] const Linear& first() const noexcept
+		[[nodiscard]] const Linear::Parameters& first() const noexcept
 		{
 			return first_;
 		}
 
-		[[nodiscard]] const Linear& second() const noexcept
+		[[nodiscard]] const Linear::Parameters& second() const noexcept
 		{
 			return second_;
 		}
@@ -39,16 +39,16 @@ namespace minitensor::nn::test
 			visitor.child("second", self.second_);
 		}
 
-		friend class ModuleAccess;
+		friend class ParameterTreeAccess;
 
-		Linear first_;
-		Linear second_;
+		Linear::Parameters first_;
+		Linear::Parameters second_;
 	};
 
-	class TiedParameters final
+	class TiedParameterTree final
 	{
 	public:
-		explicit TiedParameters(Parameter parameter)
+		explicit TiedParameterTree(Parameter parameter)
 			: first_{ parameter }, second_{ std::move(parameter) }
 		{}
 
@@ -70,33 +70,36 @@ namespace minitensor::nn::test
 			visitor.parameter("second", self.second_);
 		}
 
-		friend class ModuleAccess;
+		friend class ParameterTreeAccess;
 
 		Parameter first_;
 		Parameter second_;
 	};
 
-	TEST(ModuleTest, EnumeratesLeafParameters)
+	TEST(ParameterTreeTest, EnumeratesLeafParameters)
 	{
-		const Linear with_bias{ 3, 2, RandomKey{ 19 } };
+		const Linear linear{ 3, 2 };
+		const Linear::Parameters parameters = linear.initialize(RandomKey{ 19 });
 		std::vector<ParameterId> ids;
 
-		for_each_parameter(with_bias, [&](const Parameter& parameter)
+		for_each_parameter(parameters, [&](const Parameter& parameter)
 		{
 			ids.push_back(parameter.id());
 		});
 
 		ASSERT_EQ(ids.size(), 2);
-		EXPECT_EQ(ids[0], with_bias.weight().id());
-		ASSERT_NE(with_bias.bias(), nullptr);
-		EXPECT_EQ(ids[1], with_bias.bias()->id());
+		EXPECT_EQ(ids[0], parameters.weight().id());
+		ASSERT_NE(parameters.bias(), nullptr);
+		EXPECT_EQ(ids[1], parameters.bias()->id());
 	}
 
-	TEST(ModuleTest, RecursivelyEnumeratesChildModules)
+	TEST(ParameterTreeTest, RecursivelyEnumeratesChildTrees)
 	{
-		const LinearPair pair{
-			Linear{ 3, 4, RandomKey{ 23 } },
-			Linear{ 4, 2, RandomKey{ 29 }, false }
+		const Linear first{ 3, 4 };
+		const Linear second{ 4, 2, false };
+		const LinearParameterPair pair{
+			first.initialize(RandomKey{ 23 }),
+			second.initialize(RandomKey{ 29 })
 		};
 		std::vector<ParameterId> ids;
 
@@ -112,11 +115,13 @@ namespace minitensor::nn::test
 		EXPECT_EQ(ids[2], pair.second().weight().id());
 	}
 
-	TEST(ModuleTest, TransformsChildParametersWithoutChangingTheSource)
+	TEST(ParameterTreeTest, TransformsChildParametersWithoutChangingTheSource)
 	{
-		const LinearPair source{
-			Linear{ 3, 4, RandomKey{ 31 } },
-			Linear{ 4, 2, RandomKey{ 37 }, false }
+		const Linear first{ 3, 4 };
+		const Linear second{ 4, 2, false };
+		const LinearParameterPair source{
+			first.initialize(RandomKey{ 31 }),
+			second.initialize(RandomKey{ 37 })
 		};
 		std::vector<ParameterId> source_ids;
 		std::vector<std::vector<float>> source_values;
@@ -127,7 +132,7 @@ namespace minitensor::nn::test
 		});
 
 		std::size_t invocation_count = 0;
-		const LinearPair transformed = transform_parameter_values(
+		const LinearParameterPair transformed = transform_parameter_values(
 			source,
 			[&](const Parameter& parameter)
 			{
@@ -161,9 +166,9 @@ namespace minitensor::nn::test
 		}
 	}
 
-	TEST(ModuleTest, TransformsTiedParametersOncePerIdentity)
+	TEST(ParameterTreeTest, TransformsTiedParametersOncePerIdentity)
 	{
-		const TiedParameters source{ Parameter{
+		const TiedParameterTree source{ Parameter{
 			full(Shape{ 2 }, 1.0F),
 			ParameterMetadata{.trainable = false }
 		} };
@@ -174,7 +179,7 @@ namespace minitensor::nn::test
 		});
 
 		std::size_t invocation_count = 0;
-		const TiedParameters transformed = transform_parameter_values(
+		const TiedParameterTree transformed = transform_parameter_values(
 			source,
 			[&](const Parameter& parameter)
 			{

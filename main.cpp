@@ -9,10 +9,10 @@
 
 namespace mt = minitensor;
 
-void print_params(mt::nn::Linear& module)
+void print_params(const mt::nn::Linear::Parameters& parameters)
 {
-	auto we = mt::to_vector(module.weight().value());
-	auto bi = mt::to_vector(module.bias()->value());
+	auto we = mt::to_vector(parameters.weight().value());
+	auto bi = mt::to_vector(parameters.bias()->value());
 
 	for (auto i = 0; i < 12; ++i)
 	{
@@ -32,16 +32,17 @@ void print_params(mt::nn::Linear& module)
 int main()
 {
 	auto key = mt::RandomKey(45);
-	auto mod = mt::nn::Linear(3, 4, key);
+	auto module = mt::nn::Linear(3, 4);
+	auto parameters = module.initialize(key);
 
-	print_params(mod);
+	print_params(parameters);
 
-	mod = mt::nn::transform_parameter_values(
-			std::move(mod),
+	parameters = mt::nn::transform_parameter_values(
+			std::move(parameters),
 			[&](const mt::nn::Parameter& parameter)
 			{
 				return mt::full_like(parameter.value(), 5.0F);
 			});
 
-	print_params(mod);
+	print_params(parameters);
 }
