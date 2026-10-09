@@ -8,6 +8,7 @@
 #include <array>
 #include <span>
 #include <stdexcept>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -50,5 +51,21 @@ namespace minitensor::test
 			Shape{ 1 }, 1.0F,
 			TensorOptions{ DType::Float32, Device::cpu(1) });
 		EXPECT_THROW(eval(unsupported), std::runtime_error);
+	}
+
+	TEST(EvaluationTest, LeafifiesSingleAndBatchedLazyResults)
+	{
+		const Tensor single_source = full(Shape{ 2 }, 1.5F) + 2.0F;
+		const Tensor single = leafify(single_source);
+		EXPECT_EQ(to_vector(single), (std::vector<float>{ 3.5F, 3.5F }));
+
+		const Tensor shared = full(Shape{ 2 }, 2.0F) + 1.0F;
+		const std::array<Tensor, 2> sources{ shared, shared * 3.0F };
+		const std::vector<Tensor> batch = leafify(sources);
+
+		ASSERT_EQ(batch.size(), 2);
+		EXPECT_EQ(to_vector(batch[0]), (std::vector<float>{ 3.0F, 3.0F }));
+		EXPECT_EQ(to_vector(batch[1]), (std::vector<float>{ 9.0F, 9.0F }));
+		EXPECT_TRUE(leafify(std::span<const Tensor>{}).empty());
 	}
 }

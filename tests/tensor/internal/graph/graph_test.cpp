@@ -13,12 +13,15 @@
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/graph/apply_operation.hpp"
 #include "tensor/graph/fwd.hpp"
+#include "tensor/graph/leaf.hpp"
 #include "tensor/graph/node.hpp"
 #include "tensor/graph/primitive.hpp"
 #include "tensor/graph/value.hpp"
 #include "tensor/primitives/creation/full.hpp"
 #include "tensor/storage/layout.hpp"
+#include "tensor/storage/materialization.hpp"
 #include "tensor/tensor_access.hpp"
+#include "tensor/support/test_buffer.hpp"
 #include "tensor/support/test_primitive.hpp"
 
 namespace minitensor::test
@@ -84,6 +87,56 @@ namespace minitensor::test
 		EXPECT_THROW(
 			(void)(detail::Value{ spec, detail::NodeRef{} }),
 			std::invalid_argument);
+	}
+
+	TEST(LeafTest, ProducesAProducerFreeValueWithoutCopyingStorage)
+	{
+		const detail::TensorSpec spec{
+			Shape{ 2, 3 }, DType::Float32, Device::cpu() };
+		const detail::BufferRef buffer = make_test_buffer(6 * sizeof(float));
+		const detail::Layout layout = detail::Layout::contiguous(spec.shape);
+		const detail::ValueRef input = detail::make_materialized_leaf(
+			spec, detail::Materialization{ buffer, layout });
+
+		EXPECT_TRUE(input->is_leaf());
+		EXPECT_EQ(detail::leafify_materialized(input), input);
+
+		detail::NodeRef producer = std::make_shared<detail::Node>(
+			std::make_unique<IdentitySpecPrimitive>(),
+			std::vector<detail::ValueRef>{ input });
+		std::weak_ptr<const detail::Node> weak_producer = producer;
+		detail::ValueRef produced = std::make_shared<detail::Value>(spec, producer);
+		produced->materialize(detail::Materialization{ buffer, layout });
+
+		const detail::ValueRef leafified = detail::leafify_materialized(produced);
+
+		EXPECT_NE(leafified, produced);
+		EXPECT_TRUE(leafified->is_leaf());
+		EXPECT_EQ(leafified->producer(), nullptr);
+		EXPECT_EQ(leafified->spec(), spec);
+		ASSERT_NE(leafified->materialization(), nullptr);
+		EXPECT_EQ(leafified->materialization()->buffer_ref(), buffer);
+		EXPECT_EQ(leafified->materialization()->layout(), layout);
+
+		produced.reset();
+		producer.reset();
+		EXPECT_TRUE(weak_producer.expired());
+		EXPECT_EQ(leafified->materialization()->buffer_ref(), buffer);
+	}
+
+	TEST(LeafTest, RejectsNullAndUnmaterializedValues)
+	{
+		const detail::TensorSpec spec{
+			Shape{ 2 }, DType::Float32, Device::cpu() };
+		const detail::ValueRef unmaterialized =
+			std::make_shared<detail::Value>(spec);
+
+		EXPECT_THROW(
+			(void)detail::leafify_materialized(detail::ValueRef{}),
+			std::invalid_argument);
+		EXPECT_THROW(
+			(void)detail::leafify_materialized(unmaterialized),
+			std::logic_error);
 	}
 
 	TEST(TensorAccessTest, ConvertsBetweenHandlesAndValues)

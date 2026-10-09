@@ -20,6 +20,7 @@ target_sources(
         src/tensor/graph/apply_operation.cpp
         src/tensor/graph/node.cpp
         src/tensor/graph/value.cpp
+        src/tensor/graph/leaf.cpp
         src/tensor/ops/creation.cpp
         src/tensor/ops/elementwise.cpp
         src/tensor/ops/linalg.cpp
@@ -64,6 +65,7 @@ target_sources(
         src/tensor/execution/evaluator.cpp
         src/tensor/execution/runtime_registry.cpp
         src/tensor/execution/environment.cpp
+        src/tensor/execution/host_transfer.cpp
         src/tensor/autograd/engine.cpp
         src/tensor/autograd/reduce_to_shape.cpp
         src/tensor/autograd.cpp
@@ -168,6 +170,7 @@ if(BUILD_TESTING)
         tests/nn/public/parameter_test.cpp
         tests/nn/public/parameter_tree_test.cpp
         tests/nn/public/gradients_test.cpp
+        tests/nn/public/leafification_test.cpp
         tests/nn/public/linear_test.cpp
         tests/nn/public/sgd_test.cpp
     )
