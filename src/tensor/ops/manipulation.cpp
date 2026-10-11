@@ -17,12 +17,12 @@
 
 #include "apply_primitive.hpp"
 #include "tensor/core/axis.hpp"
+#include "tensor/primitives/manipulation/basic_index.hpp"
 #include "tensor/primitives/manipulation/broadcast_to.hpp"
 #include "tensor/primitives/manipulation/concatenate.hpp"
 #include "tensor/primitives/manipulation/contiguous.hpp"
 #include "tensor/primitives/manipulation/permute.hpp"
 #include "tensor/primitives/manipulation/reshape.hpp"
-#include "tensor/primitives/manipulation/slice.hpp"
 
 namespace minitensor
 {
@@ -252,9 +252,17 @@ namespace minitensor
 		std::optional<Extent> stop,
 		Extent step)
 	{
+		auto parameters = detail::BasicIndexParameters::for_slice(axis, start, stop, step, input.shape());
 		return detail::apply_primitive(
-			std::make_unique<detail::SlicePrimitive>(
-			axis, start, stop, step, input.shape()),
+			std::make_unique<detail::BasicIndexPrimitive>(std::move(parameters)),
+			input);
+	}
+
+	Tensor select(const Tensor& input, Axis axis, Extent index)
+	{
+		auto parameters = detail::BasicIndexParameters::for_select(axis, index, input.shape());
+		return detail::apply_primitive(
+			std::make_unique<detail::BasicIndexPrimitive>(std::move(parameters)),
 			input);
 	}
 }

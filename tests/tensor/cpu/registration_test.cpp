@@ -21,10 +21,10 @@
 #include "tensor/primitives/elementwise/square_root.hpp"
 #include "tensor/primitives/elementwise/subtract.hpp"
 #include "tensor/primitives/linalg/matmul.hpp"
+#include "tensor/primitives/manipulation/basic_index.hpp"
 #include "tensor/primitives/manipulation/concatenate.hpp"
 #include "tensor/primitives/manipulation/contiguous.hpp"
 #include "tensor/primitives/manipulation/reshape.hpp"
-#include "tensor/primitives/manipulation/slice.hpp"
 #include "tensor/primitives/reduction/sum.hpp"
 
 namespace minitensor::test
@@ -49,7 +49,7 @@ namespace minitensor::test
 			typeid(detail::ContiguousPrimitive),
 			typeid(detail::ReshapePrimitive),
 			typeid(detail::ConcatenatePrimitive),
-			typeid(detail::SliceScatterPrimitive),
+			typeid(detail::BasicIndexScatterPrimitive),
 			typeid(detail::SumPrimitive)
 		};
 

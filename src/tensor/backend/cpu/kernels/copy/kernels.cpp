@@ -12,10 +12,10 @@
 #include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/dispatch/tensor_view.hpp"
 #include "tensor/graph/primitive.hpp"
+#include "tensor/primitives/manipulation/basic_index.hpp"
 #include "tensor/primitives/manipulation/concatenate.hpp"
 #include "tensor/primitives/manipulation/contiguous.hpp"
 #include "tensor/primitives/manipulation/reshape.hpp"
-#include "tensor/primitives/manipulation/slice.hpp"
 
 namespace minitensor::detail::cpu
 {
@@ -57,24 +57,25 @@ namespace minitensor::detail::cpu
 			});
 		}
 
-		void run_slice_scatter(
+		void run_basic_index_scatter(
 			DeviceRuntime&,
 			const Primitive& primitive,
 			std::span<const TensorView> inputs,
 			MutableTensorView output)
 		{
 			assert(inputs.size() == 1);
-			const auto& slice_scatter = dynamic_cast<const SliceScatterPrimitive&>(primitive);
+			const auto& basic_index_scatter = dynamic_cast<const BasicIndexScatterPrimitive&>(primitive);
+			const BasicIndexParameters& parameters = basic_index_scatter.parameters();
+			assert(inputs.front().shape() == parameters.output_shape());
+			assert(output.shape() == parameters.input_shape());
 
 			dispatch_dtype(
 				output.dtype(), [&]<typename T>(std::type_identity<T>)
 			{
-				slice_scatter_copy<T>(
+				basic_index_scatter_copy<T>(
 					inputs.front(),
 					output,
-					slice_scatter.axis(),
-					slice_scatter.start(),
-					slice_scatter.step());
+					parameters.derive_layout(output.layout()));
 			});
 		}
 	}
@@ -91,7 +92,7 @@ namespace minitensor::detail::cpu
 			KernelKey{ typeid(ConcatenatePrimitive), DeviceType::Cpu },
 			run_concatenate);
 		registry.register_kernel(
-			KernelKey{ typeid(SliceScatterPrimitive), DeviceType::Cpu },
-			run_slice_scatter);
+			KernelKey{ typeid(BasicIndexScatterPrimitive), DeviceType::Cpu },
+			run_basic_index_scatter);
 	}
 }

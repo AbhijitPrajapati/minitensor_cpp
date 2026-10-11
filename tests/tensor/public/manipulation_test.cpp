@@ -211,4 +211,29 @@ namespace minitensor::test
 			std::invalid_argument);
 		EXPECT_THROW((void)slice(matrix, 2), std::out_of_range);
 	}
+
+	TEST(SelectTest, RemovesAnAxisAndSupportsNegativeIndices)
+	{
+		const Tensor input = from_data(
+			{ 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F,
+			  7.0F, 8.0F, 9.0F, 10.0F, 11.0F, 12.0F },
+			Shape{ 2, 3, 2 });
+
+		const Tensor middle = select(input, 1, 1);
+		EXPECT_EQ(middle.shape(), (Shape{ 2, 2 }));
+		expect_tensor_eq(middle, std::array<float, 4>{ 3.0F, 4.0F, 9.0F, 10.0F });
+
+		const Tensor last = select(input, -2, -1);
+		expect_tensor_eq(last, std::array<float, 4>{ 5.0F, 6.0F, 11.0F, 12.0F });
+		EXPECT_FLOAT_EQ(item(select(from_data({ 2.0F, 3.0F }, Shape{ 2 }), 0, 1)), 3.0F);
+	}
+
+	TEST(SelectTest, ValidatesAxisAndIndex)
+	{
+		const Tensor input = full(Shape{ 2, 3 }, 1.0F);
+		EXPECT_THROW((void)select(input, 2, 0), std::out_of_range);
+		EXPECT_THROW((void)select(input, 1, 3), std::out_of_range);
+		EXPECT_THROW((void)select(input, 1, -4), std::out_of_range);
+		EXPECT_THROW((void)select(full(Shape{ 2, 0 }, 1.0F), 1, 0), std::out_of_range);
+	}
 }
