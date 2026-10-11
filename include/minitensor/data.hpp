@@ -1,7 +1,10 @@
 #pragma once
 
+#include <cstdint>
 #include <initializer_list>
+#include <ranges>
 #include <span>
+#include <utility>
 #include <vector>
 
 #include <minitensor/tensor.hpp>
@@ -9,8 +12,62 @@
 
 namespace minitensor
 {
-	[[nodiscard]] std::vector<float> to_vector(const Tensor& tensor);
-	[[nodiscard]] float item(const Tensor& tensor);
-	[[nodiscard]] Tensor from_data(std::span<const float> data, Shape shape, TensorOptions options = {});
-	[[nodiscard]] Tensor from_data(std::initializer_list<float> data, Shape shape, TensorOptions options = {});
+	template <TensorElement T = float>
+	[[nodiscard]] std::vector<T> to_vector(const Tensor& tensor);
+
+	template <TensorElement T = float>
+	[[nodiscard]] T item(const Tensor& tensor);
+
+
+	// Base from_data implementation
+	template <TensorElement T>
+	[[nodiscard]] Tensor from_data(
+		std::span<const T> data,
+		Shape shape,
+		Device device = Device::cpu());
+
+	// Initializer list overload
+	template <TensorElement T>
+	[[nodiscard]] Tensor from_data(
+		std::initializer_list<T> data,
+		Shape shape,
+		Device device = Device::cpu())
+	{
+		return from_data<T>(
+			std::span<const T>(data.begin(), data.size()),
+			std::move(shape),
+			device);
+	}
+
+	// Contiguous range overload
+	template <typename Range>
+		requires (
+			std::ranges::contiguous_range<const Range&> &&
+			std::ranges::sized_range<const Range&> &&
+			TensorElement<std::ranges::range_value_t<Range>>)
+	[[nodiscard]] Tensor from_data(
+		const Range& data,
+		Shape shape,
+		Device device = Device::cpu())
+	{
+		using T = std::ranges::range_value_t<Range>;
+		return from_data<T>(
+			std::span<const T>(std::ranges::data(data), std::ranges::size(data)),
+			std::move(shape),
+			device);
+	}
+
+	// Declare external template instantiation (in data.cpp)
+	extern template std::vector<float> to_vector<float>(const Tensor& tensor);
+	extern template std::vector<std::int64_t> to_vector<std::int64_t>(const Tensor& tensor);
+	extern template float item<float>(const Tensor& tensor);
+	extern template std::int64_t item<std::int64_t>(const Tensor& tensor);
+	extern template Tensor from_data<float>(
+		std::span<const float> data,
+		Shape shape,
+		Device device);
+	extern template Tensor from_data<std::int64_t>(
+		std::span<const std::int64_t> data,
+		Shape shape,
+		Device device);
 }

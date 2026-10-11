@@ -1,5 +1,6 @@
 #include <minitensor/types.hpp>
 
+#include <cstdint>
 #include <initializer_list>
 #include <limits>
 #include <span>
@@ -51,7 +52,7 @@ namespace minitensor
 		}
 
 		// The entire shape has zero elements regardless of the other
-		// extents, so don't report multiplication overflow
+		// extents, so don't report multiplication overflow.
 		if (contains_zero)
 		{
 			return 0;
@@ -83,6 +84,8 @@ namespace minitensor
 		{
 		case DType::Float32:
 			return sizeof(float);
+		case DType::Int64:
+			return sizeof(std::int64_t);
 		}
 		throw std::invalid_argument{ "unrecognized dtype" };
 	}
@@ -93,6 +96,8 @@ namespace minitensor
 		{
 		case DType::Float32:
 			return "float32";
+		case DType::Int64:
+			return "int64";
 		}
 		throw std::invalid_argument{ "unrecognized dtype" };
 	}

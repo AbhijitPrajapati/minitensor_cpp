@@ -23,9 +23,9 @@ namespace minitensor::detail::cpu
 		template <CpuElement T>
 		void dot(const TensorView& lhs, const TensorView& rhs, MutableTensorView output)
 		{
-			assert(lhs.dtype() == ElementDType<T>::value);
-			assert(rhs.dtype() == ElementDType<T>::value);
-			assert(output.dtype() == ElementDType<T>::value);
+			assert(lhs.dtype() == dtype_of_v<T>);
+			assert(rhs.dtype() == dtype_of_v<T>);
+			assert(output.dtype() == dtype_of_v<T>);
 			assert(lhs.shape().rank() == 1);
 			assert(rhs.shape().rank() == 1);
 			assert(output.shape().is_scalar());
@@ -60,9 +60,9 @@ namespace minitensor::detail::cpu
 		template <CpuElement T>
 		void gemv(const TensorView& matrix, const TensorView& vector, MutableTensorView output, const MatmulPlan& plan)
 		{
-			assert(matrix.dtype() == ElementDType<T>::value);
-			assert(vector.dtype() == ElementDType<T>::value);
-			assert(output.dtype() == ElementDType<T>::value);
+			assert(matrix.dtype() == dtype_of_v<T>);
+			assert(vector.dtype() == dtype_of_v<T>);
+			assert(output.dtype() == dtype_of_v<T>);
 			assert(matrix.shape().rank() >= 2);
 			assert(vector.shape().rank() == 1);
 			assert(plan.column_count() == 1);
@@ -113,9 +113,9 @@ namespace minitensor::detail::cpu
 			MutableTensorView output,
 			const MatmulPlan& plan)
 		{
-			assert(vector.dtype() == ElementDType<T>::value);
-			assert(matrix.dtype() == ElementDType<T>::value);
-			assert(output.dtype() == ElementDType<T>::value);
+			assert(vector.dtype() == dtype_of_v<T>);
+			assert(matrix.dtype() == dtype_of_v<T>);
+			assert(output.dtype() == dtype_of_v<T>);
 			assert(vector.shape().rank() == 1);
 			assert(matrix.shape().rank() >= 2);
 			assert(plan.row_count() == 1);
@@ -164,9 +164,9 @@ namespace minitensor::detail::cpu
 		template <CpuElement T>
 		void gemm(const TensorView& lhs, const TensorView& rhs, MutableTensorView output, const MatmulPlan& plan)
 		{
-			assert(lhs.dtype() == ElementDType<T>::value);
-			assert(rhs.dtype() == ElementDType<T>::value);
-			assert(output.dtype() == ElementDType<T>::value);
+			assert(lhs.dtype() == dtype_of_v<T>);
+			assert(rhs.dtype() == dtype_of_v<T>);
+			assert(output.dtype() == dtype_of_v<T>);
 			assert(lhs.shape().rank() >= 2);
 			assert(rhs.shape().rank() >= 2);
 
@@ -225,9 +225,9 @@ namespace minitensor::detail::cpu
 			const TensorView& rhs,
 			MutableTensorView output)
 		{
-			assert(lhs.dtype() == ElementDType<T>::value);
-			assert(rhs.dtype() == ElementDType<T>::value);
-			assert(output.dtype() == ElementDType<T>::value);
+			assert(lhs.dtype() == dtype_of_v<T>);
+			assert(rhs.dtype() == dtype_of_v<T>);
+			assert(output.dtype() == dtype_of_v<T>);
 			assert(output.layout().is_contiguous(output.shape()));
 
 			if (output.shape().numel() == 0)

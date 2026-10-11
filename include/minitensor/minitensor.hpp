@@ -6,5 +6,6 @@
 #include "nn.hpp"
 #include "ops.hpp"
 #include "random.hpp"
+#include "host_scalar.hpp"
 #include "tensor.hpp"
 #include "types.hpp"

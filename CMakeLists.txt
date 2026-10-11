@@ -11,6 +11,7 @@ target_sources(
     PRIVATE
         src/tensor/tensor.cpp
         src/tensor/types.cpp
+        src/tensor/host_scalar.cpp
         src/tensor/data.cpp
         src/tensor/evaluation.cpp
         src/tensor/random.cpp
@@ -147,6 +148,7 @@ if(BUILD_TESTING)
         public
         public
         tests/tensor/public/types_test.cpp
+        tests/tensor/public/host_scalar_test.cpp
         tests/tensor/public/tensor_test.cpp
         tests/tensor/public/creation_test.cpp
         tests/tensor/public/elementwise_test.cpp

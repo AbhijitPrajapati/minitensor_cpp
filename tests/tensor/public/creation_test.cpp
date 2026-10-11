@@ -4,6 +4,7 @@
 #include <minitensor/types.hpp>
 
 #include <array>
+#include <cstdint>
 
 #include <gtest/gtest.h>
 
@@ -25,6 +26,13 @@ namespace minitensor::test
 		const Tensor empty = full(Shape{ 2, 0, 3 }, 1.0F);
 		EXPECT_EQ(empty.shape(), (Shape{ 2, 0, 3 }));
 		EXPECT_EQ(empty.numel(), 0);
+
+		const Tensor integers = full(
+			Shape{ 2 },
+			std::int64_t{ 9'007'199'254'740'993 },
+			TensorOptions{ DType::Int64, Device::cpu() });
+		EXPECT_EQ(integers.shape(), (Shape{ 2 }));
+		EXPECT_EQ(integers.dtype(), DType::Int64);
 	}
 
 	TEST(CreationTest, FullAndConstantConveniencesProduceValues)

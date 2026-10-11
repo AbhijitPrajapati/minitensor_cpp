@@ -67,6 +67,18 @@ namespace minitensor::test
 	{
 		EXPECT_EQ(dtype_size(DType::Float32), sizeof(float));
 		EXPECT_EQ(dtype_name(DType::Float32), "float32");
+		EXPECT_TRUE(is_floating_point(DType::Float32));
+		EXPECT_FALSE(is_integral(DType::Float32));
+		EXPECT_EQ(dtype_of_v<float>, DType::Float32);
+	}
+
+	TEST(DTypeTest, ExposesInt64Properties)
+	{
+		EXPECT_EQ(dtype_size(DType::Int64), sizeof(std::int64_t));
+		EXPECT_EQ(dtype_name(DType::Int64), "int64");
+		EXPECT_FALSE(is_floating_point(DType::Int64));
+		EXPECT_TRUE(is_integral(DType::Int64));
+		EXPECT_EQ(dtype_of_v<std::int64_t>, DType::Int64);
 	}
 
 	TEST(DTypeTest, RejectsUnknownValues)
