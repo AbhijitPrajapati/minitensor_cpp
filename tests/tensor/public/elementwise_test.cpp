@@ -7,6 +7,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 
@@ -166,6 +167,12 @@ namespace minitensor::test
 		EXPECT_THROW((void)apply(GetParam(), lhs, rhs), std::invalid_argument);
 	}
 
+	TEST_P(BinaryElementwiseTest, RejectsIntegralInputs)
+	{
+		const Tensor input = from_data<std::int64_t>({ 1, 2 }, Shape{ 2 });
+		EXPECT_THROW((void)apply(GetParam(), input, input), std::invalid_argument);
+	}
+
 	INSTANTIATE_TEST_SUITE_P(
 		AllOperations,
 		BinaryElementwiseTest,
@@ -213,6 +220,12 @@ namespace minitensor::test
 			}
 		}
 		expect_tensor_near(result, expected);
+	}
+
+	TEST_P(UnaryElementwiseTest, RejectsIntegralInputs)
+	{
+		const Tensor input = from_data<std::int64_t>({ 1, 2 }, Shape{ 2 });
+		EXPECT_THROW((void)apply(GetParam(), input), std::invalid_argument);
 	}
 
 	INSTANTIATE_TEST_SUITE_P(

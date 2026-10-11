@@ -35,6 +35,10 @@ namespace minitensor::detail
 		{
 			throw std::invalid_argument{ "add requires matching dtypes" };
 		}
+		if (!is_floating_point(lhs.dtype))
+		{
+			throw std::invalid_argument{ "add requires floating-point inputs" };
+		}
 		if (lhs.device != rhs.device)
 		{
 			throw std::invalid_argument{ "add requires input tensors on the same device" };

@@ -42,6 +42,10 @@ namespace minitensor
 		{
 			throw std::invalid_argument{ "grad requires rank 0 output" };
 		}
+		if (!is_floating_point(output.dtype()))
+		{
+			throw std::invalid_argument{ "grad requires a floating-point output" };
+		}
 		Tensor seed = full(Shape{}, 1.0F, TensorOptions{ output.dtype(), output.device() });
 		return vjp(output, inputs, seed);
 	}

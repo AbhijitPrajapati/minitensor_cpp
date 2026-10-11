@@ -9,6 +9,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <stdexcept>
 #include <vector>
 
@@ -88,5 +89,18 @@ namespace minitensor::test
 	{
 		const Tensor input = full(Shape{ 2 }, 1.0F);
 		EXPECT_THROW((void)grad(input, input), std::invalid_argument);
+	}
+
+	TEST(AutogradTest, RejectsNonFloatingOutputsCotangentsAndTargets)
+	{
+		const Tensor floating = full(Shape{}, 1.0F);
+		const Tensor integral = full(
+			Shape{}, std::int64_t{ 1 },
+			TensorOptions{ DType::Int64, Device::cpu() });
+
+		EXPECT_THROW((void)grad(integral, integral), std::invalid_argument);
+		EXPECT_THROW((void)vjp(integral, integral, integral), std::invalid_argument);
+		EXPECT_THROW((void)vjp(floating, floating, integral), std::invalid_argument);
+		EXPECT_THROW((void)vjp(floating, integral, floating), std::invalid_argument);
 	}
 }

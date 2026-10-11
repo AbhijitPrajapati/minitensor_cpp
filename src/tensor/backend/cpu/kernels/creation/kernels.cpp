@@ -42,7 +42,7 @@ namespace minitensor::detail::cpu
 
 			const auto& uniform_primitive = dynamic_cast<const UniformPrimitive&>(primitive);
 
-			dispatch_dtype(
+			dispatch_floating_dtype(
 				output.dtype(),
 				[&]<typename T>(std::type_identity<T>)
 			{
@@ -59,7 +59,7 @@ namespace minitensor::detail::cpu
 
 			const auto& normal_primitive = dynamic_cast<const NormalPrimitive&>(primitive);
 
-			dispatch_dtype(
+			dispatch_floating_dtype(
 				output.dtype(),
 				[&]<typename T>(std::type_identity<T>)
 			{

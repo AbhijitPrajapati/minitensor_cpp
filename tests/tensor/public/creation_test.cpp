@@ -1,3 +1,4 @@
+#include <minitensor/data.hpp>
 #include <minitensor/ops/creation.hpp>
 #include <minitensor/random.hpp>
 #include <minitensor/tensor.hpp>
@@ -5,6 +6,7 @@
 
 #include <array>
 #include <cstdint>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -33,6 +35,11 @@ namespace minitensor::test
 			TensorOptions{ DType::Int64, Device::cpu() });
 		EXPECT_EQ(integers.shape(), (Shape{ 2 }));
 		EXPECT_EQ(integers.dtype(), DType::Int64);
+		EXPECT_EQ(
+			to_vector<std::int64_t>(integers),
+			(std::vector<std::int64_t>{
+				9'007'199'254'740'993,
+				9'007'199'254'740'993 }));
 	}
 
 	TEST(CreationTest, FullAndConstantConveniencesProduceValues)

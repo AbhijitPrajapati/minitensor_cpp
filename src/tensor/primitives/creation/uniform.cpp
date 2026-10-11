@@ -10,6 +10,7 @@
 
 #include <minitensor/random.hpp>
 #include <minitensor/tensor.hpp>
+#include <minitensor/types.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
 
@@ -18,6 +19,10 @@ namespace minitensor::detail
 	UniformPrimitive::UniformPrimitive(TensorSpec output_spec, float low, float high, RandomKey key)
 		: output_spec_(std::move(output_spec)), low_(low), high_(high), key_(key)
 	{
+		if (!is_floating_point(output_spec_.dtype))
+		{
+			throw std::invalid_argument{ "uniform requires a floating-point dtype" };
+		}
 		if (!std::isfinite(low_) || !std::isfinite(high_))
 		{
 			throw std::invalid_argument{ "uniform bounds must be finite" };

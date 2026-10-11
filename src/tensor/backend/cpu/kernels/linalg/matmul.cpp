@@ -275,7 +275,7 @@ namespace minitensor::detail::cpu
 			assert(output.layout().is_contiguous(output.shape()));
 			(void)dynamic_cast<const MatmulPrimitive&>(primitive);
 
-			dispatch_dtype(
+			dispatch_floating_dtype(
 				output.dtype(),
 				[&]<typename T>(std::type_identity<T>)
 			{

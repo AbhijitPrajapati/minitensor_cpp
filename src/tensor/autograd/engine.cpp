@@ -147,8 +147,29 @@ namespace minitensor::detail
 			throw std::invalid_argument("reverse vjp output cannot be null");
 		}
 
-		// validate cotangent
+		// validate differentiation dtypes and cotangent specification
 		const TensorSpec& output_spec = output->spec();
+		if (!is_floating_point(output_spec.dtype))
+		{
+			throw std::invalid_argument{ "reverse vjp requires a floating-point output" };
+		}
+		for (const ValueRef& target : targets)
+		{
+			if (!target)
+			{
+				throw std::invalid_argument{ "reverse vjp target cannot be null" };
+			}
+			if (!is_floating_point(target->spec().dtype))
+			{
+				throw std::invalid_argument{
+					"reverse vjp requires floating-point targets" };
+			}
+		}
+		if (!is_floating_point(output_cotangent.dtype()))
+		{
+			throw std::invalid_argument{
+				"reverse vjp requires a floating-point output cotangent" };
+		}
 		if (output_cotangent.device() != output_spec.device)
 		{
 			throw std::invalid_argument{ "output cotangent does not match output device" };
