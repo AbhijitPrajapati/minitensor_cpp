@@ -175,6 +175,7 @@ if(BUILD_TESTING)
         tests/nn/public/gradients_test.cpp
         tests/nn/public/leafification_test.cpp
         tests/nn/public/linear_test.cpp
+        tests/nn/public/loss_test.cpp
         tests/nn/public/sgd_test.cpp
     )
 

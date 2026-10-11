@@ -4,16 +4,36 @@
 #include <memory>
 #include <numeric>
 #include <span>
+#include <utility>
 #include <vector>
 
+#include <minitensor/ops/elementwise.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "apply_primitive.hpp"
+#include "tensor/core/axis.hpp"
 #include "tensor/primitives/reduction/sum.hpp"
 
 namespace minitensor
 {
+	namespace
+	{
+		Shape::size_type reduction_size(
+			const Shape& input_shape,
+			std::span<const Axis> axes)
+		{
+			std::vector<Extent> reduced_extents;
+			reduced_extents.reserve(axes.size());
+			for (const Axis axis : axes)
+			{
+				reduced_extents.push_back(
+					input_shape[detail::normalize_axis(axis, input_shape.rank())]);
+			}
+			return Shape{ std::move(reduced_extents) }.numel();
+		}
+	}
+
 	Tensor sum(const Tensor& input, std::span<const Axis> axes, bool keep_dim)
 	{
 		if (axes.empty())
@@ -34,6 +54,31 @@ namespace minitensor
 		std::vector<Axis> axes(input.rank());
 		std::iota(axes.begin(), axes.end(), Axis{ 0 });
 		return sum(input, axes, keep_dim);
+	}
+
+	Tensor mean(const Tensor& input, std::span<const Axis> axes, bool keep_dim)
+	{
+		if (axes.empty())
+		{
+			return input;
+		}
+
+		const Tensor total = sum(input, axes, keep_dim);
+		const Shape::size_type output_size = total.numel();
+		const Shape::size_type reduction_size = output_size == 0 ? 1 : input.numel() / output_size;
+		return total / static_cast<float>(reduction_size);
+	}
+
+	Tensor mean(const Tensor& input, std::initializer_list<Axis> axes, bool keep_dim)
+	{
+		return mean(input, std::span<const Axis>(axes.begin(), axes.size()), keep_dim);
+	}
+
+	Tensor mean(const Tensor& input, bool keep_dim)
+	{
+		std::vector<Axis> axes(input.rank());
+		std::iota(axes.begin(), axes.end(), Axis{ 0 });
+		return mean(input, axes, keep_dim);
 	}
 
 }
