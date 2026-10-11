@@ -1,6 +1,6 @@
 #include <minitensor/data.hpp>
 
-#include <initializer_list>
+#include <cstdint>
 #include <span>
 #include <stdexcept>
 #include <utility>
@@ -19,44 +19,57 @@
 
 namespace minitensor
 {
-	Tensor from_data(std::span<const float> data, Shape shape, TensorOptions options)
+	template <TensorElement T>
+	Tensor from_data(std::span<const T> data, Shape shape, Device device)
 	{
 		if (data.size() != shape.numel())
 		{
 			throw std::invalid_argument{ "data size does not match requested shape" };
 		}
 
-		detail::TensorSpec spec{ std::move(shape), DType::Float32, options.device };
+		detail::TensorSpec spec{ std::move(shape), dtype_of_v<T>, device };
 		detail::ValueRef value = detail::make_value_from_host(std::move(spec), std::as_bytes(data));
 		return detail::TensorAccess::make(std::move(value));
 	}
 
-	Tensor from_data(std::initializer_list<float> data, Shape shape, TensorOptions options)
+	template <TensorElement T>
+	std::vector<T> to_vector(const Tensor& tensor)
 	{
-		return from_data(std::span<const float>(data.begin(), data.size()), std::move(shape), options);
-	}
-
-	std::vector<float> to_vector(const Tensor& tensor)
-	{
-		if (tensor.dtype() != DType::Float32)
+		if (tensor.dtype() != dtype_of_v<T>)
 		{
-			throw std::logic_error{ "unsupported datatype detected" };
+			throw std::invalid_argument{ "requested host type does not match tensor dtype" };
 		}
 
 		const Tensor contiguous_tensor = contiguous(tensor);
 		eval(contiguous_tensor);
 		const detail::ValueRef& value = detail::TensorAccess::value(contiguous_tensor);
-		std::vector<float> result(tensor.numel());
-		detail::copy_value_to_host(std::as_writable_bytes(std::span<float>(result)), value);
+		std::vector<T> result(tensor.numel());
+		detail::copy_value_to_host(std::as_writable_bytes(std::span<T>(result)), value);
 		return result;
 	}
 
-	float item(const Tensor& tensor)
+	template <TensorElement T>
+	T item(const Tensor& tensor)
 	{
 		if (tensor.numel() != 1)
 		{
 			throw std::invalid_argument{ "item() requires a single tensor element" };
 		}
-		return to_vector(tensor).front();
+		return to_vector<T>(tensor).front();
 	}
+
+	// Explicit template instantiation to pair with
+	// external template declaration in header file.
+	template std::vector<float> to_vector<float>(const Tensor& tensor);
+	template std::vector<std::int64_t> to_vector<std::int64_t>(const Tensor& tensor);
+	template float item<float>(const Tensor& tensor);
+	template std::int64_t item<std::int64_t>(const Tensor& tensor);
+	template Tensor from_data<float>(
+		std::span<const float> data,
+		Shape shape,
+		Device device);
+	template Tensor from_data<std::int64_t>(
+		std::span<const std::int64_t> data,
+		Shape shape,
+		Device device);
 }

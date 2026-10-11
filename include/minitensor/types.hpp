@@ -1,9 +1,11 @@
 #pragma once
 
+#include <concepts>
 #include <cstdint>
 #include <initializer_list>
 #include <span>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 namespace minitensor
@@ -17,7 +19,7 @@ namespace minitensor
 		using value_type = Extent;
 		using size_type = std::size_t;
 
-		// scalar shape
+		// Scalar shape
 		Shape() = default;
 
 		Shape(std::initializer_list<value_type> dimensions);
@@ -44,10 +46,52 @@ namespace minitensor
 	enum class DType : std::uint8_t
 	{
 		Float32,
+		Int64
 	};
 
 	[[nodiscard]] std::size_t dtype_size(DType dtype);
 	[[nodiscard]] std::string_view dtype_name(DType dtype);
+
+	// Helpers to discern DType categories.
+	[[nodiscard]] constexpr bool is_floating_point(DType dtype) noexcept
+	{
+		return dtype == DType::Float32;
+	}
+
+	[[nodiscard]] constexpr bool is_integral(DType dtype) noexcept
+	{
+		return dtype == DType::Int64;
+	}
+
+	namespace detail
+	{
+		// Bridge C++ types to DType.
+		template <typename T>
+		struct DTypeOf;
+
+		template <>
+		struct DTypeOf<float> final
+		{
+			static constexpr DType value = DType::Float32;
+		};
+
+		template <>
+		struct DTypeOf<std::int64_t> final
+		{
+			static constexpr DType value = DType::Int64;
+		};
+	}
+
+	template <typename T>
+	concept TensorElement =
+		std::same_as<T, std::remove_cv_t<T>> &&
+		requires
+		{
+			{ detail::DTypeOf<T>::value } -> std::convertible_to<DType>;
+		};
+
+	template <TensorElement T>
+	inline constexpr DType dtype_of_v = detail::DTypeOf<T>::value;
 
 	enum class DeviceType : std::uint8_t
 	{

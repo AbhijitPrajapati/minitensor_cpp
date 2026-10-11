@@ -28,8 +28,8 @@ namespace minitensor::detail::cpu
 			Accumulator initial_value,
 			Operation&& operation)
 	{
-		assert(input.dtype() == ElementDType<T>::value);
-		assert(output.dtype() == ElementDType<T>::value);
+		assert(input.dtype() == dtype_of_v<T>);
+		assert(output.dtype() == dtype_of_v<T>);
 		assert(output.layout().is_contiguous(output.shape()));
 
 		const ReductionPlan plan{ input.shape(), input.layout(), axes };

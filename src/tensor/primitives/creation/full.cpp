@@ -4,16 +4,19 @@
 #include <span>
 #include <stdexcept>
 #include <string_view>
+#include <utility>
 #include <vector>
 
+#include <minitensor/host_scalar.hpp>
 #include <minitensor/tensor.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
 
 namespace minitensor::detail
 {
-	FullPrimitive::FullPrimitive(TensorSpec output_spec, float fill_value)
-		: output_spec_(output_spec), fill_value_(fill_value)
+	FullPrimitive::FullPrimitive(TensorSpec output_spec, HostScalar fill_value)
+		: output_spec_(std::move(output_spec)),
+		fill_value_(fill_value.cast(output_spec_.dtype))
 	{}
 
 	std::string_view FullPrimitive::name() const noexcept
@@ -30,7 +33,7 @@ namespace minitensor::detail
 		return output_spec_;
 	}
 
-	float FullPrimitive::fill_value() const noexcept
+	const HostScalar& FullPrimitive::fill_value() const noexcept
 	{
 		return fill_value_;
 	}

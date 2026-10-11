@@ -20,7 +20,7 @@ namespace minitensor::detail::cpu
 	template <CpuElement T>
 	void fill(MutableTensorView output, T fill_value)
 	{
-		assert(output.dtype() == ElementDType<T>::value);
+		assert(output.dtype() == dtype_of_v<T>);
 
 		const Shape& output_shape = output.shape();
 		assert(output.layout().is_contiguous(output_shape));
@@ -38,7 +38,7 @@ namespace minitensor::detail::cpu
 	template <CpuElement T>
 	void uniform(MutableTensorView output, T low, T high, RandomKey key)
 	{
-		assert(output.dtype() == ElementDType<T>::value);
+		assert(output.dtype() == dtype_of_v<T>);
 		static_assert(std::is_floating_point_v<T>);
 
 		const Shape& output_shape = output.shape();
@@ -87,7 +87,7 @@ namespace minitensor::detail::cpu
 	template <CpuElement T>
 	void normal(MutableTensorView output, T mean, T std_dev, RandomKey key)
 	{
-		assert(output.dtype() == ElementDType<T>::value);
+		assert(output.dtype() == dtype_of_v<T>);
 		static_assert(std::is_floating_point_v<T>);
 
 		const Shape& output_shape = output.shape();

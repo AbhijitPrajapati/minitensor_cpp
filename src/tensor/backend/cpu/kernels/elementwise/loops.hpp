@@ -20,8 +20,8 @@ namespace minitensor::detail::cpu
 		requires std::invocable<Operation&, T>&& std::convertible_to<std::invoke_result_t<Operation&, T>, T>
 	void unary_elementwise(const TensorView& input, MutableTensorView output, Operation&& operation)
 	{
-		assert(input.dtype() == ElementDType<T>::value);
-		assert(output.dtype() == ElementDType<T>::value);
+		assert(input.dtype() == dtype_of_v<T>);
+		assert(output.dtype() == dtype_of_v<T>);
 
 		const Shape& output_shape = output.shape();
 		assert(input.shape() == output_shape);
@@ -77,9 +77,9 @@ namespace minitensor::detail::cpu
 		requires std::invocable<Operation&, T, T>&& std::convertible_to<std::invoke_result_t<Operation&, T, T>, T>
 	void binary_elementwise(const TensorView& lhs, const TensorView& rhs, MutableTensorView output, Operation&& operation)
 	{
-		assert(lhs.dtype() == ElementDType<T>::value);
-		assert(rhs.dtype() == ElementDType<T>::value);
-		assert(output.dtype() == ElementDType<T>::value);
+		assert(lhs.dtype() == dtype_of_v<T>);
+		assert(rhs.dtype() == dtype_of_v<T>);
+		assert(output.dtype() == dtype_of_v<T>);
 
 		const Shape& output_shape = output.shape();
 		assert(output.layout().is_contiguous(output_shape));

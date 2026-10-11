@@ -1,14 +1,15 @@
 #pragma once
 
 #include <minitensor/random.hpp>
+#include <minitensor/host_scalar.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 namespace minitensor
 {
-	[[nodiscard]] Tensor full(Shape shape, float value, TensorOptions options = {});
-	[[nodiscard]] Tensor full_like(const Tensor& input, float value);
-	[[nodiscard]] Tensor full_like(const Tensor& input, float value, TensorOptions options);
+	[[nodiscard]] Tensor full(Shape shape, HostScalar value, TensorOptions options = {});
+	[[nodiscard]] Tensor full_like(const Tensor& input, HostScalar value);
+	[[nodiscard]] Tensor full_like(const Tensor& input, HostScalar value, TensorOptions options);
 	[[nodiscard]] Tensor zeros(Shape shape, TensorOptions options = {});
 	[[nodiscard]] Tensor ones(Shape shape, TensorOptions options = {});
 	[[nodiscard]] Tensor zeros_like(const Tensor& input);

@@ -4,6 +4,7 @@
 #include <utility>
 
 #include <minitensor/random.hpp>
+#include <minitensor/host_scalar.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
@@ -28,18 +29,18 @@ namespace minitensor
 		}
 	}
 
-	Tensor full(Shape shape, float value, TensorOptions options)
+	Tensor full(Shape shape, HostScalar value, TensorOptions options)
 	{
 		return detail::apply_primitive(
 			std::make_unique<detail::FullPrimitive>(output_spec(std::move(shape), options), value));
 	}
 
-	Tensor full_like(const Tensor& input, float value)
+	Tensor full_like(const Tensor& input, HostScalar value)
 	{
 		return full(input.shape(), value, options_like(input));
 	}
 
-	Tensor full_like(const Tensor& input, float value, TensorOptions options)
+	Tensor full_like(const Tensor& input, HostScalar value, TensorOptions options)
 	{
 		return full(input.shape(), value, options);
 	}

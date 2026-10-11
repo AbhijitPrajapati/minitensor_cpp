@@ -246,6 +246,7 @@ namespace minitensor::test
 		expect_tensor_eq(2.0F * input, multiply);
 		expect_tensor_near(input / 2.0F, tensor_divide);
 		expect_tensor_near(8.0F / input, scalar_divide);
+		expect_tensor_eq(input + 2, add);
 	}
 
 	TEST(ElementwiseTest, SupportsScalarAndEmptyBroadcasting)

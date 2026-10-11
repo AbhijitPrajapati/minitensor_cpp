@@ -31,7 +31,7 @@ namespace minitensor::detail::cpu
 				output.dtype(),
 				[&]<typename T>(std::type_identity<T>)
 			{
-				fill(output, static_cast<T>(full.fill_value()));
+				fill(output, full.fill_value().get<T>());
 			});
 		}
 

@@ -87,8 +87,8 @@ namespace minitensor::detail::cpu
 	template <CpuElement T>
 	void copy_to_contiguous(const TensorView& input, MutableTensorView output)
 	{
-		assert(input.dtype() == ElementDType<T>::value);
-		assert(output.dtype() == ElementDType<T>::value);
+		assert(input.dtype() == dtype_of_v<T>);
+		assert(output.dtype() == dtype_of_v<T>);
 		assert(input.shape().numel() == output.shape().numel());
 		assert(output.layout().is_contiguous(output.shape()));
 
@@ -113,7 +113,7 @@ namespace minitensor::detail::cpu
 		Shape::size_type axis)
 	{
 		assert(!inputs.empty());
-		assert(output.dtype() == ElementDType<T>::value);
+		assert(output.dtype() == dtype_of_v<T>);
 		assert(output.layout().is_contiguous(output.shape()));
 		assert(axis < output.shape().rank());
 
@@ -127,7 +127,7 @@ namespace minitensor::detail::cpu
 
 		for (const TensorView& input : inputs)
 		{
-			assert(input.dtype() == ElementDType<T>::value);
+			assert(input.dtype() == dtype_of_v<T>);
 			assert(input.shape().rank() == output.shape().rank());
 
 			const Extent input_axis_extent = input.shape()[axis];
@@ -164,8 +164,8 @@ namespace minitensor::detail::cpu
 		Extent start,
 		Extent step)
 	{
-		assert(input.dtype() == ElementDType<T>::value);
-		assert(output.dtype() == ElementDType<T>::value);
+		assert(input.dtype() == dtype_of_v<T>);
+		assert(output.dtype() == dtype_of_v<T>);
 		assert(output.layout().is_contiguous(output.shape()));
 		assert(input.shape().rank() == output.shape().rank());
 		assert(axis < output.shape().rank());

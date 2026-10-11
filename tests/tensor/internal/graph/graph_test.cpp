@@ -2,6 +2,7 @@
 #include <minitensor/types.hpp>
 
 #include <array>
+#include <cstdint>
 #include <memory>
 #include <span>
 #include <stdexcept>
@@ -181,7 +182,21 @@ namespace minitensor::test
 		const auto* primitive = dynamic_cast<const detail::FullPrimitive*>(
 			&output->producer()->primitive());
 		ASSERT_NE(primitive, nullptr);
-		EXPECT_FLOAT_EQ(primitive->fill_value(), 7.25F);
+		EXPECT_FLOAT_EQ(primitive->fill_value().get<float>(), 7.25F);
+
+		constexpr std::int64_t integer_value = 9'007'199'254'740'993;
+		const detail::TensorSpec integer_spec{
+			Shape{ 1 }, DType::Int64, Device::cpu() };
+		const detail::ValueRef integer_output = detail::apply_operation(
+			std::make_unique<detail::FullPrimitive>(integer_spec, integer_value),
+			std::span<const detail::ValueRef>{});
+		const auto* integer_primitive =
+			dynamic_cast<const detail::FullPrimitive*>(
+				&integer_output->producer()->primitive());
+		ASSERT_NE(integer_primitive, nullptr);
+		EXPECT_EQ(
+			integer_primitive->fill_value().get<std::int64_t>(),
+			integer_value);
 	}
 
 	TEST(ApplyOperationTest, ValidatesPrimitiveAndInputs)
