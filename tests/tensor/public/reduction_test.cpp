@@ -83,4 +83,20 @@ namespace minitensor::test
 		const Tensor input = from_data<std::int64_t>({ 1, 2 }, Shape{ 2 });
 		EXPECT_THROW((void)sum(input), std::invalid_argument);
 	}
+
+	TEST(MeanTest, ReducesContiguousAndStridedInputs)
+	{
+		const Tensor matrix = from_data(
+			{ 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F }, Shape{ 2, 3 });
+
+		const std::array<float, 2> row_means{ 2.0F, 5.0F };
+		expect_tensor_eq(mean(matrix, { -1 }), row_means);
+		const Tensor kept = mean(matrix, { -1 }, true);
+		EXPECT_EQ(kept.shape(), (Shape{ 2, 1 }));
+		expect_tensor_eq(kept, row_means);
+		EXPECT_FLOAT_EQ(item(mean(matrix)), 3.5F);
+
+		const std::array<float, 3> transposed_rows{ 2.5F, 3.5F, 4.5F };
+		expect_tensor_eq(mean(transpose(matrix), { 1 }), transposed_rows);
+	}
 }
