@@ -64,6 +64,22 @@ namespace minitensor::test
 		expect_tensor_eq(result, expected);
 	}
 
+	TEST(ManipulationAutogradTest, ScattersSelectCotangents)
+	{
+		const Tensor input = full(Shape{ 2, 3, 2 }, 0.0F);
+		const Tensor output = select(input, 1, 1);
+		const Tensor seed = from_data(
+			{ 1.0F, 2.0F, 3.0F, 4.0F }, Shape{ 2, 2 });
+		const Tensor result = vjp(output, input, seed).front();
+		const std::array<float, 12> expected{
+			0.0F, 0.0F, 1.0F, 2.0F, 0.0F, 0.0F,
+			0.0F, 0.0F, 3.0F, 4.0F, 0.0F, 0.0F
+		};
+
+		EXPECT_EQ(result.shape(), input.shape());
+		expect_tensor_eq(result, expected);
+	}
+
 	TEST(ManipulationAutogradTest, ZeroFillsAnEmptySliceCotangent)
 	{
 		const Tensor input = full(Shape{ 2, 3 }, 1.0F);

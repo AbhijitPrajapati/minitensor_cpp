@@ -19,9 +19,9 @@
 #include "tensor/dispatch/tensor_view.hpp"
 #include "tensor/primitives/creation/full.hpp"
 #include "tensor/primitives/elementwise/add.hpp"
+#include "tensor/primitives/manipulation/basic_index.hpp"
 #include "tensor/primitives/manipulation/concatenate.hpp"
 #include "tensor/primitives/manipulation/reshape.hpp"
-#include "tensor/primitives/manipulation/slice.hpp"
 #include "tensor/storage/layout.hpp"
 #include "tensor/storage/materialization.hpp"
 
@@ -190,13 +190,13 @@ namespace minitensor::test
 		EXPECT_TRUE(std::equal(expected.begin(), expected.end(), float_data(output_buffer)));
 	}
 
-	TEST(CpuSliceScatterKernelTest, ZeroFillsGapsForNegativeSteps)
+	TEST(CpuBasicIndexScatterKernelTest, ZeroFillsSliceGapsForNegativeSteps)
 	{
 		detail::KernelRegistry registry;
 		detail::cpu::register_kernels(registry);
 		detail::cpu::CpuRuntime runtime;
 		const detail::KernelFn& kernel = registry.get({
-			typeid(detail::SliceScatterPrimitive), DeviceType::Cpu });
+			typeid(detail::BasicIndexScatterPrimitive), DeviceType::Cpu });
 
 		const detail::TensorSpec input_spec{ Shape{ 2, 3 }, DType::Float32, Device::cpu() };
 		const detail::TensorSpec output_spec{ Shape{ 2, 5 }, DType::Float32, Device::cpu() };
@@ -213,11 +213,12 @@ namespace minitensor::test
 		const std::array<detail::TensorView, 1> inputs{
 			detail::TensorView{ input_spec, input_storage } };
 		const detail::MutableTensorView output{ output_spec, output_storage };
-		const detail::SliceParameters parameters{
-			1, std::nullopt, std::nullopt, -2, output_spec.shape };
+		const detail::BasicIndexParameters parameters =
+			detail::BasicIndexParameters::for_slice(
+				1, std::nullopt, std::nullopt, -2, output_spec.shape);
 		kernel(
 			runtime,
-			detail::SliceScatterPrimitive{ output_spec.shape, parameters },
+			detail::BasicIndexScatterPrimitive{ parameters },
 			inputs,
 			output);
 
@@ -225,6 +226,45 @@ namespace minitensor::test
 			-1.0F,
 			3.0F, 0.0F, 2.0F, 0.0F, 1.0F,
 			6.0F, 0.0F, 5.0F, 0.0F, 4.0F
+		};
+		EXPECT_TRUE(std::equal(expected.begin(), expected.end(), float_data(output_buffer)));
+	}
+
+	TEST(CpuBasicIndexScatterKernelTest, InsertsRankReducedSelection)
+	{
+		detail::KernelRegistry registry;
+		detail::cpu::register_kernels(registry);
+		detail::cpu::CpuRuntime runtime;
+		const detail::KernelFn& kernel = registry.get({
+			typeid(detail::BasicIndexScatterPrimitive), DeviceType::Cpu });
+
+		const detail::TensorSpec input_spec{ Shape{ 2, 2 }, DType::Float32, Device::cpu() };
+		const detail::TensorSpec output_spec{ Shape{ 2, 3, 2 }, DType::Float32, Device::cpu() };
+		const detail::BufferRef input_buffer = runtime.allocate(4 * sizeof(float));
+		const detail::BufferRef output_buffer = runtime.allocate(13 * sizeof(float));
+		const std::array<float, 4> input_values{ 1.0F, 2.0F, 3.0F, 4.0F };
+		std::copy(input_values.begin(), input_values.end(), float_data(input_buffer));
+		std::fill_n(float_data(output_buffer), 13, -1.0F);
+
+		const detail::Materialization input_storage{
+			input_buffer, detail::Layout::contiguous(input_spec.shape) };
+		const detail::Materialization output_storage{
+			output_buffer, detail::Layout::contiguous(output_spec.shape, 1) };
+		const std::array<detail::TensorView, 1> inputs{
+			detail::TensorView{ input_spec, input_storage } };
+		const detail::MutableTensorView output{ output_spec, output_storage };
+		const detail::BasicIndexParameters parameters =
+			detail::BasicIndexParameters::for_select(1, 1, output_spec.shape);
+		kernel(
+			runtime,
+			detail::BasicIndexScatterPrimitive{ parameters },
+			inputs,
+			output);
+
+		const std::array<float, 13> expected{
+			-1.0F,
+			0.0F, 0.0F, 1.0F, 2.0F, 0.0F, 0.0F,
+			0.0F, 0.0F, 3.0F, 4.0F, 0.0F, 0.0F
 		};
 		EXPECT_TRUE(std::equal(expected.begin(), expected.end(), float_data(output_buffer)));
 	}
