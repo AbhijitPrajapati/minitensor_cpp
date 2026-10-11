@@ -73,6 +73,7 @@ target_sources(
         src/nn/parameter.cpp
         src/nn/modules/linear.cpp
         src/nn/optimizers/sgd.cpp
+        src/nn/loss.cpp
 )
 
 # Specify all header files the library needs

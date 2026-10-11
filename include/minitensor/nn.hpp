@@ -2,6 +2,7 @@
 
 #include "nn/gradients.hpp"
 #include "nn/leafification.hpp"
+#include "nn/loss.hpp"
 #include "nn/modules/linear.hpp"
 #include "nn/optimizers/sgd.hpp"
 #include "nn/parameter.hpp"
