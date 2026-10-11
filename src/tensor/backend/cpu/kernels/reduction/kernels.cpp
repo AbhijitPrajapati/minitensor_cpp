@@ -27,7 +27,7 @@ namespace minitensor::detail::cpu
 			assert(inputs.size() == 1);
 			const auto& sum = dynamic_cast<const SumPrimitive&>(primitive);
 
-			dispatch_dtype(
+			dispatch_floating_dtype(
 				output.dtype(),
 				[&]<typename T>(std::type_identity<T>)
 			{

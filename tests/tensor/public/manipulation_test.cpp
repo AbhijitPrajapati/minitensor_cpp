@@ -5,10 +5,12 @@
 #include <minitensor/types.hpp>
 
 #include <array>
+#include <cstdint>
 #include <limits>
 #include <optional>
 #include <span>
 #include <stdexcept>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -64,6 +66,17 @@ namespace minitensor::test
 		const Tensor result = contiguous(permuted);
 		EXPECT_EQ(result.shape(), permuted.shape());
 		expect_tensor_eq(result, expected);
+	}
+
+	TEST(ContiguousTest, CopiesIntegralStorage)
+	{
+		const Tensor input = from_data<std::int64_t>(
+			{ 1, 2, 3, 4, 5, 6 }, Shape{ 2, 3 });
+		const Tensor result = contiguous(transpose(input));
+
+		EXPECT_EQ(
+			to_vector<std::int64_t>(result),
+			(std::vector<std::int64_t>{ 1, 4, 2, 5, 3, 6 }));
 	}
 
 	TEST(ReshapeTest, PreservesLogicalOrderForContiguousAndStridedInputs)

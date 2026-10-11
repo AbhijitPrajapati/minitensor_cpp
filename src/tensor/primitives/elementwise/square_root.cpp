@@ -26,6 +26,10 @@ namespace minitensor::detail
 		{
 			throw std::invalid_argument{ "sqrt expects 1 input tensor" };
 		}
+		if (!is_floating_point(inputs.front().dtype))
+		{
+			throw std::invalid_argument{ "sqrt requires a floating-point input" };
+		}
 		return inputs.front();
 	}
 

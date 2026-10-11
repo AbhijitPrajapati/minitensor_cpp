@@ -6,6 +6,7 @@
 #include <minitensor/types.hpp>
 
 #include <array>
+#include <cstdint>
 #include <stdexcept>
 
 #include <gtest/gtest.h>
@@ -119,5 +120,8 @@ namespace minitensor::test
 			Shape{ 2, 2 }, 1.0F,
 			TensorOptions{ DType::Float32, Device::cpu(1) });
 		EXPECT_THROW((void)matmul(lhs, rhs), std::invalid_argument);
+
+		const Tensor integral = from_data<std::int64_t>({ 1, 2 }, Shape{ 2 });
+		EXPECT_THROW((void)matmul(integral, integral), std::invalid_argument);
 	}
 }

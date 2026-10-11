@@ -10,6 +10,7 @@
 
 #include <minitensor/random.hpp>
 #include <minitensor/tensor.hpp>
+#include <minitensor/types.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
 
@@ -18,6 +19,10 @@ namespace minitensor::detail
 	NormalPrimitive::NormalPrimitive(TensorSpec output_spec, float mean, float std_dev, RandomKey key)
 		: output_spec_(std::move(output_spec)), mean_(mean), std_dev_(std_dev), key_(key)
 	{
+		if (!is_floating_point(output_spec_.dtype))
+		{
+			throw std::invalid_argument{ "normal requires a floating-point dtype" };
+		}
 		if (!std::isfinite(mean_) || !std::isfinite(std_dev_))
 		{
 			throw std::invalid_argument{ "normal parameters must be finite" };

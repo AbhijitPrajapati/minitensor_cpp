@@ -6,6 +6,7 @@
 #include <minitensor/types.hpp>
 
 #include <array>
+#include <cstdint>
 #include <span>
 #include <stdexcept>
 
@@ -75,5 +76,11 @@ namespace minitensor::test
 		EXPECT_THROW((void)sum(matrix, { 1, -1 }), std::invalid_argument);
 		EXPECT_THROW((void)sum(matrix, { 2 }), std::out_of_range);
 		EXPECT_THROW((void)sum(matrix, { 0, 1, 0 }), std::invalid_argument);
+	}
+
+	TEST(SumTest, RejectsIntegralInputs)
+	{
+		const Tensor input = from_data<std::int64_t>({ 1, 2 }, Shape{ 2 });
+		EXPECT_THROW((void)sum(input), std::invalid_argument);
 	}
 }

@@ -57,6 +57,10 @@ namespace minitensor::detail
 			throw std::invalid_argument{
 				"sum primitive was normalized for a different input rank" };
 		}
+		if (!is_floating_point(input.dtype))
+		{
+			throw std::invalid_argument{ "sum requires a floating-point input" };
+		}
 
 		std::vector<Extent> output_extents;
 		if (keep_dim_)

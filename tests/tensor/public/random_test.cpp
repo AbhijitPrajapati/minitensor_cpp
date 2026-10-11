@@ -87,5 +87,13 @@ namespace minitensor::test
 			(void)normal(
 			Shape{ 1 }, std::numeric_limits<float>::quiet_NaN(), 1.0F, key),
 			std::invalid_argument);
+
+		const TensorOptions integral_options{ DType::Int64, Device::cpu() };
+		EXPECT_THROW(
+			(void)uniform(Shape{ 1 }, 0.0F, 1.0F, key, integral_options),
+			std::invalid_argument);
+		EXPECT_THROW(
+			(void)normal(Shape{ 1 }, 0.0F, 1.0F, key, integral_options),
+			std::invalid_argument);
 	}
 }

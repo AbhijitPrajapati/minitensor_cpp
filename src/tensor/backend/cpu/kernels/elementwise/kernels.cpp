@@ -32,7 +32,7 @@ namespace minitensor::detail::cpu
 			assert(inputs.size() == 1);
 			(void)dynamic_cast<const PrimitiveType&>(primitive);
 
-			dispatch_dtype(
+			dispatch_floating_dtype(
 				output.dtype(),
 				[&]<typename T>(std::type_identity<T>)
 			{
@@ -46,7 +46,7 @@ namespace minitensor::detail::cpu
 			assert(inputs.size() == 2);
 			(void)dynamic_cast<const PrimitiveType&>(primitive);
 
-			dispatch_dtype(
+			dispatch_floating_dtype(
 				output.dtype(),
 				[&]<typename T>(std::type_identity<T>)
 			{

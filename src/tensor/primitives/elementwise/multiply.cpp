@@ -36,6 +36,10 @@ namespace minitensor::detail
 		{
 			throw std::invalid_argument{ "multiply requires matching dtypes" };
 		}
+		if (!is_floating_point(lhs.dtype))
+		{
+			throw std::invalid_argument{ "multiply requires floating-point inputs" };
+		}
 		if (lhs.device != rhs.device)
 		{
 			throw std::invalid_argument{ "multiply requires input tensors on the same device" };
