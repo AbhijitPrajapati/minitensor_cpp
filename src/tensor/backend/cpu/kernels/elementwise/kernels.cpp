@@ -1,6 +1,7 @@
 #include "tensor/backend/cpu/kernels/registrations.hpp"
 
 #include <cassert>
+#include <cmath>
 #include <span>
 #include <type_traits>
 
@@ -12,6 +13,7 @@
 #include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/dispatch/tensor_view.hpp"
 #include "tensor/graph/primitive.hpp"
+#include "tensor/primitives/elementwise/absolute_value.hpp"
 #include "tensor/primitives/elementwise/add.hpp"
 #include "tensor/primitives/elementwise/divide.hpp"
 #include "tensor/primitives/elementwise/exponential.hpp"
@@ -19,6 +21,7 @@
 #include "tensor/primitives/elementwise/logarithm.hpp"
 #include "tensor/primitives/elementwise/multiply.hpp"
 #include "tensor/primitives/elementwise/negate.hpp"
+#include "tensor/primitives/elementwise/sign.hpp"
 #include "tensor/primitives/elementwise/square_root.hpp"
 #include "tensor/primitives/elementwise/subtract.hpp"
 
@@ -114,6 +117,39 @@ namespace minitensor::detail::cpu
 				});
 		}
 
+		void run_absolute_value(DeviceRuntime&, const Primitive& primitive, std::span<const TensorView> inputs, MutableTensorView output)
+		{
+			run_unary<AbsoluteValuePrimitive>(
+				primitive,
+				inputs,
+				output,
+				[](auto input)
+				{
+					return std::abs(input);
+				});
+		}
+
+		void run_sign(DeviceRuntime&, const Primitive& primitive, std::span<const TensorView> inputs, MutableTensorView output)
+		{
+			run_unary<SignPrimitive>(
+				primitive,
+				inputs,
+				output,
+				[](auto input)
+				{
+					using T = decltype(input);
+					if (input > T{ 0 })
+					{
+						return T{ 1 };
+					}
+					if (input < T{ 0 })
+					{
+						return T{ -1 };
+					}
+					return input;
+				});
+		}
+
 		void run_add(DeviceRuntime&, const Primitive& primitive, std::span<const TensorView> inputs, MutableTensorView output)
 		{
 			run_binary<AddPrimitive>(
@@ -170,6 +206,8 @@ namespace minitensor::detail::cpu
 		registry.register_kernel(KernelKey{ typeid(LogarithmPrimitive), DeviceType::Cpu }, run_logarithm);
 		registry.register_kernel(KernelKey{ typeid(SquareRootPrimitive), DeviceType::Cpu }, run_square_root);
 		registry.register_kernel(KernelKey{ typeid(HyperbolicTangentPrimitive), DeviceType::Cpu }, run_hyperbolic_tangent);
+		registry.register_kernel(KernelKey{ typeid(AbsoluteValuePrimitive), DeviceType::Cpu }, run_absolute_value);
+		registry.register_kernel(KernelKey{ typeid(SignPrimitive), DeviceType::Cpu }, run_sign);
 		registry.register_kernel(KernelKey{ typeid(AddPrimitive), DeviceType::Cpu }, run_add);
 		registry.register_kernel(KernelKey{ typeid(SubtractPrimitive), DeviceType::Cpu }, run_subtract);
 		registry.register_kernel(KernelKey{ typeid(MultiplyPrimitive), DeviceType::Cpu }, run_multiply);

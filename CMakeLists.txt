@@ -30,6 +30,7 @@ target_sources(
         src/tensor/primitives/creation/full.cpp
         src/tensor/primitives/creation/uniform.cpp
         src/tensor/primitives/creation/normal.cpp
+        src/tensor/primitives/elementwise/absolute_value.cpp
         src/tensor/primitives/elementwise/add.cpp
         src/tensor/primitives/elementwise/divide.cpp
         src/tensor/primitives/elementwise/exponential.cpp
@@ -39,6 +40,7 @@ target_sources(
         src/tensor/primitives/elementwise/negate.cpp
         src/tensor/primitives/elementwise/square_root.cpp
         src/tensor/primitives/elementwise/subtract.cpp
+        src/tensor/primitives/elementwise/sign.cpp
         src/tensor/primitives/linalg/matmul.cpp
         src/tensor/primitives/manipulation/broadcast_to.cpp
         src/tensor/primitives/manipulation/concatenate.cpp

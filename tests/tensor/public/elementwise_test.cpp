@@ -8,8 +8,10 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -65,7 +67,9 @@ namespace minitensor::test
 			Exponential,
 			Logarithm,
 			SquareRoot,
-			HyperbolicTangent
+			HyperbolicTangent,
+			AbsoluteValue,
+			Sign
 		};
 
 		Tensor apply(UnaryOperation operation, const Tensor& input)
@@ -82,6 +86,10 @@ namespace minitensor::test
 				return sqrt(input);
 			case UnaryOperation::HyperbolicTangent:
 				return tanh(input);
+			case UnaryOperation::AbsoluteValue:
+				return abs(input);
+			case UnaryOperation::Sign:
+				return sign(input);
 			}
 			throw std::logic_error{ "unknown test operation" };
 		}
@@ -100,6 +108,10 @@ namespace minitensor::test
 				return "SquareRoot";
 			case UnaryOperation::HyperbolicTangent:
 				return "HyperbolicTangent";
+			case UnaryOperation::AbsoluteValue:
+				return "AbsoluteValue";
+			case UnaryOperation::Sign:
+				return "Sign";
 			}
 			return "Unknown";
 		}
@@ -217,6 +229,12 @@ namespace minitensor::test
 			case UnaryOperation::HyperbolicTangent:
 				expected[index] = std::tanh(logical_input[index]);
 				break;
+			case UnaryOperation::AbsoluteValue:
+				expected[index] = std::abs(logical_input[index]);
+				break;
+			case UnaryOperation::Sign:
+				expected[index] = 1.0F;
+				break;
 			}
 		}
 		expect_tensor_near(result, expected);
@@ -236,8 +254,33 @@ namespace minitensor::test
 			UnaryOperation::Exponential,
 			UnaryOperation::Logarithm,
 			UnaryOperation::SquareRoot,
-			UnaryOperation::HyperbolicTangent),
+				UnaryOperation::HyperbolicTangent,
+				UnaryOperation::AbsoluteValue,
+				UnaryOperation::Sign),
 		unary_name);
+
+	TEST(ElementwiseTest, AbsoluteValueAndSignHandleSpecialValues)
+	{
+		const float nan = std::numeric_limits<float>::quiet_NaN();
+		const Tensor input = from_data(
+			{ -2.0F, -0.0F, 0.0F, 3.0F, nan }, Shape{ 5 });
+
+		const std::vector<float> absolute_values = to_vector(abs(input));
+		ASSERT_EQ(absolute_values.size(), 5);
+		EXPECT_FLOAT_EQ(absolute_values[0], 2.0F);
+		EXPECT_FALSE(std::signbit(absolute_values[1]));
+		EXPECT_FLOAT_EQ(absolute_values[2], 0.0F);
+		EXPECT_FLOAT_EQ(absolute_values[3], 3.0F);
+		EXPECT_TRUE(std::isnan(absolute_values[4]));
+
+		const std::vector<float> sign_values = to_vector(sign(input));
+		ASSERT_EQ(sign_values.size(), 5);
+		EXPECT_FLOAT_EQ(sign_values[0], -1.0F);
+		EXPECT_TRUE(std::signbit(sign_values[1]));
+		EXPECT_FLOAT_EQ(sign_values[2], 0.0F);
+		EXPECT_FLOAT_EQ(sign_values[3], 1.0F);
+		EXPECT_TRUE(std::isnan(sign_values[4]));
+	}
 
 	TEST(ElementwiseScalarOverloadTest, PreservesOperandOrder)
 	{
