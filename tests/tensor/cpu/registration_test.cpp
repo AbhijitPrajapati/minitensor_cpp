@@ -11,6 +11,7 @@
 #include "tensor/primitives/creation/full.hpp"
 #include "tensor/primitives/creation/normal.hpp"
 #include "tensor/primitives/creation/uniform.hpp"
+#include "tensor/primitives/elementwise/absolute_value.hpp"
 #include "tensor/primitives/elementwise/add.hpp"
 #include "tensor/primitives/elementwise/divide.hpp"
 #include "tensor/primitives/elementwise/exponential.hpp"
@@ -18,6 +19,7 @@
 #include "tensor/primitives/elementwise/logarithm.hpp"
 #include "tensor/primitives/elementwise/multiply.hpp"
 #include "tensor/primitives/elementwise/negate.hpp"
+#include "tensor/primitives/elementwise/sign.hpp"
 #include "tensor/primitives/elementwise/square_root.hpp"
 #include "tensor/primitives/elementwise/subtract.hpp"
 #include "tensor/primitives/linalg/matmul.hpp"
@@ -33,10 +35,12 @@ namespace minitensor::test
 	{
 		detail::KernelRegistry registry;
 		detail::cpu::register_kernels(registry);
-		const std::array<std::type_index, 17> primitive_types{
+		const std::array<std::type_index, 19> primitive_types{
 			typeid(detail::FullPrimitive),
 			typeid(detail::UniformPrimitive),
 			typeid(detail::NormalPrimitive),
+			typeid(detail::AbsoluteValuePrimitive),
+			typeid(detail::SignPrimitive),
 			typeid(detail::NegatePrimitive),
 			typeid(detail::ExponentialPrimitive),
 			typeid(detail::LogarithmPrimitive),

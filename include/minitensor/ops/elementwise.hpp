@@ -23,4 +23,6 @@ namespace minitensor
 	[[nodiscard]] Tensor log(const Tensor& input);
 	[[nodiscard]] Tensor sqrt(const Tensor& input);
 	[[nodiscard]] Tensor tanh(const Tensor& input);
+	[[nodiscard]] Tensor sign(const Tensor& input);
+	[[nodiscard]] Tensor abs(const Tensor& input);
 }

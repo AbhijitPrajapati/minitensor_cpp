@@ -2,12 +2,13 @@
 
 #include <memory>
 
-#include <minitensor/ops/creation.hpp>
 #include <minitensor/host_scalar.hpp>
+#include <minitensor/ops/creation.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "apply_primitive.hpp"
+#include "tensor/primitives/elementwise/absolute_value.hpp"
 #include "tensor/primitives/elementwise/add.hpp"
 #include "tensor/primitives/elementwise/divide.hpp"
 #include "tensor/primitives/elementwise/exponential.hpp"
@@ -15,6 +16,7 @@
 #include "tensor/primitives/elementwise/logarithm.hpp"
 #include "tensor/primitives/elementwise/multiply.hpp"
 #include "tensor/primitives/elementwise/negate.hpp"
+#include "tensor/primitives/elementwise/sign.hpp"
 #include "tensor/primitives/elementwise/square_root.hpp"
 #include "tensor/primitives/elementwise/subtract.hpp"
 
@@ -112,5 +114,17 @@ namespace minitensor
 	{
 		return detail::apply_primitive(
 			std::make_unique<detail::HyperbolicTangentPrimitive>(), input);
+	}
+
+	Tensor sign(const Tensor& input)
+	{
+		return detail::apply_primitive(
+			std::make_unique<detail::SignPrimitive>(), input);
+	}
+
+	Tensor abs(const Tensor& input)
+	{
+		return detail::apply_primitive(
+			std::make_unique<detail::AbsoluteValuePrimitive>(), input);
 	}
 }

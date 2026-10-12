@@ -54,7 +54,9 @@ namespace minitensor::test
 			Exponential,
 			Logarithm,
 			SquareRoot,
-			HyperbolicTangent
+			HyperbolicTangent,
+			AbsoluteValue,
+			Sign
 		};
 
 		Tensor apply(UnaryRule rule, const Tensor& input)
@@ -71,6 +73,10 @@ namespace minitensor::test
 				return sqrt(input);
 			case UnaryRule::HyperbolicTangent:
 				return tanh(input);
+			case UnaryRule::AbsoluteValue:
+				return abs(input);
+			case UnaryRule::Sign:
+				return sign(input);
 			}
 			throw std::logic_error{ "unknown unary VJP test rule" };
 		}
@@ -89,6 +95,10 @@ namespace minitensor::test
 				return "SquareRoot";
 			case UnaryRule::HyperbolicTangent:
 				return "HyperbolicTangent";
+			case UnaryRule::AbsoluteValue:
+				return "AbsoluteValue";
+			case UnaryRule::Sign:
+				return "Sign";
 			}
 			return "Unknown";
 		}
@@ -126,6 +136,12 @@ namespace minitensor::test
 				expected[index] = 1.0F - output * output;
 				break;
 			}
+			case UnaryRule::AbsoluteValue:
+				expected[index] = 1.0F;
+				break;
+			case UnaryRule::Sign:
+				expected[index] = 0.0F;
+				break;
 			}
 		}
 
@@ -140,8 +156,20 @@ namespace minitensor::test
 			UnaryRule::Exponential,
 			UnaryRule::Logarithm,
 			UnaryRule::SquareRoot,
-			UnaryRule::HyperbolicTangent),
+				UnaryRule::HyperbolicTangent,
+				UnaryRule::AbsoluteValue,
+				UnaryRule::Sign),
 		unary_rule_name);
+
+	TEST(ElementwiseAutogradTest, AbsoluteValueUsesZeroSubgradientAtOrigin)
+	{
+		const Tensor input = from_data({ -2.0F, 0.0F, 3.0F }, Shape{ 3 });
+		const Tensor weights = from_data({ 2.0F, 3.0F, 4.0F }, Shape{ 3 });
+		const Tensor gradient = grad(sum(abs(input) * weights), input).front();
+
+		const std::array<float, 3> expected{ -2.0F, 0.0F, 4.0F };
+		expect_tensor_eq(gradient, expected);
+	}
 
 	TEST(ElementwiseAutogradTest, PreservesScalarLeftOperandOrder)
 	{
