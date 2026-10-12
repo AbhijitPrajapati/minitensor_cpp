@@ -30,4 +30,22 @@ namespace minitensor::nn::test
 		minitensor::test::expect_tensor_near(
 			grad(loss, prediction).front(), expected_gradient);
 	}
+
+	TEST(L1LossTest, ComputesLossAndPredictionSubgradient)
+	{
+		const Tensor prediction = from_data(
+			{ 1.0F, 2.0F, 0.0F, -2.0F }, Shape{ 4 });
+		const Tensor target = from_data(
+			{ 0.0F, 2.0F, 1.0F, 1.0F }, Shape{ 4 });
+		const Tensor loss = l1_loss(prediction, target);
+
+		EXPECT_TRUE(loss.shape().is_scalar());
+		EXPECT_NEAR(item(loss), 5.0F / 4.0F, 1.0E-6F);
+
+		const std::array<float, 4> expected_gradient{
+			0.25F, 0.0F, -0.25F, -0.25F
+		};
+		minitensor::test::expect_tensor_near(
+			grad(loss, prediction).front(), expected_gradient);
+	}
 }

@@ -1,7 +1,8 @@
 #include <minitensor/nn/loss.hpp>
 
+#include <minitensor/ops/elementwise.hpp>
+#include <minitensor/ops/reduction.hpp>
 #include <minitensor/tensor.hpp>
-#include <minitensor/ops.hpp>
 
 namespace minitensor::nn
 {
@@ -9,5 +10,10 @@ namespace minitensor::nn
 	{
 		Tensor error = prediction - target;
 		return mean(error * error);
+	}
+
+	Tensor l1_loss(const Tensor& prediction, const Tensor& target)
+	{
+		return mean(abs(prediction - target));
 	}
 }
