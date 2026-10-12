@@ -17,9 +17,13 @@
 
 namespace minitensor
 {
+
+	// This helper is used by the composed mean operation.
+	// It currently repeats reduction logic in the operation layer,
+	// but this will be resolved once compiler IR is considered in the future
 	namespace
 	{
-		Shape::size_type reduction_size(
+		Shape::size_type reduction_element_count(
 			const Shape& input_shape,
 			std::span<const Axis> axes)
 		{
@@ -64,8 +68,7 @@ namespace minitensor
 		}
 
 		const Tensor total = sum(input, axes, keep_dim);
-		const Shape::size_type output_size = total.numel();
-		const Shape::size_type reduction_size = output_size == 0 ? 1 : input.numel() / output_size;
+		const Shape::size_type reduction_size = reduction_element_count(input.shape(), axes);
 		return total / static_cast<float>(reduction_size);
 	}
 
