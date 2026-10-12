@@ -38,8 +38,7 @@ void training_demo()
 	for (size_t epoch = 1; epoch <= 2000; ++epoch)
 	{
 		mt::Tensor pred = model(parameters, x);
-		mt::Tensor error = pred - y;
-		mt::Tensor loss = mt::sum(error * error) / 100.0F;
+		mt::Tensor loss = mt::nn::mse_loss(pred, y);
 
 		if (epoch % 100 == 0)
 		{
@@ -66,5 +65,5 @@ void training_demo()
 
 int main()
 {
-	
+	training_demo();
 }

@@ -26,7 +26,8 @@ namespace minitensor::test
 			Add,
 			Subtract,
 			Multiply,
-			Divide
+			Divide,
+			LogAddExp
 		};
 
 		Tensor apply(BinaryOperation operation, const Tensor& lhs, const Tensor& rhs)
@@ -41,6 +42,8 @@ namespace minitensor::test
 				return lhs * rhs;
 			case BinaryOperation::Divide:
 				return lhs / rhs;
+			case BinaryOperation::LogAddExp:
+				return logaddexp(lhs, rhs);
 			}
 			throw std::logic_error{ "unknown test operation" };
 		}
@@ -57,6 +60,8 @@ namespace minitensor::test
 				return "Multiply";
 			case BinaryOperation::Divide:
 				return "Divide";
+			case BinaryOperation::LogAddExp:
+				return "LogAddExp";
 			}
 			return "Unknown";
 		}
@@ -69,7 +74,8 @@ namespace minitensor::test
 			SquareRoot,
 			HyperbolicTangent,
 			AbsoluteValue,
-			Sign
+			Sign,
+			Sigmoid
 		};
 
 		Tensor apply(UnaryOperation operation, const Tensor& input)
@@ -90,6 +96,8 @@ namespace minitensor::test
 				return abs(input);
 			case UnaryOperation::Sign:
 				return sign(input);
+			case UnaryOperation::Sigmoid:
+				return sigmoid(input);
 			}
 			throw std::logic_error{ "unknown test operation" };
 		}
@@ -112,6 +120,8 @@ namespace minitensor::test
 				return "AbsoluteValue";
 			case UnaryOperation::Sign:
 				return "Sign";
+			case UnaryOperation::Sigmoid:
+				return "Sigmoid";
 			}
 			return "Unknown";
 		}
@@ -158,6 +168,15 @@ namespace minitensor::test
 			expect_tensor_near(result, expected);
 			break;
 		}
+		case BinaryOperation::LogAddExp:
+		{
+			const std::array<float, 6> expected{
+				2.3132617F, 2.6931472F, 4.1269280F,
+				4.0485873F, 4.1269280F, 4.6931472F
+			};
+			expect_tensor_near(result, expected);
+			break;
+		}
 		}
 	}
 
@@ -192,7 +211,8 @@ namespace minitensor::test
 			BinaryOperation::Add,
 			BinaryOperation::Subtract,
 			BinaryOperation::Multiply,
-			BinaryOperation::Divide),
+			BinaryOperation::Divide,
+			BinaryOperation::LogAddExp),
 		binary_name);
 
 	class UnaryElementwiseTest : public testing::TestWithParam<UnaryOperation>
@@ -235,6 +255,9 @@ namespace minitensor::test
 			case UnaryOperation::Sign:
 				expected[index] = 1.0F;
 				break;
+			case UnaryOperation::Sigmoid:
+				expected[index] = 1.0F / (1.0F + std::exp(-logical_input[index]));
+				break;
 			}
 		}
 		expect_tensor_near(result, expected);
@@ -254,10 +277,25 @@ namespace minitensor::test
 			UnaryOperation::Exponential,
 			UnaryOperation::Logarithm,
 			UnaryOperation::SquareRoot,
-				UnaryOperation::HyperbolicTangent,
-				UnaryOperation::AbsoluteValue,
-				UnaryOperation::Sign),
+			UnaryOperation::HyperbolicTangent,
+			UnaryOperation::AbsoluteValue,
+			UnaryOperation::Sign,
+			UnaryOperation::Sigmoid),
 		unary_name);
+
+	TEST(ElementwiseTest, SigmoidAndLogAddExpRemainStableAtLargeMagnitudes)
+	{
+		const Tensor input = from_data(
+			{ -1000.0F, 0.0F, 1000.0F }, Shape{ 3 });
+
+		const std::array<float, 3> sigmoid_expected{ 0.0F, 0.5F, 1.0F };
+		const std::array<float, 3> logaddexp_expected{
+			0.0F, std::log(2.0F), 1000.0F
+		};
+		expect_tensor_near(sigmoid(input), sigmoid_expected);
+		expect_tensor_near(logaddexp(0.0F, input), logaddexp_expected);
+		expect_tensor_near(logaddexp(input, 0.0F), logaddexp_expected);
+	}
 
 	TEST(ElementwiseTest, AbsoluteValueAndSignHandleSpecialValues)
 	{

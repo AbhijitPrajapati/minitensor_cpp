@@ -1,5 +1,6 @@
 #include "tensor/backend/cpu/kernels/registrations.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <span>
@@ -18,9 +19,11 @@
 #include "tensor/primitives/elementwise/divide.hpp"
 #include "tensor/primitives/elementwise/exponential.hpp"
 #include "tensor/primitives/elementwise/hyperbolic_tangent.hpp"
+#include "tensor/primitives/elementwise/logaddexp.hpp"
 #include "tensor/primitives/elementwise/logarithm.hpp"
 #include "tensor/primitives/elementwise/multiply.hpp"
 #include "tensor/primitives/elementwise/negate.hpp"
+#include "tensor/primitives/elementwise/sigmoid.hpp"
 #include "tensor/primitives/elementwise/sign.hpp"
 #include "tensor/primitives/elementwise/square_root.hpp"
 #include "tensor/primitives/elementwise/subtract.hpp"
@@ -150,6 +153,27 @@ namespace minitensor::detail::cpu
 				});
 		}
 
+		void run_sigmoid(DeviceRuntime&, const Primitive& primitive, std::span<const TensorView> inputs, MutableTensorView output)
+		{
+			run_unary<SigmoidPrimitive>(
+				primitive,
+				inputs,
+				output,
+				[](auto input)
+				{
+					using T = decltype(input);
+
+					if (input >= T{ 0 })
+					{
+						const T exponential = std::exp(-input);
+						return T{ 1 } / (T{ 1 } + exponential);
+					}
+
+					const T exponential = std::exp(input);
+					return exponential / (T{ 1 } + exponential);
+				});
+		}
+
 		void run_add(DeviceRuntime&, const Primitive& primitive, std::span<const TensorView> inputs, MutableTensorView output)
 		{
 			run_binary<AddPrimitive>(
@@ -197,6 +221,29 @@ namespace minitensor::detail::cpu
 					return lhs / rhs;
 				});
 		}
+
+		void run_logaddexp(DeviceRuntime&, const Primitive& primitive, std::span<const TensorView> inputs, MutableTensorView output)
+		{
+			run_binary<LogAddExpPrimitive>(
+				primitive,
+				inputs,
+				output,
+				[](auto lhs, auto rhs)
+				{
+					if (std::isnan(lhs) || std::isnan(rhs))
+					{
+						return lhs + rhs;
+					}
+
+					const auto maximum = std::max(lhs, rhs);
+					if (std::isinf(maximum))
+					{
+						return maximum;
+					}
+
+					return maximum + std::log1p(std::exp(-std::abs(lhs - rhs)));
+				});
+		}
 	}
 
 	void register_elementwise_kernels(KernelRegistry& registry)
@@ -208,9 +255,11 @@ namespace minitensor::detail::cpu
 		registry.register_kernel(KernelKey{ typeid(HyperbolicTangentPrimitive), DeviceType::Cpu }, run_hyperbolic_tangent);
 		registry.register_kernel(KernelKey{ typeid(AbsoluteValuePrimitive), DeviceType::Cpu }, run_absolute_value);
 		registry.register_kernel(KernelKey{ typeid(SignPrimitive), DeviceType::Cpu }, run_sign);
+		registry.register_kernel(KernelKey{ typeid(SigmoidPrimitive), DeviceType::Cpu }, run_sigmoid);
 		registry.register_kernel(KernelKey{ typeid(AddPrimitive), DeviceType::Cpu }, run_add);
 		registry.register_kernel(KernelKey{ typeid(SubtractPrimitive), DeviceType::Cpu }, run_subtract);
 		registry.register_kernel(KernelKey{ typeid(MultiplyPrimitive), DeviceType::Cpu }, run_multiply);
 		registry.register_kernel(KernelKey{ typeid(DividePrimitive), DeviceType::Cpu }, run_divide);
+		registry.register_kernel(KernelKey{ typeid(LogAddExpPrimitive), DeviceType::Cpu }, run_logaddexp);
 	}
 }

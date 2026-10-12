@@ -17,6 +17,9 @@ namespace minitensor
 	[[nodiscard]] Tensor operator/(const Tensor& lhs, const Tensor& rhs);
 	[[nodiscard]] Tensor operator/(const Tensor& tensor, HostScalar scalar);
 	[[nodiscard]] Tensor operator/(HostScalar scalar, const Tensor& tensor);
+	[[nodiscard]] Tensor logaddexp(const Tensor& lhs, const Tensor& rhs);
+	[[nodiscard]] Tensor logaddexp(const Tensor& tensor, HostScalar scalar);
+	[[nodiscard]] Tensor logaddexp(HostScalar scalar, const Tensor& tensor);
 
 	[[nodiscard]] Tensor operator-(const Tensor& input);
 	[[nodiscard]] Tensor exp(const Tensor& input);
@@ -25,4 +28,5 @@ namespace minitensor
 	[[nodiscard]] Tensor tanh(const Tensor& input);
 	[[nodiscard]] Tensor sign(const Tensor& input);
 	[[nodiscard]] Tensor abs(const Tensor& input);
+	[[nodiscard]] Tensor sigmoid(const Tensor& input);
 }
