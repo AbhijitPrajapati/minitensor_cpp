@@ -56,7 +56,8 @@ namespace minitensor::test
 			SquareRoot,
 			HyperbolicTangent,
 			AbsoluteValue,
-			Sign
+			Sign,
+			Sigmoid
 		};
 
 		Tensor apply(UnaryRule rule, const Tensor& input)
@@ -77,6 +78,8 @@ namespace minitensor::test
 				return abs(input);
 			case UnaryRule::Sign:
 				return sign(input);
+			case UnaryRule::Sigmoid:
+				return sigmoid(input);
 			}
 			throw std::logic_error{ "unknown unary VJP test rule" };
 		}
@@ -99,6 +102,8 @@ namespace minitensor::test
 				return "AbsoluteValue";
 			case UnaryRule::Sign:
 				return "Sign";
+			case UnaryRule::Sigmoid:
+				return "Sigmoid";
 			}
 			return "Unknown";
 		}
@@ -142,6 +147,12 @@ namespace minitensor::test
 			case UnaryRule::Sign:
 				expected[index] = 0.0F;
 				break;
+			case UnaryRule::Sigmoid:
+			{
+				const float output = 1.0F / (1.0F + std::exp(-value));
+				expected[index] = output * (1.0F - output);
+				break;
+			}
 			}
 		}
 
@@ -156,10 +167,33 @@ namespace minitensor::test
 			UnaryRule::Exponential,
 			UnaryRule::Logarithm,
 			UnaryRule::SquareRoot,
-				UnaryRule::HyperbolicTangent,
-				UnaryRule::AbsoluteValue,
-				UnaryRule::Sign),
+			UnaryRule::HyperbolicTangent,
+			UnaryRule::AbsoluteValue,
+			UnaryRule::Sign,
+			UnaryRule::Sigmoid),
 		unary_rule_name);
+
+	TEST(ElementwiseAutogradTest, LogAddExpReducesBroadcastContributions)
+	{
+		const Tensor lhs = from_data({ 0.0F, 2.0F }, Shape{ 2, 1 });
+		const Tensor rhs = from_data({ 0.0F, 1.0F }, Shape{ 1, 2 });
+		const std::array<Tensor, 2> inputs{ lhs, rhs };
+		const std::vector<Tensor> gradients = grad(sum(logaddexp(lhs, rhs)), inputs);
+
+		const std::array<float, 2> lhs_expected{ 0.7689414F, 1.6118556F };
+		const std::array<float, 2> rhs_expected{ 0.6192029F, 1.0F };
+		expect_tensor_near(gradients[0], lhs_expected);
+		expect_tensor_near(gradients[1], rhs_expected);
+	}
+
+	TEST(ElementwiseAutogradTest, LogAddExpPreservesSmallDominatedGradient)
+	{
+		const Tensor lhs = from_data({ 20.0F }, Shape{});
+		const Tensor rhs = from_data({ 0.0F }, Shape{});
+		const Tensor rhs_gradient = grad(logaddexp(lhs, rhs), rhs).front();
+
+		EXPECT_NEAR(item(rhs_gradient), 2.0611537E-9F, 1.0E-12F);
+	}
 
 	TEST(ElementwiseAutogradTest, AbsoluteValueUsesZeroSubgradientAtOrigin)
 	{

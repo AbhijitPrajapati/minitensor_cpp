@@ -1,0 +1,66 @@
+#include "logaddexp.hpp"
+
+#include <optional>
+#include <span>
+#include <stdexcept>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+#include <minitensor/ops/elementwise.hpp>
+#include <minitensor/tensor.hpp>
+#include <minitensor/types.hpp>
+
+#include "tensor/autograd/reduce_to_shape.hpp"
+#include "tensor/core/shape_inference.hpp"
+#include "tensor/core/tensor_spec.hpp"
+
+namespace minitensor::detail
+{
+	std::string_view LogAddExpPrimitive::name() const noexcept
+	{
+		return "log_add_exp";
+	}
+
+	TensorSpec LogAddExpPrimitive::infer(std::span<const TensorSpec> inputs) const
+	{
+		if (inputs.size() != 2)
+		{
+			throw std::invalid_argument{ "log add exp expects 2 input tensors" };
+		}
+
+		const TensorSpec& lhs = inputs[0];
+		const TensorSpec& rhs = inputs[1];
+
+		if (lhs.dtype != rhs.dtype)
+		{
+			throw std::invalid_argument{ "log add exp requires matching dtypes" };
+		}
+		if (!is_floating_point(lhs.dtype))
+		{
+			throw std::invalid_argument{ "log add exp requires floating-point inputs" };
+		}
+		if (lhs.device != rhs.device)
+		{
+			throw std::invalid_argument{ "log add exp requires input tensors on the same device" };
+		}
+
+		Shape output_shape = broadcast_shape(lhs.shape, rhs.shape);
+		return TensorSpec{ std::move(output_shape), lhs.dtype, lhs.device };
+	}
+
+	std::vector<std::optional<Tensor>> LogAddExpPrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const
+	{
+		if (inputs.size() != 2)
+		{
+			throw std::logic_error{ "log add exp VJP expects 2 inputs" };
+		}
+
+		const Tensor lhs_weight = sigmoid(inputs[0] - inputs[1]);
+		const Tensor rhs_weight = sigmoid(inputs[1] - inputs[0]);
+
+		return {
+			reduce_to_shape(output_cotangent * lhs_weight, inputs[0].shape()),
+			reduce_to_shape(output_cotangent * rhs_weight, inputs[1].shape()) };
+	}
+}

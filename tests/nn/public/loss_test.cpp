@@ -1,11 +1,13 @@
 #include <minitensor/nn/loss.hpp>
 
 #include <array>
+#include <stdexcept>
 
 #include <gtest/gtest.h>
 
 #include <minitensor/autograd.hpp>
 #include <minitensor/data.hpp>
+#include <minitensor/ops/creation.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
@@ -47,5 +49,33 @@ namespace minitensor::nn::test
 		};
 		minitensor::test::expect_tensor_near(
 			grad(loss, prediction).front(), expected_gradient);
+	}
+
+	TEST(BinaryCrossEntropyWithLogitsTest, ComputesStableLossAndLogitsGradient)
+	{
+		const Tensor logits = from_data(
+			{ -100.0F, -2.0F, 0.0F, 2.0F, 100.0F }, Shape{ 5 });
+		const Tensor target = from_data(
+			{ 0.0F, 0.0F, 1.0F, 1.0F, 1.0F }, Shape{ 5 });
+		const Tensor loss = binary_cross_entropy_with_logits(logits, target);
+
+		EXPECT_TRUE(loss.shape().is_scalar());
+		EXPECT_NEAR(item(loss), 0.1894006F, 1.0E-6F);
+
+		const std::array<float, 5> expected_gradient{
+			0.0F, 0.0238406F, -0.1F, -0.0238406F, 0.0F
+		};
+		minitensor::test::expect_tensor_near(
+			grad(loss, logits).front(), expected_gradient);
+	}
+
+	TEST(BinaryCrossEntropyWithLogitsTest, RejectsDifferentShapes)
+	{
+		const Tensor logits = full(Shape{ 2 }, 0.0F);
+		const Tensor target = full(Shape{ 2, 1 }, 0.0F);
+
+		EXPECT_THROW(
+			(void)binary_cross_entropy_with_logits(logits, target),
+			std::invalid_argument);
 	}
 }

@@ -13,9 +13,11 @@
 #include "tensor/primitives/elementwise/divide.hpp"
 #include "tensor/primitives/elementwise/exponential.hpp"
 #include "tensor/primitives/elementwise/hyperbolic_tangent.hpp"
+#include "tensor/primitives/elementwise/logaddexp.hpp"
 #include "tensor/primitives/elementwise/logarithm.hpp"
 #include "tensor/primitives/elementwise/multiply.hpp"
 #include "tensor/primitives/elementwise/negate.hpp"
+#include "tensor/primitives/elementwise/sigmoid.hpp"
 #include "tensor/primitives/elementwise/sign.hpp"
 #include "tensor/primitives/elementwise/square_root.hpp"
 #include "tensor/primitives/elementwise/subtract.hpp"
@@ -90,6 +92,21 @@ namespace minitensor
 		return scalar_like(scalar, tensor) / tensor;
 	}
 
+	Tensor logaddexp(const Tensor& lhs, const Tensor& rhs)
+	{
+		return detail::apply_primitive(std::make_unique<detail::LogAddExpPrimitive>(), lhs, rhs);
+	}
+
+	Tensor logaddexp(const Tensor& tensor, HostScalar scalar)
+	{
+		return logaddexp(tensor, scalar_like(scalar, tensor));
+	}
+
+	Tensor logaddexp(HostScalar scalar, const Tensor& tensor)
+	{
+		return logaddexp(tensor, scalar);
+	}
+
 	Tensor operator-(const Tensor& input)
 	{
 		return detail::apply_primitive(std::make_unique<detail::NegatePrimitive>(), input);
@@ -126,5 +143,11 @@ namespace minitensor
 	{
 		return detail::apply_primitive(
 			std::make_unique<detail::AbsoluteValuePrimitive>(), input);
+	}
+
+	Tensor sigmoid(const Tensor& input)
+	{
+		return detail::apply_primitive(
+			std::make_unique<detail::SigmoidPrimitive>(), input);
 	}
 }
