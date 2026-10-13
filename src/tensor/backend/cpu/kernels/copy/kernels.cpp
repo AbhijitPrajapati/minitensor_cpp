@@ -15,6 +15,7 @@
 #include "tensor/primitives/manipulation/basic_index.hpp"
 #include "tensor/primitives/manipulation/concatenate.hpp"
 #include "tensor/primitives/manipulation/contiguous.hpp"
+#include "tensor/primitives/manipulation/gather.hpp"
 #include "tensor/primitives/manipulation/reshape.hpp"
 
 namespace minitensor::detail::cpu
@@ -78,6 +79,47 @@ namespace minitensor::detail::cpu
 					parameters.derive_layout(output.layout()));
 			});
 		}
+
+		void run_gather(
+			DeviceRuntime&,
+			const Primitive& primitive,
+			std::span<const TensorView> inputs,
+			MutableTensorView output)
+		{
+			assert(inputs.size() == 2);
+			const auto& gather = dynamic_cast<const GatherPrimitive&>(primitive);
+
+			dispatch_dtype(
+				output.dtype(), [&]<typename T>(std::type_identity<T>)
+			{
+				gather_copy<T>(
+					inputs[0],
+					inputs[1],
+					output,
+					gather.axis());
+			});
+		}
+
+		void run_gather_scatter_add(
+			DeviceRuntime&,
+			const Primitive& primitive,
+			std::span<const TensorView> inputs,
+			MutableTensorView output)
+		{
+			assert(inputs.size() == 2);
+			const auto& scatter =
+				dynamic_cast<const GatherScatterAddPrimitive&>(primitive);
+
+			dispatch_floating_dtype(
+				output.dtype(), [&]<typename T>(std::type_identity<T>)
+			{
+				gather_scatter_add<T>(
+					inputs[0],
+					inputs[1],
+					output,
+					scatter.axis());
+			});
+		}
 	}
 
 	void register_copy_kernels(KernelRegistry& registry)
@@ -94,5 +136,11 @@ namespace minitensor::detail::cpu
 		registry.register_kernel(
 			KernelKey{ typeid(BasicIndexScatterPrimitive), DeviceType::Cpu },
 			run_basic_index_scatter);
+		registry.register_kernel(
+			KernelKey{ typeid(GatherPrimitive), DeviceType::Cpu },
+			run_gather);
+		registry.register_kernel(
+			KernelKey{ typeid(GatherScatterAddPrimitive), DeviceType::Cpu },
+			run_gather_scatter_add);
 	}
 }

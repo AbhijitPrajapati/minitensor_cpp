@@ -26,6 +26,7 @@
 #include "tensor/primitives/manipulation/basic_index.hpp"
 #include "tensor/primitives/manipulation/concatenate.hpp"
 #include "tensor/primitives/manipulation/contiguous.hpp"
+#include "tensor/primitives/manipulation/gather.hpp"
 #include "tensor/primitives/manipulation/reshape.hpp"
 #include "tensor/primitives/reduction/logsumexp.hpp"
 #include "tensor/primitives/reduction/sum.hpp"
@@ -36,7 +37,7 @@ namespace minitensor::test
 	{
 		detail::KernelRegistry registry;
 		detail::cpu::register_kernels(registry);
-		const std::array<std::type_index, 20> primitive_types{
+		const std::array<std::type_index, 22> primitive_types{
 			typeid(detail::FullPrimitive),
 			typeid(detail::UniformPrimitive),
 			typeid(detail::NormalPrimitive),
@@ -55,6 +56,8 @@ namespace minitensor::test
 			typeid(detail::ReshapePrimitive),
 			typeid(detail::ConcatenatePrimitive),
 			typeid(detail::BasicIndexScatterPrimitive),
+			typeid(detail::GatherPrimitive),
+			typeid(detail::GatherScatterAddPrimitive),
 			typeid(detail::SumPrimitive),
 			typeid(detail::LogSumExpPrimitive)
 		};

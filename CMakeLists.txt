@@ -50,6 +50,7 @@ target_sources(
         src/tensor/primitives/manipulation/permute.cpp
         src/tensor/primitives/manipulation/reshape.cpp
         src/tensor/primitives/manipulation/basic_index.cpp
+        src/tensor/primitives/manipulation/gather.cpp
         src/tensor/primitives/reduction/sum.cpp
         src/tensor/primitives/reduction/logsumexp.cpp
         src/tensor/storage/layout.cpp

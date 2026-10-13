@@ -21,6 +21,7 @@
 #include "tensor/primitives/manipulation/broadcast_to.hpp"
 #include "tensor/primitives/manipulation/concatenate.hpp"
 #include "tensor/primitives/manipulation/contiguous.hpp"
+#include "tensor/primitives/manipulation/gather.hpp"
 #include "tensor/primitives/manipulation/permute.hpp"
 #include "tensor/primitives/manipulation/reshape.hpp"
 
@@ -264,5 +265,12 @@ namespace minitensor
 		return detail::apply_primitive(
 			std::make_unique<detail::BasicIndexPrimitive>(std::move(parameters)),
 			input);
+	}
+
+	Tensor gather(const Tensor& source, Axis axis, const Tensor& indices)
+	{
+		return detail::apply_primitive(
+			std::make_unique<detail::GatherPrimitive>(axis, source.rank()),
+			source, indices);
 	}
 }
