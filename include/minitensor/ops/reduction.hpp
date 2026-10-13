@@ -14,4 +14,7 @@ namespace minitensor
 	[[nodiscard]] Tensor mean(const Tensor& input, std::span<const Axis> axes, bool keep_dim = false);
 	[[nodiscard]] Tensor mean(const Tensor& input, std::initializer_list<Axis> axes, bool keep_dim = false);
 	[[nodiscard]] Tensor mean(const Tensor& input, bool keep_dim = false);
+	[[nodiscard]] Tensor logsumexp(const Tensor& input, std::span<const Axis> axes, bool keep_dim = false);
+	[[nodiscard]] Tensor logsumexp(const Tensor& input, std::initializer_list<Axis> axes, bool keep_dim = false);
+	[[nodiscard]] Tensor logsumexp(const Tensor& input, bool keep_dim = false);
 }

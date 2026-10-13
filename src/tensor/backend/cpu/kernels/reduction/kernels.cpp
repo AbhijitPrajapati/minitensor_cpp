@@ -12,6 +12,7 @@
 #include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/dispatch/tensor_view.hpp"
 #include "tensor/graph/primitive.hpp"
+#include "tensor/primitives/reduction/logsumexp.hpp"
 #include "tensor/primitives/reduction/sum.hpp"
 
 namespace minitensor::detail::cpu
@@ -42,6 +43,26 @@ namespace minitensor::detail::cpu
 					});
 			});
 		}
+
+		void run_logsumexp(
+			DeviceRuntime&,
+			const Primitive& primitive,
+			std::span<const TensorView> inputs,
+			MutableTensorView output)
+		{
+			assert(inputs.size() == 1);
+			const auto& logsumexp = dynamic_cast<const LogSumExpPrimitive&>(primitive);
+
+			dispatch_floating_dtype(
+				output.dtype(),
+				[&]<typename T>(std::type_identity<T>)
+			{
+				reduce_logsumexp<T>(
+					inputs.front(),
+					output,
+					logsumexp.axes());
+			});
+		}
 	}
 
 	void register_reduction_kernels(KernelRegistry& registry)
@@ -49,5 +70,8 @@ namespace minitensor::detail::cpu
 		registry.register_kernel(
 			KernelKey{ typeid(SumPrimitive), DeviceType::Cpu },
 			run_sum);
+		registry.register_kernel(
+			KernelKey{ typeid(LogSumExpPrimitive), DeviceType::Cpu },
+			run_logsumexp);
 	}
 }
