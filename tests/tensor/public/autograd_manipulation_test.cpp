@@ -116,4 +116,19 @@ namespace minitensor::test
 		const std::array<float, 6> expected{ 2.0F, 2.0F, 2.0F, 4.0F, 4.0F, 4.0F };
 		expect_tensor_eq(result, expected);
 	}
+
+	TEST(ManipulationAutogradTest, DifferentiatesLogSumExpReductions)
+	{
+		const Tensor input = from_data(
+			{ 0.0F, 1.0F, 2.0F,
+				0.0F, -1.0F, -2.0F },
+			Shape{ 2, 3 });
+		const Tensor result = grad(sum(logsumexp(input, { 1 })), input).front();
+
+		const std::array<float, 6> expected{
+			0.0900306F, 0.2447285F, 0.6652410F,
+			0.6652410F, 0.2447285F, 0.0900306F
+		};
+		expect_tensor_near(result, expected);
+	}
 }

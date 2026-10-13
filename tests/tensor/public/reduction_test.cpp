@@ -6,9 +6,12 @@
 #include <minitensor/types.hpp>
 
 #include <array>
+#include <cmath>
 #include <cstdint>
+#include <limits>
 #include <span>
 #include <stdexcept>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -98,5 +101,62 @@ namespace minitensor::test
 
 		const std::array<float, 3> transposed_rows{ 2.5F, 3.5F, 4.5F };
 		expect_tensor_eq(mean(transpose(matrix), { 1 }), transposed_rows);
+	}
+
+	TEST(LogSumExpTest, ReducesStridedInputsWithoutOverflow)
+	{
+		const Tensor matrix = from_data(
+			{ 1000.0F, -1000.0F, 0.0F, 1000.0F, -1000.0F, 0.0F },
+			Shape{ 2, 3 });
+		const Tensor transposed = transpose(matrix);
+		const Tensor result = logsumexp(transposed, { -1 }, true);
+
+		EXPECT_EQ(result.shape(), (Shape{ 3, 1 }));
+		const std::array<float, 3> expected{
+			1000.0F + std::log(2.0F),
+			-1000.0F + std::log(2.0F),
+			std::log(2.0F)
+		};
+		expect_tensor_near(result, expected, 1.0E-4F, 0.0F);
+		EXPECT_NEAR(
+			item(logsumexp(matrix)),
+			1000.0F + std::log(2.0F),
+			1.0E-4F);
+	}
+
+	TEST(LogSumExpTest, HandlesEmptyAndNonFiniteReductions)
+	{
+		const Tensor empty = full(Shape{ 2, 0, 3 }, 0.0F);
+		const std::vector<float> empty_result = to_vector(logsumexp(empty, { 1 }));
+		ASSERT_EQ(empty_result.size(), 6);
+		for (const float value : empty_result)
+		{
+			EXPECT_TRUE(std::isinf(value));
+			EXPECT_TRUE(std::signbit(value));
+		}
+
+		const float infinity = std::numeric_limits<float>::infinity();
+		const float nan = std::numeric_limits<float>::quiet_NaN();
+		const Tensor special = from_data(
+			{ -infinity, -infinity, infinity, 0.0F, nan, 1.0F },
+			Shape{ 3, 2 });
+		const std::vector<float> special_result =
+			to_vector(logsumexp(special, { 1 }));
+
+		ASSERT_EQ(special_result.size(), 3);
+		EXPECT_TRUE(std::isinf(special_result[0]));
+		EXPECT_TRUE(std::signbit(special_result[0]));
+		EXPECT_EQ(special_result[1], infinity);
+		EXPECT_TRUE(std::isnan(special_result[2]));
+	}
+
+	TEST(LogSumExpTest, ValidatesAxesAndDType)
+	{
+		const Tensor matrix = full(Shape{ 2, 3 }, 1.0F);
+		EXPECT_THROW((void)logsumexp(matrix, { 1, -1 }), std::invalid_argument);
+		EXPECT_THROW((void)logsumexp(matrix, { 2 }), std::out_of_range);
+
+		const Tensor integral = from_data<std::int64_t>({ 1, 2 }, Shape{ 2 });
+		EXPECT_THROW((void)logsumexp(integral), std::invalid_argument);
 	}
 }

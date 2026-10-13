@@ -13,6 +13,7 @@
 
 #include "apply_primitive.hpp"
 #include "tensor/core/axis.hpp"
+#include "tensor/primitives/reduction/logsumexp.hpp"
 #include "tensor/primitives/reduction/sum.hpp"
 
 namespace minitensor
@@ -82,6 +83,28 @@ namespace minitensor
 		std::vector<Axis> axes(input.rank());
 		std::iota(axes.begin(), axes.end(), Axis{ 0 });
 		return mean(input, axes, keep_dim);
+	}
+
+	Tensor logsumexp(const Tensor& input, std::span<const Axis> axes, bool keep_dim)
+	{
+		if (axes.empty())
+		{
+			return input;
+		}
+		return detail::apply_primitive(
+			std::make_unique<detail::LogSumExpPrimitive>(axes, input.rank(), keep_dim), input);
+	}
+
+	Tensor logsumexp(const Tensor& input, std::initializer_list<Axis> axes, bool keep_dim)
+	{
+		return logsumexp(input, std::span<const Axis>(axes.begin(), axes.size()), keep_dim);
+	}
+
+	Tensor logsumexp(const Tensor& input, bool keep_dim)
+	{
+		std::vector<Axis> axes(input.rank());
+		std::iota(axes.begin(), axes.end(), Axis{ 0 });
+		return logsumexp(input, axes, keep_dim);
 	}
 
 }

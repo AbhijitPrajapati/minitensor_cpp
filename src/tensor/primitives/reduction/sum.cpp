@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <optional>
-#include <ranges>
 #include <span>
 #include <stdexcept>
 #include <string_view>
