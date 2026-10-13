@@ -236,4 +236,48 @@ namespace minitensor::test
 		EXPECT_THROW((void)select(input, 1, -4), std::out_of_range);
 		EXPECT_THROW((void)select(full(Shape{ 2, 0 }, 1.0F), 1, 0), std::out_of_range);
 	}
+
+	TEST(GatherTest, GathersStridedIntegralValuesAlongNormalizedAxis)
+	{
+		const Tensor source = transpose(from_data<std::int64_t>(
+			{ 1, 4, 2, 5, 3, 6 }, Shape{ 3, 2 }));
+		const Tensor indices = transpose(from_data<std::int64_t>(
+			{ 2, 1, 0, 1 }, Shape{ 2, 2 }));
+		const Tensor result = gather(source, -1, indices);
+
+		EXPECT_EQ(result.shape(), (Shape{ 2, 2 }));
+		EXPECT_EQ(result.dtype(), DType::Int64);
+		EXPECT_EQ(
+			to_vector<std::int64_t>(result),
+			(std::vector<std::int64_t>{ 3, 1, 5, 5 }));
+	}
+
+	TEST(GatherTest, ValidatesStaticAndRuntimeInputs)
+	{
+		const Tensor source = full(Shape{ 2, 3 }, 1.0F);
+		const Tensor indices = from_data<std::int64_t>({ 0, 1 }, Shape{ 2, 1 });
+
+		EXPECT_THROW((void)gather(source, 2, indices), std::out_of_range);
+		EXPECT_THROW(
+			(void)gather(source, 1, full(Shape{ 2, 1 }, 0.0F)),
+			std::invalid_argument);
+		EXPECT_THROW(
+			(void)gather(
+				source,
+				1,
+				from_data<std::int64_t>({ 0, 1 }, Shape{ 2 })),
+			std::invalid_argument);
+		EXPECT_THROW(
+			(void)gather(
+				source,
+				1,
+				from_data<std::int64_t>({ 0, 0, 0 }, Shape{ 3, 1 })),
+			std::invalid_argument);
+
+		const Tensor out_of_bounds = gather(
+			source,
+			1,
+			from_data<std::int64_t>({ 0, 3 }, Shape{ 2, 1 }));
+		EXPECT_THROW((void)to_vector(out_of_bounds), std::out_of_range);
+	}
 }

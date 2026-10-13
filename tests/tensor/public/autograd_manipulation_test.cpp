@@ -7,6 +7,7 @@
 #include <minitensor/types.hpp>
 
 #include <array>
+#include <cstdint>
 #include <optional>
 #include <vector>
 
@@ -87,6 +88,24 @@ namespace minitensor::test
 		const Tensor seed = full(Shape{ 2, 0 }, 1.0F);
 		const Tensor result = vjp(output, input, seed).front();
 		const std::array<float, 6> expected{};
+		expect_tensor_eq(result, expected);
+	}
+
+	TEST(ManipulationAutogradTest, AccumulatesRepeatedGatherCotangents)
+	{
+		const Tensor input = full(Shape{ 2, 4 }, 0.0F);
+		const Tensor indices = from_data<std::int64_t>(
+			{ 1, 1, 3, 0, 2, 2 }, Shape{ 2, 3 });
+		const Tensor output = gather(input, 1, indices);
+		const Tensor seed = from_data(
+			{ 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F }, Shape{ 2, 3 });
+		const Tensor result = vjp(output, input, seed).front();
+		const std::array<float, 8> expected{
+			0.0F, 3.0F, 0.0F, 3.0F,
+			4.0F, 0.0F, 11.0F, 0.0F
+		};
+
+		EXPECT_EQ(result.shape(), input.shape());
 		expect_tensor_eq(result, expected);
 	}
 
