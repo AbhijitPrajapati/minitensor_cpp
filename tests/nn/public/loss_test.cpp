@@ -1,6 +1,7 @@
 #include <minitensor/nn/loss.hpp>
 
 #include <array>
+#include <cstdint>
 #include <stdexcept>
 
 #include <gtest/gtest.h>
@@ -77,5 +78,26 @@ namespace minitensor::nn::test
 		EXPECT_THROW(
 			(void)binary_cross_entropy_with_logits(logits, target),
 			std::invalid_argument);
+	}
+
+	TEST(CategoricalCrossEntropyWithLogitsTest, ComputesLossAndLogitsGradient)
+	{
+		const Tensor logits = from_data(
+			{ 2.0F, 0.0F, 1.0F, 1.0F, 0.0F, 2.0F }, Shape{ 3, 2 });
+		const Tensor targets =
+			from_data<std::int64_t>({ 0, 1 }, Shape{ 2 });
+		const Tensor loss =
+			categorical_cross_entropy_with_logits(logits, targets, 0);
+
+		EXPECT_TRUE(loss.shape().is_scalar());
+		EXPECT_NEAR(item(loss), 0.9076060F, 1.0E-6F);
+
+		const std::array<float, 6> expected_gradient{
+			-0.1673795F, 0.0450153F,
+			0.1223642F, -0.3776358F,
+			0.0450153F, 0.3326205F
+		};
+		minitensor::test::expect_tensor_near(
+			grad(loss, logits).front(), expected_gradient);
 	}
 }

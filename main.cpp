@@ -65,5 +65,5 @@ void training_demo()
 
 int main()
 {
-	training_demo();
+
 }
