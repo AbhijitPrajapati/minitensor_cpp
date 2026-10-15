@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <initializer_list>
 #include <ranges>
@@ -12,6 +13,8 @@
 
 namespace minitensor
 {
+	// Data transfer functions
+
 	template <TensorElement T = float>
 	[[nodiscard]] std::vector<T> to_vector(const Tensor& tensor);
 
@@ -19,14 +22,12 @@ namespace minitensor
 	[[nodiscard]] T item(const Tensor& tensor);
 
 
-	// Base from_data implementation
 	template <TensorElement T>
 	[[nodiscard]] Tensor from_data(
 		std::span<const T> data,
 		Shape shape,
 		Device device = Device::cpu());
 
-	// Initializer list overload
 	template <TensorElement T>
 	[[nodiscard]] Tensor from_data(
 		std::initializer_list<T> data,
@@ -39,16 +40,19 @@ namespace minitensor
 			device);
 	}
 
-	// Contiguous range overload
+	// In addition to span and initializer list overloads, a contiguous range 
+	// overload is required for from_data because the compiler cannot deduce
+	// T from say, std::array<float, N>. This function simply extracts T
+	// and calls the span overload.
 	template <typename Range>
 		requires (
-			std::ranges::contiguous_range<const Range&> &&
-			std::ranges::sized_range<const Range&> &&
-			TensorElement<std::ranges::range_value_t<Range>>)
-	[[nodiscard]] Tensor from_data(
-		const Range& data,
-		Shape shape,
-		Device device = Device::cpu())
+	std::ranges::contiguous_range<const Range&>&&
+		std::ranges::sized_range<const Range&>&&
+		TensorElement<std::ranges::range_value_t<Range>>)
+		[[nodiscard]] Tensor from_data(
+			const Range& data,
+			Shape shape,
+			Device device = Device::cpu())
 	{
 		using T = std::ranges::range_value_t<Range>;
 		return from_data<T>(
@@ -57,7 +61,8 @@ namespace minitensor
 			device);
 	}
 
-	// Declare external template instantiation (in data.cpp)
+	// Templated function definitions must be visible to all compilation units
+	// unless an external definition is specified.
 	extern template std::vector<float> to_vector<float>(const Tensor& tensor);
 	extern template std::vector<std::int64_t> to_vector<std::int64_t>(const Tensor& tensor);
 	extern template float item<float>(const Tensor& tensor);

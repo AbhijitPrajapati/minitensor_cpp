@@ -12,7 +12,7 @@ namespace minitensor::detail::cpu
 {
 	namespace
 	{
-		// Retrives the stride for an input batch axis
+		// This function retrives the stride for an input batch axis.
 		MatmulPlan::stride_type aligned_batch_stride(
 			const Shape& shape,
 			const Layout& layout,
@@ -20,14 +20,14 @@ namespace minitensor::detail::cpu
 			MatmulPlan::size_type output_batch_rank,
 			MatmulPlan::size_type output_axis) noexcept
 		{
-			// If axis was appended as a leading dimension during right alignment, then the stride is 0
+			// If axis was appended as a leading dimension during right alignment, then the stride is 0.
 			const MatmulPlan::size_type leading_axes = output_batch_rank - batch_rank;
 			if (output_axis < leading_axes)
 			{
 				return 0;
 			}
 
-			// otherwise, return the corresponding stride
+			// Otherwise, we return the corresponding stride.
 			const MatmulPlan::size_type input_axis = output_axis - leading_axes;
 			return shape[input_axis] == 1 ? 0 : layout.stride(input_axis);
 		}

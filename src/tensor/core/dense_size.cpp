@@ -9,6 +9,7 @@
 
 namespace minitensor::detail
 {
+	// This function computes the buffer size in bytes for a given tensor specification.
 	std::size_t dense_size_bytes(const TensorSpec& spec)
 	{
 		const std::size_t element_size = dtype_size(spec.dtype);

@@ -72,6 +72,7 @@ namespace minitensor::detail
 		return layout_;
 	}
 
+	// This function validates the materialization with respect to the tensor specification.
 	void Materialization::validate(const TensorSpec& spec) const
 	{
 		if (spec.device != buffer_->device())
@@ -89,6 +90,8 @@ namespace minitensor::detail
 			return;
 		}
 
+		// The minimum and maximum offsets required by the layout are validated 
+		// with respect to the buffer.
 		offset_type min_offset = layout_.offset();
 		offset_type max_offset = layout_.offset();
 

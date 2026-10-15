@@ -11,6 +11,9 @@
 namespace minitensor
 {
 	using Extent = std::int64_t;
+
+	// This is a user-facing, unnormalized axis type. Shape::size_type is used
+	// internally for normalized axes.
 	using Axis = std::int64_t;
 
 	class Shape final
@@ -19,7 +22,7 @@ namespace minitensor
 		using value_type = Extent;
 		using size_type = std::size_t;
 
-		// Scalar shape
+		// The default constructor constructs a scalar shape.
 		Shape() = default;
 
 		Shape(std::initializer_list<value_type> dimensions);
@@ -52,7 +55,7 @@ namespace minitensor
 	[[nodiscard]] std::size_t dtype_size(DType dtype);
 	[[nodiscard]] std::string_view dtype_name(DType dtype);
 
-	// Helpers to discern DType categories.
+	// Discern between categories of DTypes
 	[[nodiscard]] constexpr bool is_floating_point(DType dtype) noexcept
 	{
 		return dtype == DType::Float32;
@@ -65,7 +68,7 @@ namespace minitensor
 
 	namespace detail
 	{
-		// Bridge C++ types to DType.
+		// DTypeOf maps C++ types to DTypes.
 		template <typename T>
 		struct DTypeOf;
 
@@ -82,13 +85,14 @@ namespace minitensor
 		};
 	}
 
+	// Backend-agnostic concept used for data transfer
 	template <typename T>
 	concept TensorElement =
-		std::same_as<T, std::remove_cv_t<T>> &&
+		std::same_as<T, std::remove_cv_t<T>>&&
 		requires
-		{
-			{ detail::DTypeOf<T>::value } -> std::convertible_to<DType>;
-		};
+	{
+		{ detail::DTypeOf<T>::value } -> std::convertible_to<DType>;
+	};
 
 	template <TensorElement T>
 	inline constexpr DType dtype_of_v = detail::DTypeOf<T>::value;
@@ -129,6 +133,7 @@ namespace minitensor
 		std::uint32_t index_{ 0 };
 	};
 
+	// User-facing structure for Tensor specifications
 	struct TensorOptions final
 	{
 		DType dtype{ DType::Float32 };

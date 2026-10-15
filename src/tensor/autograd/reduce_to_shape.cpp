@@ -11,6 +11,7 @@
 
 namespace minitensor::detail
 {
+	// This helper is used to reverse any broadcasting for VJPs.
 	Tensor reduce_to_shape(const Tensor& cotangent, const Shape& target_shape)
 	{
 		const Shape& cotangent_shape = cotangent.shape();

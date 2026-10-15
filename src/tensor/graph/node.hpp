@@ -9,6 +9,7 @@
 
 namespace minitensor::detail
 {
+	// Nodes in the graph represent operations.
 	class Node final
 	{
 	public:

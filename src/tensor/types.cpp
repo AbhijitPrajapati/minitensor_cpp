@@ -52,7 +52,7 @@ namespace minitensor
 		}
 
 		// The entire shape has zero elements regardless of the other
-		// extents, so don't report multiplication overflow.
+		// extents, multiplication overflow need not be reported.
 		if (contains_zero)
 		{
 			return 0;

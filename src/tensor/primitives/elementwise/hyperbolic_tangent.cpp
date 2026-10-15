@@ -42,11 +42,6 @@ namespace minitensor::detail
 		{
 			throw std::logic_error{ "tanh VJP expects 1 input" };
 		}
-
-		const Tensor one = full(
-			Shape{},
-			1.0F,
-			TensorOptions{ output.dtype(), output.device() });
-		return { output_cotangent * (one - output * output) };
+		return { output_cotangent * (1.0F - output * output) };
 	}
 }

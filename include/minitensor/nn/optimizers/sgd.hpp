@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <stdexcept>
 #include <utility>
@@ -15,6 +16,7 @@ namespace minitensor::nn
 	class SGD final
 	{
 	public:
+		// SGD has no state.
 		struct State final
 		{};
 
@@ -58,6 +60,8 @@ namespace minitensor::nn
 					++update_count;
 					return value - learning_rate_ * gradient;
 				});
+
+			// Gradients must have exactly as many elements as there are parameters.
 			if (update_count != gradients.size())
 			{
 				throw std::invalid_argument{ "parameter gradients contain extra gradients" };

@@ -16,6 +16,8 @@
 
 namespace minitensor::detail
 {
+	// Utility for applying primitives
+
 	template <typename... Inputs>
 	[[nodiscard]] Tensor apply_primitive(
 		std::unique_ptr<Primitive> primitive,

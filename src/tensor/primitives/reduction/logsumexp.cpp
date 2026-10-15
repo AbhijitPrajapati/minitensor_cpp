@@ -112,8 +112,6 @@ namespace minitensor::detail
 		Tensor expanded_output = output;
 		Tensor expanded_cotangent = output_cotangent;
 
-		// Recover expanded output and cotangent shapes if 
-		// dimensions were dropped.
 		if (!keep_dim_)
 		{
 			std::vector<Extent> expanded_extents(

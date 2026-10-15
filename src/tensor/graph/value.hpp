@@ -9,6 +9,8 @@
 
 namespace minitensor::detail
 {
+	// Value is the internal representation of a Tensor value, or an edge
+	// in the computation graph.
 	class Value final
 	{
 	public:

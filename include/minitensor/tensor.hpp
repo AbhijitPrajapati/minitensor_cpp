@@ -9,10 +9,11 @@ namespace minitensor
 	namespace detail
 	{
 		class Value;
-		// friend struct allowing operators to access value
 		struct TensorAccess;
 	} // namespace detail
 
+	// The public Tensor handle is a thin wrapper around a Value
+	// in the graph. This design faciliates natural Tensor semantics safely.
 	class Tensor
 	{
 	public:
@@ -30,7 +31,9 @@ namespace minitensor
 	private:
 		explicit Tensor(std::shared_ptr<detail::Value>);
 		std::shared_ptr<detail::Value> value_;
-		// friend struct allowing operators to access internals
+
+		// This centralized friend structure allows operations to accces
+		// the Value of Tensors and create Tensors from Values.
 		friend struct detail::TensorAccess;
 	};
 

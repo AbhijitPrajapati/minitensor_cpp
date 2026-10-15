@@ -15,6 +15,9 @@
 
 namespace minitensor::detail
 {
+	// Parameters for basic indexing are encapsulated in an independent class
+	// for brevity regarding shared logic/validation between BasicIndexPrimitive and 
+	// its VJP.
 	class BasicIndexParameters final
 	{
 	public:
@@ -58,6 +61,8 @@ namespace minitensor::detail
 		std::vector<Component> components_;
 	};
 
+	// This primitive is used for basic slicing and select operations where a 
+	// view is returned. The gather operation has a separate primitive.
 	class BasicIndexPrimitive final : public Primitive
 	{
 	public:
@@ -71,6 +76,8 @@ namespace minitensor::detail
 	private:
 		BasicIndexParameters parameters_;
 	};
+
+	// BasicIndex and BasicIndexScatter are eachother's VJPs.
 
 	class BasicIndexScatterPrimitive final : public Primitive
 	{

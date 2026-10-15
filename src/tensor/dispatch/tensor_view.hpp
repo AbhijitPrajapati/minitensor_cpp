@@ -5,6 +5,9 @@
 namespace minitensor::detail
 {
 
+	// Tensor views are the way in which tensor data is represented to backend kernels.
+	// Mutable tensor views are used for output tensors.
+
 	struct TensorSpec;
 	class Materialization;
 	class Layout;

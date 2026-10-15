@@ -9,6 +9,7 @@ namespace minitensor
 
 namespace minitensor::detail
 {
+	// The abstract buffer class is implemented by each backend.
 	class Buffer
 	{
 	public:

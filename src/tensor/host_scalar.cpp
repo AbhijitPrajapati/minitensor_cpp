@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
+#include <variant>
 
 #include <minitensor/types.hpp>
 
@@ -41,7 +42,7 @@ namespace minitensor
 
 			const float value = std::get<float>(value_);
 
-			// Range check before casting float -> int
+			// Range check before casting float to int
 			if (!std::isfinite(value))
 			{
 				throw std::invalid_argument{ "cannot convert a non-finite scalar to int64" };

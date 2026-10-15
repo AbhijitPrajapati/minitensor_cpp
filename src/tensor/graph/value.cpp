@@ -7,6 +7,7 @@
 #include <tensor/storage/materialization.hpp>
 
 #include "fwd.hpp"
+#include "node.hpp"
 
 
 namespace minitensor::detail
@@ -31,6 +32,9 @@ namespace minitensor::detail
 		return materialization_ ? (&*materialization_) : nullptr;
 	}
 
+	// Materialization validation takes place here. Consumers of Value
+	// trust that the materialization within has been validated in order
+	// to avoid unreasonable duplication.
 	void Value::materialize(Materialization materialization) const
 	{
 		if (materialization_)

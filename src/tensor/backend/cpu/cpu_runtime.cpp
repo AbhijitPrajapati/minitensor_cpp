@@ -13,6 +13,8 @@
 
 namespace minitensor::detail::cpu
 {
+	// The CpuRuntime simply uses memcpy to manage memory.
+
 	CpuRuntime::CpuRuntime(Device device) : device_{ device }
 	{
 		if (device_.type() != DeviceType::Cpu)

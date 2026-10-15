@@ -26,6 +26,8 @@ namespace minitensor::detail
 		Shape::size_type input_rank_;
 	};
 
+	// Gather and GatherScatterAdd are eachother's VJPs
+
 	class GatherScatterAddPrimitive final : public Primitive
 	{
 	public:

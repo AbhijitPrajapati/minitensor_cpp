@@ -10,6 +10,7 @@
 
 namespace minitensor::detail
 {
+	// Each device has its own runtime.
 	class RuntimeRegistry final
 	{
 	public:

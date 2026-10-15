@@ -27,6 +27,9 @@ namespace minitensor::detail
 		return inputs.front();
 	}
 
+	// Contiguous may or may not allocate a buffer depending on
+	// whether the input is contiguous or not. It still requires a registered 
+	// kernel nonetheless.
 	std::optional<Layout> ContiguousPrimitive::try_derive_shared_layout(
 		const TensorSpec& input_spec,
 		const Layout& input_layout,

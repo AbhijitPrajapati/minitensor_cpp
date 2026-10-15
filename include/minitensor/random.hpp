@@ -7,10 +7,10 @@ namespace minitensor
 {
 	namespace detail
 	{
-		// Accessor for random key words
 		struct RandomKeyAccess;
 	}
 
+	// Random keys are explicitely managed by the user for portability and transparency.
 	class RandomKey final
 	{
 	public:
@@ -29,6 +29,8 @@ namespace minitensor
 			: words_{ first, second }
 		{}
 
+		// The friend structure allows internals to access words without exposing
+		// them to the user. 
 		friend struct detail::RandomKeyAccess;
 		friend RandomKey fold_in(RandomKey key, std::uint64_t data) noexcept;
 

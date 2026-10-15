@@ -88,6 +88,7 @@ namespace minitensor::detail
 			throw std::logic_error{ "permute VJP expects 1 input" };
 		}
 
+		// The VJP for permute is simply the inverse permuation applied on the output cotangent.
 		std::vector<Axis> inverse_permutation(permutation_.size());
 		for (Shape::size_type output_axis = 0; output_axis < permutation_.size(); ++output_axis)
 		{

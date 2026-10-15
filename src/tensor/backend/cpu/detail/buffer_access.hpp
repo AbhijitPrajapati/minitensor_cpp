@@ -11,7 +11,7 @@ namespace minitensor::detail::cpu
 	template <typename T>
 	concept CpuElement = TensorElement<T>;
 
-	// Accessors for storage buffers
+	// These helper functions access cpu buffers and return pointers.
 	
 	template <CpuElement T>
 	[[nodiscard]] const T* data(const TensorView& view)
