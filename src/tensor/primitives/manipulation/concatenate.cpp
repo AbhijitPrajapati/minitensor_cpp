@@ -63,7 +63,7 @@ namespace minitensor::detail
 			{
 				throw std::invalid_argument{ "concatenate requires tensors with equal ranks" };
 			}
-
+			
 			for (std::size_t axis = 0; axis < input_rank_; ++axis)
 			{
 				if (axis == axis_)
@@ -97,6 +97,8 @@ namespace minitensor::detail
 		};
 	}
 
+	// The VJP for concatenation involves slicing the output cotangent to 
+	// recover the contributions from each input segment.
 	std::vector<std::optional<Tensor>> ConcatenatePrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const
 	{
 		if (inputs.empty())

@@ -4,6 +4,7 @@
 
 namespace minitensor::detail
 {
+	// This structure contains the details of a tensor independent of its materialization.
 	struct TensorSpec final
 	{
 		Shape shape;

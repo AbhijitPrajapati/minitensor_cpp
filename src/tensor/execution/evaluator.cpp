@@ -35,7 +35,7 @@ namespace minitensor::detail
 		{
 			ValueRef output;
 			NodeRef node;
-			std::optional<PlannedKernel> kernel;
+			std::optional<PlannedKernel> kernel; // View operations do not require kernels.
 		};
 
 		using EvaluationPlan = std::vector<PlannedStep>;
@@ -50,6 +50,9 @@ namespace minitensor::detail
 		{
 		public:
 			EvaluationPlanner(const RuntimeRegistry& runtimes, const KernelRegistry& kernels) noexcept : runtimes_{ runtimes }, kernels_{ kernels } {}
+
+			// An EvaluationPlan is constructed by traversing the depth-first,
+			// tracking any kernels that must be executed.
 			EvaluationPlan build(std::span<const ValueRef> roots)
 			{
 				for (const ValueRef& value : roots)
@@ -67,7 +70,7 @@ namespace minitensor::detail
 					throw std::invalid_argument{ "cannot evaluate an empty value" };
 				}
 
-				// Cached value
+				// Empty materialization denotes a cached value.
 				if (value->materialization() != nullptr)
 				{
 					return;
@@ -76,7 +79,7 @@ namespace minitensor::detail
 				const auto existing = states_.find(value.get());
 				if (existing != states_.end())
 				{
-					// Cycle in the graph if value has already been visited
+					// If a value has already been visited, a cycle in the computation graph has occured.
 					if (existing->second == VisitState::Visiting)
 					{
 						throw std::logic_error{ "cycle in computation graph" };
@@ -87,9 +90,9 @@ namespace minitensor::detail
 				states_.emplace(value.get(), VisitState::Visiting);
 
 				const NodeRef& node = value->producer_ref();
-				// No producer and no materialization
 				if (!node)
 				{
+					// Value is a leaf.
 					throw std::runtime_error{ "cannot evaluate unmaterialized leaf" };
 				}
 
@@ -99,12 +102,10 @@ namespace minitensor::detail
 					visit(input);
 				}
 
-				// Add execution details to the plan
 				const Primitive& primitive = node->primitive();
 
+				// Retrieve the associated kernel if necessary.
 				std::optional<PlannedKernel> kernel;
-
-				// Detect kernel requirement
 				if (primitive.requires_kernel_support())
 				{
 					const TensorSpec& output_spec = value->spec();
@@ -137,30 +138,31 @@ namespace minitensor::detail
 			for (const ValueRef& input : inputs)
 			{
 				const Materialization* materialization = input->materialization();
+
 				if (materialization == nullptr)
 				{
+					// Steps were likely executed in the wrong order.
 					throw std::logic_error{ "planned operation has unmaterialized input" };
 				}
 
-				// Storage-sharing operations handled once here
+				// All storage sharing operations have a single input.
 				if (inputs.size() == 1)
 				{
-					// Only check for storage sharing from single-input operations
-					// All storage-sharing operations must have a singular input
+					// Storage-sharing operations are handled once here.
 					auto shared_layout = primitive.try_derive_shared_layout(input->spec(), materialization->layout(), output.spec());
 					if (shared_layout)
 					{
 						Materialization output_materialization = Materialization(materialization->buffer_ref(), std::move(shared_layout.value()));
 						output.materialize(std::move(output_materialization));
-						return;
+						return; // The rest of the function does not execute.
 					}
 				}
 
 				input_views.emplace_back(input->spec(), *materialization);
 			}
 
-			// Storage-sharing operations should have already been handled by now
-			// All non-storage-sharing operations should provide kernels
+			// Storage-sharing operations have been handled by now. Therefore all 
+			// remaining operations should provide kernels.
 			if (!step.kernel)
 			{
 				throw std::logic_error{ "primitive must either share storage or plan a kernel" };
@@ -171,13 +173,11 @@ namespace minitensor::detail
 			BufferRef output_buffer = planned_kernel.runtime->allocate(dense_size_bytes(output_spec));
 			Materialization output_materialization(std::move(output_buffer), Layout::contiguous(output_spec.shape));
 
-			// Perform operation
 			{
 				MutableTensorView output_view(output_spec, output_materialization);
 				planned_kernel.function(*planned_kernel.runtime, primitive, input_views, output_view);
 			}
 
-			// Only materialize once operation succeeds
 			output.materialize(std::move(output_materialization));
 		}
 
@@ -189,6 +189,8 @@ namespace minitensor::detail
 	{
 		EvaluationPlanner planner(runtimes_, kernels_);
 		EvaluationPlan plan = planner.build(roots);
+		
+		// Each step is executed sequentially after the plan is constructed.
 		for (const PlannedStep& step : plan)
 		{
 			execute_step(step);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <unordered_map>
 #include <utility>
@@ -15,11 +16,13 @@ namespace minitensor::nn
 {
 	using ParameterGradients = std::unordered_map<ParameterId, Tensor>;
 
+	// Produces gradients for each unique parameter in the tree.
 	template <typename Tree>
 	[[nodiscard]] ParameterGradients parameter_gradients(
 		const Tensor& loss,
 		const Tree& parameters)
 	{
+		// Collect parameter values
 		std::vector<ParameterId> ids;
 		std::vector<Tensor> values;
 
@@ -31,8 +34,10 @@ namespace minitensor::nn
 					values.push_back(parameter.value());
 				}
 			});
+
 		std::vector<Tensor> gradients = grad(loss, values);
 
+		// Build the output mapping
 		ParameterGradients result;
 		result.reserve(ids.size());
 

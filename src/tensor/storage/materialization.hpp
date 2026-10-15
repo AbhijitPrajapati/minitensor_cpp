@@ -6,6 +6,8 @@
 namespace minitensor::detail
 {
 	struct TensorSpec;
+	
+	// This class represents the materialization of a value after it is evaluated.
 	class Materialization final
 	{
 	public:

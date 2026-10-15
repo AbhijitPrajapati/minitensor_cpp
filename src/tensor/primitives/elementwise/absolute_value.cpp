@@ -42,6 +42,8 @@ namespace minitensor::detail
 			throw std::logic_error{ "absolute value VJP expects 1 input" };
 		}
 
+		// The derivative of the absolute value function at 0 is defined here as 0,
+		// as the sign function returns 0 when the input is 0.
 		return { output_cotangent * sign(inputs.front()) };
 	}
 }

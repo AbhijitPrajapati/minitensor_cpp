@@ -41,6 +41,7 @@ namespace minitensor::detail
 		{
 			throw std::logic_error{ "sign VJP expects 1 input" };
 		}
+		// std::nullopt signals no gradient and the end of propagation.
 		return { std::nullopt };
 	}
 }

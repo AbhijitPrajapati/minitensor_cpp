@@ -42,11 +42,6 @@ namespace minitensor::detail
 		{
 			throw std::logic_error{ "sqrt VJP expects 1 input" };
 		}
-
-		const Tensor two = full(
-			Shape{},
-			2.0F,
-			TensorOptions{ output.dtype(), output.device() });
-		return { output_cotangent / (two * output) };
+		return { output_cotangent / (2.0F * output) };
 	}
 }

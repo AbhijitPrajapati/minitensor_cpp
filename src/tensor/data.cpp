@@ -1,5 +1,6 @@
 #include <minitensor/data.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <span>
 #include <stdexcept>
@@ -58,8 +59,7 @@ namespace minitensor
 		return to_vector<T>(tensor).front();
 	}
 
-	// Explicit template instantiation to pair with
-	// external template declaration in header file.
+	// Templates are instantiated explicitely
 	template std::vector<float> to_vector<float>(const Tensor& tensor);
 	template std::vector<std::int64_t> to_vector<std::int64_t>(const Tensor& tensor);
 	template float item<float>(const Tensor& tensor);

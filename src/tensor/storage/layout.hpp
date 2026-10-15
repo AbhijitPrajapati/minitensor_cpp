@@ -19,7 +19,7 @@ namespace minitensor::detail
 		using offset_type = std::int64_t;
 		using size_type = std::size_t;
 
-		// Scalar layout
+		// The default constructor constructs a scalar layout.
 		Layout() = default;
 		Layout(std::vector<stride_type> strides, offset_type offset = 0);
 
@@ -29,6 +29,8 @@ namespace minitensor::detail
 		[[nodiscard]] std::span<const stride_type> strides() const noexcept;
 		[[nodiscard]] offset_type offset() const noexcept;
 		[[nodiscard]] bool is_contiguous(const Shape& shape) const noexcept;
+
+		// Layout-only operations are delegated here.
 		[[nodiscard]] Layout broadcasted_to(const Shape& source_shape, const Shape& target_shape) const;
 		[[nodiscard]] Layout permuted(std::span<const size_type> permutation) const;
 		[[nodiscard]] std::optional<Layout> try_reshape(const Shape& source_shape, const Shape& target_shape) const;

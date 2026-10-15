@@ -13,7 +13,6 @@
 
 #include "tensor/core/axis.hpp"
 #include "tensor/core/tensor_spec.hpp"
-#include "tensor/graph/primitive.hpp"
 #include "tensor/ops/apply_primitive.hpp"
 
 namespace minitensor::detail
@@ -91,7 +90,7 @@ namespace minitensor::detail
 				output_cotangent,
 				inputs[1]
 			),
-			std::nullopt // Indices have no gradient
+			std::nullopt // Indices have no gradient.
 		};
 	}
 

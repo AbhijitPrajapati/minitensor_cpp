@@ -13,6 +13,7 @@
 
 namespace minitensor::detail
 {
+	// The abstract Primitive class serves as the foundation for graph operations.
 	class Primitive
 	{
 	public:

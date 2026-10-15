@@ -12,6 +12,9 @@
 
 namespace minitensor::detail::cpu
 {
+	// This iteration planner is used by elementwise/copy operations. It handles
+	// multiple layouts simeltaneously.
+
 	class ElementwisePlan final
 	{
 	public:
@@ -43,7 +46,7 @@ namespace minitensor::detail::cpu
 
 			std::vector<offset_type> offsets = initial_offsets_;
 
-			// Scalars and shapes containing only singleton dimensions have one logical element
+			// Scalars and shapes containing only singleton dimensions have one logical element.
 			if (axes_.empty())
 			{
 				const std::vector<stride_type> strides(layout_count(), stride_type{ 0 });
@@ -55,7 +58,6 @@ namespace minitensor::detail::cpu
 			size_type run_size = static_cast<size_type>(run_axis.extent);
 			std::size_t run_axis_start = axes_.size() - 1;
 
-			// Fold dimensions in when every layout advances as one physically strided sequence
 			while (run_axis_start > 0)
 			{
 				if (run_size > static_cast<size_type>(std::numeric_limits<offset_type>::max()))
@@ -65,6 +67,8 @@ namespace minitensor::detail::cpu
 
 				const offset_type run_extent = static_cast<offset_type>(run_size);
 				const Axis& outer_axis = axes_[run_axis_start - 1];
+
+				// When every layout advances as one physically strided sequence, we can fold the dimension in.
 				bool can_fold = true;
 				for (std::size_t layout_idx = 0; layout_idx < layout_count(); ++layout_idx)
 				{
@@ -91,6 +95,8 @@ namespace minitensor::detail::cpu
 
 			for (size_type linear = 0; linear < numel_; linear += run_size)
 			{
+				// The function is invoked for every run, allowing greater performance 
+				// compared to a per-element callback.
 				std::invoke(function, linear, offsets, run_axis.steps, run_size);
 
 				if (linear + run_size == numel_)

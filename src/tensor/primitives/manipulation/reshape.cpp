@@ -38,6 +38,7 @@ namespace minitensor::detail
 		return TensorSpec{ shape_, input.dtype, input.device };
 	}
 
+	// Reshape may or may not allocate a new buffer depending on the input layout.
 	std::optional<Layout> ReshapePrimitive::try_derive_shared_layout(const TensorSpec& input_spec, const Layout& input_layout, const TensorSpec& output_spec) const
 	{
 		return input_layout.try_reshape(input_spec.shape, output_spec.shape);

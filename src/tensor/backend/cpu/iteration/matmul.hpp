@@ -11,6 +11,9 @@
 
 namespace minitensor::detail::cpu
 {
+	// This iteration planner is specialized for matrix multiplication operations,
+	// and supported batching.
+
 	class MatmulPlan final
 	{
 	public:
@@ -54,7 +57,7 @@ namespace minitensor::detail::cpu
 
 		// Calls function(batch_index, offsets) once for each broadcasted batch.
 		// Offsets identify the first element of the logical matrix slices for
-		// that batch. Matrix strides are constant across all batches.
+		// that batch. Matrix strides are naturally constant across all batches.
 		template <typename Function>
 			requires std::invocable<Function&, size_type, const BatchOffsets&>
 		void for_each_batch(Function&& function) const

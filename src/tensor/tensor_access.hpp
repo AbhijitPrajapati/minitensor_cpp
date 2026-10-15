@@ -8,6 +8,8 @@
 
 namespace minitensor::detail
 {
+	// TensorAccess is the interface between the public Tensor handle and 
+	// the internal graph Value.
 	struct TensorAccess final
 	{
 		[[nodiscard]] static const ValueRef& value(const Tensor& tensor) noexcept

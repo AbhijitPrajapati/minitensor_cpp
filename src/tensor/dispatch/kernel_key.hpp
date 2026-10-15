@@ -10,6 +10,7 @@ namespace minitensor::detail
 {
 	using PrimitiveTypeId = std::type_index;
 
+	// Each kernel has a unique key.
 	struct KernelKey final
 	{
 		PrimitiveTypeId primitive_type;

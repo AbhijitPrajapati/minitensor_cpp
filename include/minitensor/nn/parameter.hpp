@@ -24,7 +24,10 @@ namespace minitensor::nn
 		explicit constexpr ParameterId(value_type value) noexcept
 			: value_(value)
 		{}
-		friend class Parameter; // only parameters can create ids
+
+		// This friendship ensures that only Parameters can create IDs
+		friend class Parameter;
+
 		value_type value_;
 	};
 
@@ -38,7 +41,7 @@ namespace minitensor::nn
 	class Parameter final
 	{
 	public:
-		// always allocates fresh id
+		// The public constructor always creates a fresh ID.
 		explicit Parameter(Tensor value, ParameterMetadata metadata = {});
 		Parameter(const Parameter&) noexcept = default;
 		Parameter(Parameter&&) noexcept = default;
@@ -49,11 +52,13 @@ namespace minitensor::nn
 		[[nodiscard]] const Tensor& value() const noexcept;
 		[[nodiscard]] const ParameterMetadata& metadata() const noexcept;
 
+		// Parameters are constant by nature. Changing the value or metadata
+		// produces a new Parameter.
 		[[nodiscard]] Parameter with_value(Tensor value) const;
 		[[nodiscard]] Parameter with_metadata(ParameterMetadata metadata) const;
 
 	private:
-		// always uses supplied id
+		// A supplied ID must only be allowed privately.
 		Parameter(ParameterId id, Tensor value, ParameterMetadata metadata);
 		[[nodiscard]] static ParameterId make_id();
 

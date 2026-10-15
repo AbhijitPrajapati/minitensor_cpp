@@ -10,7 +10,9 @@
 
 namespace minitensor::detail::cpu
 {
-	// Multiple dispatchers for utility
+	// These functions handle dtype dispatch, converting the dynamic DType value
+	// into a type identity used by typed kernels. Multiple dispatch functions
+	// reflect how not every operation supports every DType.
 
 	template <typename Function>
 	decltype(auto) dispatch_dtype(DType dtype, Function&& function)

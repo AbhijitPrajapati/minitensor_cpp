@@ -12,6 +12,8 @@
 
 namespace minitensor::detail::cpu
 {
+	// This iteration planner is for reduction operations.
+
 	class ReductionPlan final
 	{
 	private:

@@ -9,6 +9,7 @@
 
 namespace minitensor::detail
 {
+	// A DeviceRuntime implementation exposes device-specific rudimentary memory operations.
 	class DeviceRuntime
 	{
 	public:

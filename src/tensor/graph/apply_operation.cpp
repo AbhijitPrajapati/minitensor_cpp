@@ -14,6 +14,7 @@
 
 namespace minitensor::detail
 {
+	// This function creates a Node and Value in the graph by applying a given primitive.
 	ValueRef apply_operation(std::unique_ptr<Primitive> primitive, std::span<const ValueRef> inputs)
 	{
 		if (!primitive)

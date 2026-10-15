@@ -22,8 +22,8 @@ namespace minitensor::nn
 		class ParameterTransformTraversal;
 	}
 
-	// Access point for a parameter tree's private structural hook. Trees participate
-	// by friending this class and defining a static visit_members(Self&, Visitor&)
+	// This is the access point for a parameter tree's private structural hook. Trees 
+	// participate by friending this class and defining a static visit_members(Self&, Visitor&).
 	class ParameterTreeAccess final
 	{
 	private:
@@ -41,8 +41,8 @@ namespace minitensor::nn
 		friend class detail::ParameterTransformTraversal;
 	};
 
-	// Specific traversal methods. Each uses ParameterTreeAccess to enter a tree.
-	// Each must implement the visit, parameter, and child functions
+	// These are specific traversal methods. Each uses ParameterTreeAccess to enter a tree.
+	// Each must implement the visit, parameter, and child functions.
 	namespace detail
 	{
 		template <typename Function>
@@ -98,6 +98,7 @@ namespace minitensor::nn
 
 					// Validate that the transformed value is valid for the parameter
 					parameter = parameter.with_value(transformed_value);
+
 					transformed_values_.emplace(
 						parameter.id(),
 						std::move(transformed_value));
@@ -130,7 +131,7 @@ namespace minitensor::nn
 		std::invoke_result_t<Function&, const Parameter&>,
 		Tensor>;
 
-	// Visits every parameter in depth-first hook order.
+	// Visits every parameter in depth-first hook order
 	template <typename Tree, ParameterCallback Function>
 	void for_each_parameter(const Tree& tree, Function&& function)
 	{
@@ -139,7 +140,7 @@ namespace minitensor::nn
 		traversal.visit(tree);
 	}
 
-	// Visits every unique parameter.
+	// Visits every unique parameter, delegating to for_each_parameter
 	template <typename Tree, ParameterCallback Function>
 	void for_each_unique_parameter(const Tree& tree, Function&& function)
 	{
@@ -154,7 +155,8 @@ namespace minitensor::nn
 		});
 	}
 
-	// Takes parameter tree by value and transforms every unique parameter.
+	// Transforms each unique parameter in a tree. Taking the tree by value allows
+	// useful move semantics to safe memory. 
 	template <typename Tree, ParameterValueTransform Function>
 	Tree transform_parameter_values(Tree tree, Function&& function)
 	{

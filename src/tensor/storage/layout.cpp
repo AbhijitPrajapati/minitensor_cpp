@@ -19,6 +19,7 @@ namespace minitensor::detail
 		}
 	}
 
+	// This function creates a contiguous layout from the given shape.
 	Layout Layout::contiguous(const Shape& shape, offset_type offset)
 	{
 		std::vector<stride_type> strides(shape.rank(), stride_type{ 1 });
@@ -72,6 +73,8 @@ namespace minitensor::detail
 			return true;
 		}
 
+		// Contiguity is checked by verifying the strides. A contiguous layout
+		// can still have a non-zero offset.
 		stride_type expected = 1;
 		for (size_type i = shape.rank(); i > 0; --i)
 		{
@@ -111,6 +114,8 @@ namespace minitensor::detail
 		}
 
 		std::vector<stride_type> output_strides(target_shape.rank(), stride_type{ 0 });
+		
+		// The rank difference is used to right-align the strides.
 		const std::size_t rank_diff = target_shape.rank() - source_shape.rank();
 
 		for (std::size_t source_axis = 0; source_axis < source_shape.rank(); ++source_axis)
@@ -124,6 +129,8 @@ namespace minitensor::detail
 			}
 			else if (source_extent == 1)
 			{
+				// A zero stride is used for singleton source dimensions so that the dimension
+				// is ignored in traversal.
 				output_strides[target_axis] = 0;
 			}
 			else
@@ -161,6 +168,7 @@ namespace minitensor::detail
 		{
 			return contiguous(target_shape, offset_);
 		}
+		// Reshaping a non-contiguous tensor is unsupported.
 		if (!is_contiguous(source_shape))
 		{
 			return std::nullopt;

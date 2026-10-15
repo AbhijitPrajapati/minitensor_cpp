@@ -137,6 +137,7 @@ namespace minitensor::detail
 		: input_shape_(std::move(input_shape)), output_shape_(std::move(output_shape)), components_(std::move(components))
 	{}
 
+	// Parameter construction for slicing
 	BasicIndexParameters BasicIndexParameters::for_slice(
 		Axis axis,
 		std::optional<Extent> start,
@@ -156,6 +157,7 @@ namespace minitensor::detail
 		return BasicIndexParameters(input_shape, Shape{ std::move(output_extents) }, std::move(components));
 	}
 
+	// Parameter construction for selection
 	BasicIndexParameters BasicIndexParameters::for_select(Axis axis, Extent index, const Shape& input_shape)
 	{
 		const Shape::size_type normalized_axis = normalize_axis(axis, input_shape.rank());
@@ -179,6 +181,7 @@ namespace minitensor::detail
 		return BasicIndexParameters(input_shape, Shape{ std::move(output_extents) }, std::move(components));
 	}
 
+	// Layout derivation is determined by index parameters, so it is delegated here.
 	Layout BasicIndexParameters::derive_layout(const Layout& input_layout) const
 	{
 		std::vector<Layout::stride_type> output_strides;

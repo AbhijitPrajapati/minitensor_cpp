@@ -21,8 +21,11 @@
 
 namespace minitensor::detail
 {
+	// The reverse VJP engine mirrors the execution engine in traversal.
+
 	namespace
 	{
+		// Each step now contains the input indices needed for differentiation.
 		struct ReverseStep final
 		{
 			ValueRef output;
@@ -38,6 +41,7 @@ namespace minitensor::detail
 			Finished
 		};
 
+		// The visit record now includes whether the value depends on a target.
 		struct VisitRecord final
 		{
 			VisitState state;
@@ -49,7 +53,7 @@ namespace minitensor::detail
 		public:
 			explicit ReversePlanner(std::span<const ValueRef> targets)
 			{
-				// populate targets
+				// Populate targets
 				targets_.reserve(targets.size());
 				for (const ValueRef& target : targets)
 				{
@@ -73,13 +77,13 @@ namespace minitensor::detail
 					return {};
 				}
 
-				// visit preceding nodes
+				// Visit preceding nodes
 				(void)visit(output);
 				return std::move(plan_);
 			}
 
 		private:
-			// returns whether value is dependent on a target or is a target
+			// This function returns true when the value is dependent on a target or is a target
 			[[nodiscard]] bool visit(const ValueRef& value)
 			{
 				if (!value)
@@ -91,7 +95,7 @@ namespace minitensor::detail
 				const auto existing = visits_.find(key);
 				if (existing != visits_.end())
 				{
-					// cycle in the graph if value has already been visited
+					// If the value has already been visited, there is a cycle in the graph.
 					if (existing->second.state == VisitState::Visiting)
 					{
 						throw std::logic_error{ "cycle in computation graph" };
@@ -110,7 +114,7 @@ namespace minitensor::detail
 					const std::span<const ValueRef> inputs = node->inputs();
 					input_indices_needed.reserve(inputs.size());
 
-					// record input indices required for differentiation
+					// Record the input indices required for differentiation
 					for (std::size_t input_index = 0; input_index < inputs.size(); ++input_index)
 					{
 						if (visit(inputs[input_index]))
@@ -120,7 +124,7 @@ namespace minitensor::detail
 					}
 				}
 
-				// either is target or depends on target directly or indirectly
+				// The value may be a target or may depend on a target directly or indirectly.
 				const bool depends_on_target = is_target || !input_indices_needed.empty();
 
 				if (!input_indices_needed.empty())
@@ -136,7 +140,7 @@ namespace minitensor::detail
 
 			std::unordered_set<const Value*> targets_;
 			std::unordered_map<const Value*, VisitRecord> visits_;
-			ReversePlan plan_; // accumulated in topological order, then iterated in reverse
+			ReversePlan plan_; // The plan is accumulated in topological order, then iterated in reverse
 		};
 	}
 
@@ -147,8 +151,10 @@ namespace minitensor::detail
 			throw std::invalid_argument("reverse vjp output cannot be null");
 		}
 
-		// validate differentiation dtypes and cotangent specification
+		// Validate differentiation dtypes and cotangent specification
 		const TensorSpec& output_spec = output->spec();
+
+		// Autograd is limited to floating point outputs and targets.
 		if (!is_floating_point(output_spec.dtype))
 		{
 			throw std::invalid_argument{ "reverse vjp requires a floating-point output" };
@@ -183,18 +189,17 @@ namespace minitensor::detail
 			throw std::invalid_argument{ "output cotangent does not match output shape" };
 		}
 
-		// create plan
 		ReversePlanner planner(targets);
 		ReversePlan plan = planner.build(output);
 
-		// seed initial cotangent
+		// Seed the initial cotangent
 		std::unordered_map<const Value*, Tensor> cotangents;
 		cotangents.emplace(output.get(), output_cotangent);
 
-		// propagate in reverse
+		// Propagate the plan in reverse
 		for (auto step = plan.rbegin(); step != plan.rend(); ++step)
 		{
-			// find step's output cotangent
+			// Find the output cotangent of the step. 
 			auto output_cotangent_it = cotangents.find(step->output.get());
 			if (output_cotangent_it == cotangents.end())
 			{
@@ -202,7 +207,7 @@ namespace minitensor::detail
 			}
 			Tensor step_output_cotangent = output_cotangent_it->second;
 
-			// get input and output tensors
+			// Collect the input and output tensors
 			const std::span<const ValueRef> inputs = step->node->inputs();
 			std::vector<Tensor> input_tensors;
 			input_tensors.reserve(inputs.size());
@@ -213,7 +218,7 @@ namespace minitensor::detail
 
 			Tensor step_output = TensorAccess::make(step->output);
 
-			// run vjp rule
+			// Run the VJP rule for the primitive.
 			std::vector<std::optional<Tensor>> contributions =
 				step->node->primitive().vjp(
 					input_tensors,
@@ -225,12 +230,12 @@ namespace minitensor::detail
 				throw std::logic_error{ "primitive VJP returned a different number of input cotangents" };
 			}
 
-			// account for all contributions
+			// Apply each contribution
 			for (std::size_t input_index : step->input_indices_needed)
 			{
 				std::optional<Tensor>& contribution = contributions[input_index];
 
-				// null opt = no propagation
+				// std::nullopt = no propagation
 				if (!contribution.has_value())
 				{
 					continue;
@@ -240,7 +245,7 @@ namespace minitensor::detail
 				const TensorSpec& input_spec = input->spec();
 				Tensor input_cotangent = std::move(*contribution);
 
-				// specs must match
+				// Specifications must match.
 				if (input_cotangent.shape() != input_spec.shape ||
 					input_cotangent.dtype() != input_spec.dtype ||
 					input_cotangent.device() != input_spec.device)
@@ -250,7 +255,7 @@ namespace minitensor::detail
 						"incorrect tensor specification");
 				}
 
-				// add contribution if exising, emplace if not
+				// If an existing contribution exists, add it. Emplace if not.
 				auto existing = cotangents.find(input.get());
 				if (existing == cotangents.end())
 				{
@@ -263,7 +268,7 @@ namespace minitensor::detail
 			}
 		}
 
-		// collect target cotangents
+		// Collect the target cotangents.
 		std::vector<Tensor> target_cotangents;
 		target_cotangents.reserve(targets.size());
 		for (const ValueRef& value : targets)
@@ -275,7 +280,7 @@ namespace minitensor::detail
 				continue;
 			}
 
-			// use 0 tensor if no cotangent
+			// Use a 0 tensor if there is no cotangent.
 			const TensorSpec& spec = value->spec();
 			target_cotangents.push_back(full(spec.shape, 0.0F, TensorOptions{ spec.dtype, spec.device }));
 		}

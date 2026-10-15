@@ -1,7 +1,7 @@
 #pragma once
 
-#include <minitensor/random.hpp>
 #include <minitensor/host_scalar.hpp>
+#include <minitensor/random.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 

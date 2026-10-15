@@ -110,6 +110,7 @@ namespace minitensor::detail
 		Tensor expanded = output_cotangent;
 		if (!axes_.empty() && !keep_dim_)
 		{
+			// Expand the cotangent to match the input rank.
 			std::vector<Extent> expanded_dimensions(
 				input_shape.dimensions().begin(), input_shape.dimensions().end());
 			for (const Shape::size_type axis : axes_)

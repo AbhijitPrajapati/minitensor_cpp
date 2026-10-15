@@ -1,6 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <minitensor/evaluation.hpp>
@@ -10,10 +12,13 @@
 
 namespace minitensor::nn
 {
+	// Parameter tensors must be leafified after each training step in order to 
+	// release graphs from the previous step.
+
 	template <typename Tree>
 	[[nodiscard]] Tree leafify_parameter_values(Tree parameters)
 	{
-		// Collect ids and values 
+		// Collect IDs and values 
 		std::vector<ParameterId> ids;
 		std::vector<Tensor> values;
 
@@ -24,7 +29,6 @@ namespace minitensor::nn
 				values.push_back(parameter.value());
 });
 
-		// Leafifiy
 		std::vector<Tensor> leafified = leafify(values);
 
 		// Create map
@@ -38,7 +42,7 @@ namespace minitensor::nn
 
 		// Transform values
 		return transform_parameter_values(
-		std::move(parameters), 
+		std::move(parameters),
 			[&](const Parameter& parameter)
 			{
 				return leafified_map.at(parameter.id());
