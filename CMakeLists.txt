@@ -78,6 +78,7 @@ target_sources(
         src/tensor/autograd.cpp
         src/nn/parameter.cpp
         src/nn/modules/linear.cpp
+        src/nn/optimizers/adamw.cpp
         src/nn/optimizers/sgd.cpp
         src/nn/loss.cpp
 )
@@ -182,6 +183,7 @@ if(BUILD_TESTING)
         tests/nn/public/leafification_test.cpp
         tests/nn/public/linear_test.cpp
         tests/nn/public/loss_test.cpp
+        tests/nn/public/adamw_test.cpp
         tests/nn/public/sgd_test.cpp
     )
 
