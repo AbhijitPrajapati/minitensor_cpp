@@ -10,6 +10,7 @@
 #include <minitensor/types.hpp>
 
 #include "tensor/autograd/engine.hpp"
+#include "tensor/autograd/vjp_registry.hpp"
 #include "tensor/graph/fwd.hpp"
 #include "tensor/tensor_access.hpp"
 
@@ -23,7 +24,11 @@ namespace minitensor
 		{
 			targets.push_back(detail::TensorAccess::value(input));
 		}
-		return detail::reverse_vjp(detail::TensorAccess::value(output), targets, output_cotangent);
+		return detail::reverse_vjp(
+			detail::TensorAccess::value(output),
+			targets,
+			output_cotangent,
+			detail::vjp_registry());
 	}
 
 	std::vector<Tensor> vjp(const Tensor& output, std::initializer_list<Tensor> inputs, const Tensor& output_cotangent)

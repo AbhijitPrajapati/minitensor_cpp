@@ -8,9 +8,6 @@
 #include <utility>
 #include <vector>
 
-#include <minitensor/ops/elementwise.hpp>
-#include <minitensor/ops/manipulation.hpp>
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "tensor/core/axis.hpp"
@@ -100,34 +97,4 @@ namespace minitensor::detail
 		return keep_dim_;
 	}
 
-	std::vector<std::optional<Tensor>> LogSumExpPrimitive::vjp(std::span<const Tensor> inputs, const Tensor& output, const Tensor& output_cotangent) const
-	{
-		if (inputs.size() != 1)
-		{
-			throw std::logic_error{ "log sum exp VJP expects 1 input" };
-		}
-
-		const Tensor& input = inputs.front();
-
-		Tensor expanded_output = output;
-		Tensor expanded_cotangent = output_cotangent;
-
-		if (!keep_dim_)
-		{
-			std::vector<Extent> expanded_extents(
-				input.shape().dimensions().begin(),
-				input.shape().dimensions().end());
-
-			for (const Shape::size_type axis : axes_)
-			{
-				expanded_extents[axis] = Extent{ 1 };
-			}
-
-			const Shape expanded_shape = Shape{ std::move(expanded_extents) };
-			expanded_output = reshape(expanded_output, expanded_shape);
-			expanded_cotangent = reshape(expanded_cotangent, expanded_shape);
-		}
-
-		return { expanded_cotangent * exp(input - expanded_output) };
-	}
 }

@@ -18,6 +18,7 @@
 #include "tensor/graph/node.hpp"
 #include "tensor/graph/value.hpp"
 #include "tensor/tensor_access.hpp"
+#include "vjp_registry.hpp"
 
 namespace minitensor::detail
 {
@@ -31,6 +32,7 @@ namespace minitensor::detail
 			ValueRef output;
 			NodeRef node;
 			std::vector<std::size_t> input_indices_needed;
+			const VjpRule* rule;
 		};
 
 		using ReversePlan = std::vector<ReverseStep>;
@@ -51,7 +53,10 @@ namespace minitensor::detail
 		class ReversePlanner final
 		{
 		public:
-			explicit ReversePlanner(std::span<const ValueRef> targets)
+			ReversePlanner(
+				std::span<const ValueRef> targets,
+				const VjpRegistry& registry)
+				: registry_{ registry }
 			{
 				// Populate targets
 				targets_.reserve(targets.size());
@@ -129,7 +134,12 @@ namespace minitensor::detail
 
 				if (!input_indices_needed.empty())
 				{
-					plan_.push_back(ReverseStep{ value, node, std::move(input_indices_needed) });
+					const VjpRule& rule = registry_.get(node->primitive().id());
+					plan_.push_back(ReverseStep{
+						value,
+						node,
+						std::move(input_indices_needed),
+						&rule });
 				}
 
 				VisitRecord& record = visits_.at(key);
@@ -138,13 +148,18 @@ namespace minitensor::detail
 				return depends_on_target;
 			}
 
+			const VjpRegistry& registry_;
 			std::unordered_set<const Value*> targets_;
 			std::unordered_map<const Value*, VisitRecord> visits_;
 			ReversePlan plan_; // The plan is accumulated in topological order, then iterated in reverse
 		};
 	}
 
-	std::vector<Tensor> reverse_vjp(const ValueRef& output, std::span<const ValueRef> targets, const Tensor& output_cotangent)
+	std::vector<Tensor> reverse_vjp(
+		const ValueRef& output,
+		std::span<const ValueRef> targets,
+		const Tensor& output_cotangent,
+		const VjpRegistry& registry)
 	{
 		if (!output)
 		{
@@ -189,7 +204,7 @@ namespace minitensor::detail
 			throw std::invalid_argument{ "output cotangent does not match output shape" };
 		}
 
-		ReversePlanner planner(targets);
+		ReversePlanner planner(targets, registry);
 		ReversePlan plan = planner.build(output);
 
 		// Seed the initial cotangent
@@ -219,11 +234,12 @@ namespace minitensor::detail
 			Tensor step_output = TensorAccess::make(step->output);
 
 			// Run the VJP rule for the primitive.
-			std::vector<std::optional<Tensor>> contributions =
-				step->node->primitive().vjp(
-					input_tensors,
-					step_output,
-					step_output_cotangent);
+			const VjpContext context{
+				input_tensors,
+				step_output,
+				step_output_cotangent };
+			VjpContributions contributions =
+				(*step->rule)(step->node->primitive(), context);
 
 			if (contributions.size() != inputs.size())
 			{

@@ -6,8 +6,6 @@
 #include <string_view>
 #include <vector>
 
-#include <minitensor/ops/elementwise.hpp>
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
@@ -32,16 +30,4 @@ namespace minitensor::detail
 		return inputs.front();
 	}
 
-	std::vector<std::optional<Tensor>> SignPrimitive::vjp(
-		std::span<const Tensor> inputs,
-		const Tensor&,
-		const Tensor&) const
-	{
-		if (inputs.size() != 1)
-		{
-			throw std::logic_error{ "sign VJP expects 1 input" };
-		}
-		// std::nullopt signals no gradient and the end of propagation.
-		return { std::nullopt };
-	}
 }

@@ -5,7 +5,6 @@
 #include <string_view>
 #include <vector>
 
-#include <minitensor/tensor.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/graph/primitive.hpp"
@@ -24,9 +23,5 @@ namespace minitensor::detail
 			const TensorSpec& input_spec,
 			const Layout& input_layout,
 			const TensorSpec& output_spec) const override;
-		[[nodiscard]] std::vector<std::optional<Tensor>> vjp(
-			std::span<const Tensor> inputs,
-			const Tensor&,
-			const Tensor& output_cotangent) const override;
 	};
 }

@@ -5,7 +5,6 @@
 #include <string_view>
 #include <vector>
 
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
@@ -24,7 +23,6 @@ namespace minitensor::detail
 		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;
 		[[nodiscard]] std::optional<Layout> try_derive_shared_layout(const TensorSpec& input_spec, const Layout& input_layout, const TensorSpec& output_spec) const override;
 		[[nodiscard]] const Shape& shape() const noexcept;
-		[[nodiscard]] std::vector<std::optional<Tensor>> vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const override;
 
 	private:
 		Shape shape_;
