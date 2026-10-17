@@ -20,6 +20,9 @@ namespace minitensor::test
 	class IdentitySpecPrimitive final : public detail::Primitive
 	{
 	public:
+		static constexpr detail::PrimitiveId ID{ 0x80000001 };
+		[[nodiscard]] detail::PrimitiveId id() const noexcept override { return ID; }
+
 		[[nodiscard]] std::string_view name() const noexcept override
 		{
 			return "test_identity";
@@ -38,6 +41,9 @@ namespace minitensor::test
 	class DestructionTrackedPrimitive final : public detail::Primitive
 	{
 	public:
+		static constexpr detail::PrimitiveId ID{ 0x80000002 };
+		[[nodiscard]] detail::PrimitiveId id() const noexcept override { return ID; }
+
 		explicit DestructionTrackedPrimitive(bool& destroyed) noexcept : destroyed_{ destroyed }
 		{
 			destroyed_ = false;
@@ -69,6 +75,9 @@ namespace minitensor::test
 	class IdentityStorageSharingPrimitive final : public detail::Primitive
 	{
 	public:
+		static constexpr detail::PrimitiveId ID{ 0x80000003 };
+		[[nodiscard]] detail::PrimitiveId id() const noexcept override { return ID; }
+
 		[[nodiscard]] std::string_view name() const noexcept override
 		{
 			return "test_identity_storage_sharing";
@@ -101,6 +110,9 @@ namespace minitensor::test
 	class RuleBasedVjpPrimitive final : public detail::Primitive
 	{
 	public:
+		static constexpr detail::PrimitiveId ID{ 0x80000004 };
+		[[nodiscard]] detail::PrimitiveId id() const noexcept override { return ID; }
+
 		using Rule = std::function<std::vector<std::optional<Tensor>>(
 			std::span<const Tensor>, const Tensor&, const Tensor&)>;
 

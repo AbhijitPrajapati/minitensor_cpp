@@ -110,7 +110,7 @@ namespace minitensor::detail
 				{
 					const TensorSpec& output_spec = value->spec();
 					DeviceRuntime& runtime = runtimes_.get(output_spec.device);
-					const KernelKey key{ typeid(node->primitive()), output_spec.device.type() };
+					const KernelKey key{ node->primitive().id(), output_spec.device.type() };
 					kernel = PlannedKernel{ &runtime, kernels_.get(key) };
 				}
 
@@ -189,7 +189,7 @@ namespace minitensor::detail
 	{
 		EvaluationPlanner planner(runtimes_, kernels_);
 		EvaluationPlan plan = planner.build(roots);
-		
+
 		// Each step is executed sequentially after the plan is constructed.
 		for (const PlannedStep& step : plan)
 		{

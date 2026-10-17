@@ -1,7 +1,6 @@
 #include <minitensor/types.hpp>
 
 #include <array>
-#include <typeindex>
 
 #include <gtest/gtest.h>
 
@@ -19,6 +18,8 @@
 #include "tensor/primitives/elementwise/logarithm.hpp"
 #include "tensor/primitives/elementwise/multiply.hpp"
 #include "tensor/primitives/elementwise/negate.hpp"
+#include "tensor/primitives/elementwise/logaddexp.hpp"
+#include "tensor/primitives/elementwise/sigmoid.hpp"
 #include "tensor/primitives/elementwise/sign.hpp"
 #include "tensor/primitives/elementwise/square_root.hpp"
 #include "tensor/primitives/elementwise/subtract.hpp"
@@ -37,39 +38,41 @@ namespace minitensor::test
 	{
 		detail::KernelRegistry registry;
 		detail::cpu::register_kernels(registry);
-		const std::array<std::type_index, 22> primitive_types{
-			typeid(detail::FullPrimitive),
-			typeid(detail::UniformPrimitive),
-			typeid(detail::NormalPrimitive),
-			typeid(detail::AbsoluteValuePrimitive),
-			typeid(detail::SignPrimitive),
-			typeid(detail::NegatePrimitive),
-			typeid(detail::ExponentialPrimitive),
-			typeid(detail::LogarithmPrimitive),
-			typeid(detail::SquareRootPrimitive),
-			typeid(detail::HyperbolicTangentPrimitive),
-			typeid(detail::AddPrimitive),
-			typeid(detail::SubtractPrimitive),
-			typeid(detail::MultiplyPrimitive),
-			typeid(detail::DividePrimitive),
-			typeid(detail::ContiguousPrimitive),
-			typeid(detail::ReshapePrimitive),
-			typeid(detail::ConcatenatePrimitive),
-			typeid(detail::BasicIndexScatterPrimitive),
-			typeid(detail::GatherPrimitive),
-			typeid(detail::GatherScatterAddPrimitive),
-			typeid(detail::SumPrimitive),
-			typeid(detail::LogSumExpPrimitive)
+		const std::array<detail::PrimitiveId, 24> primitive_ids{
+			detail::FullPrimitive::ID,
+			detail::UniformPrimitive::ID,
+			detail::NormalPrimitive::ID,
+			detail::AbsoluteValuePrimitive::ID,
+			detail::SignPrimitive::ID,
+			detail::NegatePrimitive::ID,
+			detail::ExponentialPrimitive::ID,
+			detail::LogarithmPrimitive::ID,
+			detail::SquareRootPrimitive::ID,
+			detail::HyperbolicTangentPrimitive::ID,
+			detail::SigmoidPrimitive::ID,
+			detail::AddPrimitive::ID,
+			detail::SubtractPrimitive::ID,
+			detail::MultiplyPrimitive::ID,
+			detail::DividePrimitive::ID,
+			detail::LogAddExpPrimitive::ID,
+			detail::ContiguousPrimitive::ID,
+			detail::ReshapePrimitive::ID,
+			detail::ConcatenatePrimitive::ID,
+			detail::BasicIndexScatterPrimitive::ID,
+			detail::GatherPrimitive::ID,
+			detail::GatherScatterAddPrimitive::ID,
+			detail::SumPrimitive::ID,
+			detail::LogSumExpPrimitive::ID
 		};
 
-		for (const std::type_index primitive_type : primitive_types)
+		for (const detail::PrimitiveId primitive_id : primitive_ids)
 		{
 			EXPECT_TRUE(registry.contains(
-				detail::KernelKey{ primitive_type, DeviceType::Cpu }))
-				<< primitive_type.name();
+				detail::KernelKey{ primitive_id, DeviceType::Cpu }))
+				<< primitive_id.value();
 		}
 
 		EXPECT_TRUE(registry.contains(detail::KernelKey{
-			typeid(detail::MatmulPrimitive), DeviceType::Cpu }));
+			detail::MatmulPrimitive::ID, DeviceType::Cpu }));
 	}
 }

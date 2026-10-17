@@ -16,7 +16,7 @@
 
 #include "tensor/core/axis.hpp"
 #include "tensor/core/tensor_spec.hpp"
-#include "tensor/ops/apply_primitive.hpp"
+#include "tensor/apply_operation.hpp"
 #include "tensor/storage/layout.hpp"
 
 namespace minitensor::detail
@@ -267,7 +267,7 @@ namespace minitensor::detail
 			throw std::logic_error{ "basic index primitive VJP expects 1 input" };
 		}
 
-		return { apply_primitive(
+		return { apply_operation(
 			std::make_unique<BasicIndexScatterPrimitive>(parameters_),
 			output_cotangent) };
 	}
@@ -313,7 +313,7 @@ namespace minitensor::detail
 			throw std::logic_error{ "basic index scatter VJP expects 1 input" };
 		}
 
-		return { apply_primitive(
+		return { apply_operation(
 			std::make_unique<BasicIndexPrimitive>(parameters_),
 			output_cotangent) };
 	}

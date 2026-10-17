@@ -43,7 +43,7 @@ namespace minitensor::test
 		detail::KernelRegistry registry;
 		detail::cpu::register_kernels(registry);
 		detail::cpu::CpuRuntime runtime;
-		const detail::KernelFn& kernel = registry.get({ typeid(detail::UniformPrimitive), DeviceType::Cpu });
+		const detail::KernelFn& kernel = registry.get({ detail::UniformPrimitive::ID, DeviceType::Cpu });
 		const detail::TensorSpec spec{ Shape{5}, DType::Float32, Device::cpu() };
 		const detail::BufferRef buffer = runtime.allocate(7 * sizeof(float));
 		std::fill_n(float_data(buffer), 7, -100.0F);
@@ -77,7 +77,7 @@ namespace minitensor::test
 		detail::KernelRegistry registry;
 		detail::cpu::register_kernels(registry);
 		detail::cpu::CpuRuntime runtime;
-		const detail::KernelFn& kernel = registry.get({ typeid(detail::NormalPrimitive), DeviceType::Cpu });
+		const detail::KernelFn& kernel = registry.get({ detail::NormalPrimitive::ID, DeviceType::Cpu });
 		const detail::TensorSpec spec{ Shape{4096}, DType::Float32, Device::cpu() };
 		const detail::BufferRef buffer = runtime.allocate(spec.shape.numel() * sizeof(float));
 		const detail::Materialization storage{

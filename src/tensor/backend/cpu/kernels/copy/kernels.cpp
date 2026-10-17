@@ -125,22 +125,22 @@ namespace minitensor::detail::cpu
 	void register_copy_kernels(KernelRegistry& registry)
 	{
 		registry.register_kernel(
-			KernelKey{ typeid(ContiguousPrimitive), DeviceType::Cpu },
+			KernelKey{ ContiguousPrimitive::ID, DeviceType::Cpu },
 			run_contiguous);
 		registry.register_kernel(
-			KernelKey{ typeid(ReshapePrimitive), DeviceType::Cpu },
+			KernelKey{ ReshapePrimitive::ID, DeviceType::Cpu },
 			run_contiguous);
 		registry.register_kernel(
-			KernelKey{ typeid(ConcatenatePrimitive), DeviceType::Cpu },
+			KernelKey{ ConcatenatePrimitive::ID, DeviceType::Cpu },
 			run_concatenate);
 		registry.register_kernel(
-			KernelKey{ typeid(BasicIndexScatterPrimitive), DeviceType::Cpu },
+			KernelKey{ BasicIndexScatterPrimitive::ID, DeviceType::Cpu },
 			run_basic_index_scatter);
 		registry.register_kernel(
-			KernelKey{ typeid(GatherPrimitive), DeviceType::Cpu },
+			KernelKey{ GatherPrimitive::ID, DeviceType::Cpu },
 			run_gather);
 		registry.register_kernel(
-			KernelKey{ typeid(GatherScatterAddPrimitive), DeviceType::Cpu },
+			KernelKey{ GatherScatterAddPrimitive::ID, DeviceType::Cpu },
 			run_gather_scatter_add);
 	}
 }

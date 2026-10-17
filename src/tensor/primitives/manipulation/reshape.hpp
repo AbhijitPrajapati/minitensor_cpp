@@ -17,6 +17,8 @@ namespace minitensor::detail
 	class ReshapePrimitive final : public Primitive
 	{
 	public:
+		static constexpr PrimitiveId ID{ 0x0202 };
+		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
 		explicit ReshapePrimitive(Shape shape);
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;

@@ -14,7 +14,6 @@
 
 #include "tensor/core/axis.hpp"
 #include "tensor/core/tensor_spec.hpp"
-#include "tensor/ops/apply_primitive.hpp"
 
 namespace minitensor::detail
 {

@@ -12,7 +12,7 @@
 #include <gtest/gtest.h>
 
 #include "tensor/core/tensor_spec.hpp"
-#include "tensor/graph/apply_operation.hpp"
+#include "tensor/graph/apply_primitive.hpp"
 #include "tensor/graph/fwd.hpp"
 #include "tensor/graph/leaf.hpp"
 #include "tensor/graph/node.hpp"
@@ -151,7 +151,7 @@ namespace minitensor::test
 			std::invalid_argument);
 	}
 
-	TEST(ApplyOperationTest, InfersALazyProducedValue)
+	TEST(ApplyPrimitiveTest, InfersALazyProducedValue)
 	{
 		const detail::TensorSpec spec{ Shape{ 2, 3 }, DType::Float32, Device::cpu(2) };
 		const auto input = std::make_shared<detail::Value>(spec);
@@ -159,7 +159,7 @@ namespace minitensor::test
 		const detail::Primitive* primitive_address = primitive.get();
 		const std::array<detail::ValueRef, 1> inputs{ input };
 
-		const detail::ValueRef output = detail::apply_operation(std::move(primitive), inputs);
+		const detail::ValueRef output = detail::apply_primitive(std::move(primitive), inputs);
 		ASSERT_NE(output, nullptr);
 		EXPECT_EQ(primitive, nullptr);
 		EXPECT_NE(output, input);
@@ -171,10 +171,10 @@ namespace minitensor::test
 		EXPECT_EQ(output->producer()->inputs().front(), input);
 	}
 
-	TEST(ApplyOperationTest, SupportsZeroInputPrimitives)
+	TEST(ApplyPrimitiveTest, SupportsZeroInputPrimitives)
 	{
 		const detail::TensorSpec spec{ Shape{ 4, 1 }, DType::Float32, Device::cpu(3) };
-		const detail::ValueRef output = detail::apply_operation(
+		const detail::ValueRef output = detail::apply_primitive(
 			std::make_unique<detail::FullPrimitive>(spec, 7.25F),
 			std::span<const detail::ValueRef>{});
 
@@ -187,7 +187,7 @@ namespace minitensor::test
 		constexpr std::int64_t integer_value = 9'007'199'254'740'993;
 		const detail::TensorSpec integer_spec{
 			Shape{ 1 }, DType::Int64, Device::cpu() };
-		const detail::ValueRef integer_output = detail::apply_operation(
+		const detail::ValueRef integer_output = detail::apply_primitive(
 			std::make_unique<detail::FullPrimitive>(integer_spec, integer_value),
 			std::span<const detail::ValueRef>{});
 		const auto* integer_primitive =
@@ -199,7 +199,7 @@ namespace minitensor::test
 			integer_value);
 	}
 
-	TEST(ApplyOperationTest, ValidatesPrimitiveAndInputs)
+	TEST(ApplyPrimitiveTest, ValidatesPrimitiveAndInputs)
 	{
 		const detail::TensorSpec spec{ Shape{ 2 }, DType::Float32, Device::cpu() };
 		const auto input = std::make_shared<detail::Value>(spec);
@@ -207,15 +207,15 @@ namespace minitensor::test
 		const std::array<detail::ValueRef, 1> null_inputs{ detail::ValueRef{} };
 
 		EXPECT_THROW(
-			(void)detail::apply_operation(
+			(void)detail::apply_primitive(
 				std::unique_ptr<detail::Primitive>{}, inputs),
 			std::invalid_argument);
 		EXPECT_THROW(
-			(void)detail::apply_operation(
+			(void)detail::apply_primitive(
 				std::make_unique<IdentitySpecPrimitive>(), null_inputs),
 			std::invalid_argument);
 		EXPECT_THROW(
-			(void)detail::apply_operation(
+			(void)detail::apply_primitive(
 				std::make_unique<IdentitySpecPrimitive>(),
 				std::span<const detail::ValueRef>{}),
 			std::invalid_argument);

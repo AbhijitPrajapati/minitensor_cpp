@@ -248,18 +248,18 @@ namespace minitensor::detail::cpu
 
 	void register_elementwise_kernels(KernelRegistry& registry)
 	{
-		registry.register_kernel(KernelKey{ typeid(NegatePrimitive), DeviceType::Cpu }, run_negate);
-		registry.register_kernel(KernelKey{ typeid(ExponentialPrimitive), DeviceType::Cpu }, run_exponential);
-		registry.register_kernel(KernelKey{ typeid(LogarithmPrimitive), DeviceType::Cpu }, run_logarithm);
-		registry.register_kernel(KernelKey{ typeid(SquareRootPrimitive), DeviceType::Cpu }, run_square_root);
-		registry.register_kernel(KernelKey{ typeid(HyperbolicTangentPrimitive), DeviceType::Cpu }, run_hyperbolic_tangent);
-		registry.register_kernel(KernelKey{ typeid(AbsoluteValuePrimitive), DeviceType::Cpu }, run_absolute_value);
-		registry.register_kernel(KernelKey{ typeid(SignPrimitive), DeviceType::Cpu }, run_sign);
-		registry.register_kernel(KernelKey{ typeid(SigmoidPrimitive), DeviceType::Cpu }, run_sigmoid);
-		registry.register_kernel(KernelKey{ typeid(AddPrimitive), DeviceType::Cpu }, run_add);
-		registry.register_kernel(KernelKey{ typeid(SubtractPrimitive), DeviceType::Cpu }, run_subtract);
-		registry.register_kernel(KernelKey{ typeid(MultiplyPrimitive), DeviceType::Cpu }, run_multiply);
-		registry.register_kernel(KernelKey{ typeid(DividePrimitive), DeviceType::Cpu }, run_divide);
-		registry.register_kernel(KernelKey{ typeid(LogAddExpPrimitive), DeviceType::Cpu }, run_logaddexp);
+		registry.register_kernel(KernelKey{ NegatePrimitive::ID, DeviceType::Cpu }, run_negate);
+		registry.register_kernel(KernelKey{ ExponentialPrimitive::ID, DeviceType::Cpu }, run_exponential);
+		registry.register_kernel(KernelKey{ LogarithmPrimitive::ID, DeviceType::Cpu }, run_logarithm);
+		registry.register_kernel(KernelKey{ SquareRootPrimitive::ID, DeviceType::Cpu }, run_square_root);
+		registry.register_kernel(KernelKey{ HyperbolicTangentPrimitive::ID, DeviceType::Cpu }, run_hyperbolic_tangent);
+		registry.register_kernel(KernelKey{ AbsoluteValuePrimitive::ID, DeviceType::Cpu }, run_absolute_value);
+		registry.register_kernel(KernelKey{ SignPrimitive::ID, DeviceType::Cpu }, run_sign);
+		registry.register_kernel(KernelKey{ SigmoidPrimitive::ID, DeviceType::Cpu }, run_sigmoid);
+		registry.register_kernel(KernelKey{ AddPrimitive::ID, DeviceType::Cpu }, run_add);
+		registry.register_kernel(KernelKey{ SubtractPrimitive::ID, DeviceType::Cpu }, run_subtract);
+		registry.register_kernel(KernelKey{ MultiplyPrimitive::ID, DeviceType::Cpu }, run_multiply);
+		registry.register_kernel(KernelKey{ DividePrimitive::ID, DeviceType::Cpu }, run_divide);
+		registry.register_kernel(KernelKey{ LogAddExpPrimitive::ID, DeviceType::Cpu }, run_logaddexp);
 	}
 }

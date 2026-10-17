@@ -51,7 +51,7 @@ namespace minitensor::test
 		detail::cpu::register_kernels(registry);
 		detail::cpu::CpuRuntime runtime;
 		const detail::KernelFn& kernel = registry.get({
-			typeid(detail::FullPrimitive), DeviceType::Cpu });
+			detail::FullPrimitive::ID, DeviceType::Cpu });
 
 		const detail::TensorSpec spec{ Shape{ 2, 3 }, DType::Float32, Device::cpu() };
 		const detail::BufferRef buffer = runtime.allocate(7 * sizeof(float));
@@ -81,7 +81,7 @@ namespace minitensor::test
 		detail::cpu::register_kernels(registry);
 		detail::cpu::CpuRuntime runtime;
 		const detail::KernelFn& kernel = registry.get({
-			typeid(detail::AddPrimitive), DeviceType::Cpu });
+			detail::AddPrimitive::ID, DeviceType::Cpu });
 
 		const detail::TensorSpec lhs_spec{ Shape{ 2, 3 }, DType::Float32, Device::cpu() };
 		const detail::TensorSpec rhs_spec{ Shape{ 1, 3 }, DType::Float32, Device::cpu() };
@@ -119,7 +119,7 @@ namespace minitensor::test
 		detail::cpu::register_kernels(registry);
 		detail::cpu::CpuRuntime runtime;
 		const detail::KernelFn& kernel = registry.get({
-			typeid(detail::ReshapePrimitive), DeviceType::Cpu });
+			detail::ReshapePrimitive::ID, DeviceType::Cpu });
 
 		const detail::TensorSpec input_spec{ Shape{ 2, 3 }, DType::Float32, Device::cpu() };
 		const detail::TensorSpec output_spec{ Shape{ 3, 2 }, DType::Float32, Device::cpu() };
@@ -153,7 +153,7 @@ namespace minitensor::test
 		detail::cpu::register_kernels(registry);
 		detail::cpu::CpuRuntime runtime;
 		const detail::KernelFn& kernel = registry.get({
-			typeid(detail::ConcatenatePrimitive), DeviceType::Cpu });
+			detail::ConcatenatePrimitive::ID, DeviceType::Cpu });
 
 		const detail::TensorSpec column_spec{ Shape{ 2, 1 }, DType::Float32, Device::cpu() };
 		const detail::TensorSpec empty_spec{ Shape{ 2, 0 }, DType::Float32, Device::cpu() };
@@ -196,7 +196,7 @@ namespace minitensor::test
 		detail::cpu::register_kernels(registry);
 		detail::cpu::CpuRuntime runtime;
 		const detail::KernelFn& kernel = registry.get({
-			typeid(detail::BasicIndexScatterPrimitive), DeviceType::Cpu });
+			detail::BasicIndexScatterPrimitive::ID, DeviceType::Cpu });
 
 		const detail::TensorSpec input_spec{ Shape{ 2, 3 }, DType::Float32, Device::cpu() };
 		const detail::TensorSpec output_spec{ Shape{ 2, 5 }, DType::Float32, Device::cpu() };
@@ -236,7 +236,7 @@ namespace minitensor::test
 		detail::cpu::register_kernels(registry);
 		detail::cpu::CpuRuntime runtime;
 		const detail::KernelFn& kernel = registry.get({
-			typeid(detail::BasicIndexScatterPrimitive), DeviceType::Cpu });
+			detail::BasicIndexScatterPrimitive::ID, DeviceType::Cpu });
 
 		const detail::TensorSpec input_spec{ Shape{ 2, 2 }, DType::Float32, Device::cpu() };
 		const detail::TensorSpec output_spec{ Shape{ 2, 3, 2 }, DType::Float32, Device::cpu() };

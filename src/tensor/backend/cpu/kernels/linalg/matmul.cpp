@@ -287,7 +287,7 @@ namespace minitensor::detail::cpu
 	void register_linalg_kernels(KernelRegistry& registry)
 	{
 		registry.register_kernel(
-			KernelKey{ typeid(MatmulPrimitive), DeviceType::Cpu },
+			KernelKey{ MatmulPrimitive::ID, DeviceType::Cpu },
 			run_matmul);
 	}
 }

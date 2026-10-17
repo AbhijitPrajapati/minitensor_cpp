@@ -15,7 +15,7 @@
 
 #include "tensor/autograd/engine.hpp"
 #include "tensor/core/tensor_spec.hpp"
-#include "tensor/graph/apply_operation.hpp"
+#include "tensor/apply_operation.hpp"
 #include "tensor/graph/fwd.hpp"
 #include "tensor/graph/value.hpp"
 #include "tensor/tensor_access.hpp"
@@ -31,16 +31,9 @@ namespace minitensor::test
 			detail::TensorSpec output_spec,
 			RuleBasedVjpPrimitive::Rule rule)
 		{
-			std::vector<detail::ValueRef> values;
-			values.reserve(inputs.size());
-			for (const Tensor& input : inputs)
-			{
-				values.push_back(detail::TensorAccess::value(input));
-			}
-			return detail::TensorAccess::make(detail::apply_operation(
-				std::make_unique<RuleBasedVjpPrimitive>(
-					inputs.size(), std::move(output_spec), std::move(rule)),
-				values));
+			return detail::apply_operation(std::make_unique<RuleBasedVjpPrimitive>(
+				inputs.size(), std::move(output_spec), std::move(rule)),
+				inputs);
 		}
 	}
 
@@ -199,14 +192,14 @@ namespace minitensor::test
 		const Tensor seed = full(Shape{ 2 }, 1.0F);
 		EXPECT_THROW(
 			(void)detail::reverse_vjp(
-				detail::ValueRef{}, std::span<const detail::ValueRef>{}, seed),
+			detail::ValueRef{}, std::span<const detail::ValueRef>{}, seed),
 			std::invalid_argument);
 
 		const Tensor output = full(Shape{ 2 }, 1.0F);
 		const std::array<detail::ValueRef, 1> null_targets{ detail::ValueRef{} };
 		EXPECT_THROW(
 			(void)detail::reverse_vjp(
-				detail::TensorAccess::value(output), null_targets, seed),
+			detail::TensorAccess::value(output), null_targets, seed),
 			std::invalid_argument);
 	}
 
@@ -227,7 +220,7 @@ namespace minitensor::test
 			});
 		EXPECT_THROW(
 			(void)detail::reverse_vjp(
-				detail::TensorAccess::value(wrong_count), targets, seed),
+			detail::TensorAccess::value(wrong_count), targets, seed),
 			std::logic_error);
 
 		const Tensor wrong_spec = apply_vjp_rule(
@@ -239,14 +232,12 @@ namespace minitensor::test
 			});
 		EXPECT_THROW(
 			(void)detail::reverse_vjp(
-				detail::TensorAccess::value(wrong_spec), targets, seed),
+			detail::TensorAccess::value(wrong_spec), targets, seed),
 			std::logic_error);
 
-		const std::array<detail::ValueRef, 1> values{ detail::TensorAccess::value(source) };
-		const detail::ValueRef no_rule = detail::apply_operation(
-			std::make_unique<IdentitySpecPrimitive>(), values);
+		const Tensor no_rule = detail::apply_operation(std::make_unique<IdentitySpecPrimitive>(), source);
 		EXPECT_THROW(
-			(void)detail::reverse_vjp(no_rule, targets, seed),
+			(void)detail::reverse_vjp(detail::TensorAccess::value(no_rule), targets, seed),
 			std::logic_error);
 	}
 }

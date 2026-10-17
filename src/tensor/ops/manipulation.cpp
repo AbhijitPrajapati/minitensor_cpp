@@ -15,8 +15,8 @@
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
-#include "apply_primitive.hpp"
 #include "tensor/core/axis.hpp"
+#include "tensor/apply_operation.hpp"
 #include "tensor/primitives/manipulation/basic_index.hpp"
 #include "tensor/primitives/manipulation/broadcast_to.hpp"
 #include "tensor/primitives/manipulation/concatenate.hpp"
@@ -58,13 +58,13 @@ namespace minitensor
 
 	Tensor contiguous(const Tensor& input)
 	{
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::ContiguousPrimitive>(), input);
 	}
 
 	Tensor permute(const Tensor& input, std::span<const Axis> permutation)
 	{
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::PermutePrimitive>(permutation, input.rank()), input);
 	}
 
@@ -103,7 +103,7 @@ namespace minitensor
 
 	Tensor reshape(const Tensor& input, Shape shape)
 	{
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::ReshapePrimitive>(std::move(shape)), input);
 	}
 
@@ -223,7 +223,7 @@ namespace minitensor
 
 	Tensor broadcast_to(const Tensor& input, Shape shape)
 	{
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::BroadcastToPrimitive>(std::move(shape)), input);
 	}
 
@@ -237,7 +237,7 @@ namespace minitensor
 		{
 			return inputs.front();
 		}
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::ConcatenatePrimitive>(axis, inputs.front().rank()), inputs);
 	}
 
@@ -254,7 +254,7 @@ namespace minitensor
 		Extent step)
 	{
 		auto parameters = detail::BasicIndexParameters::for_slice(axis, start, stop, step, input.shape());
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::BasicIndexPrimitive>(std::move(parameters)),
 			input);
 	}
@@ -262,14 +262,14 @@ namespace minitensor
 	Tensor select(const Tensor& input, Axis axis, Extent index)
 	{
 		auto parameters = detail::BasicIndexParameters::for_select(axis, index, input.shape());
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::BasicIndexPrimitive>(std::move(parameters)),
 			input);
 	}
 
 	Tensor gather(const Tensor& source, Axis axis, const Tensor& indices)
 	{
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::GatherPrimitive>(axis, source.rank()),
 			source, indices);
 	}

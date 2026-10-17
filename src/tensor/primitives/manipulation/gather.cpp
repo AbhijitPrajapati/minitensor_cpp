@@ -13,7 +13,7 @@
 
 #include "tensor/core/axis.hpp"
 #include "tensor/core/tensor_spec.hpp"
-#include "tensor/ops/apply_primitive.hpp"
+#include "tensor/apply_operation.hpp"
 
 namespace minitensor::detail
 {
@@ -83,7 +83,7 @@ namespace minitensor::detail
 			throw std::logic_error{ "gather VJP expects 2 inputs" };
 		}
 
-		return { apply_primitive(
+		return { apply_operation(
 				std::make_unique<GatherScatterAddPrimitive>(
 					inputs[0].shape(),
 					axis_),
@@ -178,7 +178,7 @@ namespace minitensor::detail
 			throw std::logic_error{ "gather scatter add VJP expects 2 inputs" };
 		}
 
-		return { apply_primitive(
+		return { apply_operation(
 				std::make_unique<GatherPrimitive>(
 					static_cast<Axis>(axis_),
 					target_shape_.rank()),

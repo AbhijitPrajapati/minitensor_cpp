@@ -16,6 +16,8 @@ namespace minitensor::detail
 	class UniformPrimitive final : public Primitive
 	{
 	public:
+		static constexpr PrimitiveId ID{ 0x0002 };
+		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
 		explicit UniformPrimitive(TensorSpec output_spec, float low, float high, RandomKey key);
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;

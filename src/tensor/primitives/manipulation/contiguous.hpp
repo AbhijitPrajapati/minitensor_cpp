@@ -16,6 +16,8 @@ namespace minitensor::detail
 	class ContiguousPrimitive final : public Primitive
 	{
 	public:
+		static constexpr PrimitiveId ID{ 0x0201 };
+		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;
 		[[nodiscard]] std::optional<Layout> try_derive_shared_layout(

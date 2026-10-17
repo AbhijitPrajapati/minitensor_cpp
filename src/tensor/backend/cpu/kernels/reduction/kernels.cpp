@@ -68,10 +68,10 @@ namespace minitensor::detail::cpu
 	void register_reduction_kernels(KernelRegistry& registry)
 	{
 		registry.register_kernel(
-			KernelKey{ typeid(SumPrimitive), DeviceType::Cpu },
+			KernelKey{ SumPrimitive::ID, DeviceType::Cpu },
 			run_sum);
 		registry.register_kernel(
-			KernelKey{ typeid(LogSumExpPrimitive), DeviceType::Cpu },
+			KernelKey{ LogSumExpPrimitive::ID, DeviceType::Cpu },
 			run_logsumexp);
 	}
 }
