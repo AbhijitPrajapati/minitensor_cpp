@@ -17,4 +17,9 @@ namespace minitensor::nn
 	{
 		return learning_rate_;
 	}
+
+	SGD::State leafify_optimizer_state(SGD::State state) noexcept
+	{
+		return state;
+	}
 }
