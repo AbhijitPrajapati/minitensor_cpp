@@ -17,6 +17,8 @@ namespace minitensor::detail
 	class BroadcastToPrimitive final : public Primitive
 	{
 	public:
+		static constexpr PrimitiveId ID{ 0x0204 };
+		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
 		explicit BroadcastToPrimitive(Shape shape);
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;

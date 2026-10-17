@@ -15,7 +15,7 @@ namespace minitensor::nn
 	{
 	public:
 		// SGD has no state.
-		struct State final
+		class State final
 		{};
 
 		explicit SGD(float learning_rate);

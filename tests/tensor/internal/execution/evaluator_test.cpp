@@ -5,7 +5,6 @@
 #include <memory>
 #include <span>
 #include <stdexcept>
-#include <typeinfo>
 #include <utility>
 #include <vector>
 
@@ -17,7 +16,7 @@
 #include "tensor/dispatch/tensor_view.hpp"
 #include "tensor/execution/evaluator.hpp"
 #include "tensor/execution/runtime_registry.hpp"
-#include "tensor/graph/apply_operation.hpp"
+#include "tensor/graph/apply_primitive.hpp"
 #include "tensor/graph/node.hpp"
 #include "tensor/graph/value.hpp"
 #include "tensor/storage/buffer.hpp"
@@ -44,7 +43,7 @@ namespace minitensor::test
 		detail::ValueRef apply_identity(const detail::ValueRef& input)
 		{
 			const std::array<detail::ValueRef, 1> inputs{ input };
-			return detail::apply_operation(
+			return detail::apply_primitive(
 				std::make_unique<IdentitySpecPrimitive>(), inputs);
 		}
 	}
@@ -88,7 +87,7 @@ namespace minitensor::test
 
 		const detail::TensorSpec spec_{ Shape{ 2, 3 }, DType::Float32, Device::cpu() };
 		const detail::KernelKey identity_key_{
-			typeid(IdentitySpecPrimitive), DeviceType::Cpu };
+			IdentitySpecPrimitive::ID, DeviceType::Cpu };
 		detail::RuntimeRegistry runtimes_;
 		detail::KernelRegistry kernels_;
 		TestRuntime* runtime_{ nullptr };
@@ -144,7 +143,7 @@ namespace minitensor::test
 		input->materialize(detail::Materialization{
 			make_test_buffer(6 * sizeof(float)), detail::Layout{ { 1, 2 } } });
 		const std::array<detail::ValueRef, 1> inputs{ input };
-		const detail::ValueRef output = detail::apply_operation(
+		const detail::ValueRef output = detail::apply_primitive(
 			std::make_unique<IdentityStorageSharingPrimitive>(), inputs);
 
 		detail::RuntimeRegistry runtimes;
@@ -178,7 +177,7 @@ namespace minitensor::test
 		detail::RuntimeRegistry runtimes;
 		detail::KernelRegistry kernels;
 		kernels.register_kernel(
-			{ typeid(IdentitySpecPrimitive), DeviceType::Cpu },
+			{ IdentitySpecPrimitive::ID, DeviceType::Cpu },
 			[](detail::DeviceRuntime&, const detail::Primitive&,
 				std::span<const detail::TensorView>, detail::MutableTensorView) {});
 
@@ -196,7 +195,7 @@ namespace minitensor::test
 		const detail::ValueRef valid = apply_identity(leaf);
 		const std::array<detail::ValueRef, 1> inputs{ leaf };
 		bool destroyed = false;
-		const detail::ValueRef unavailable = detail::apply_operation(
+		const detail::ValueRef unavailable = detail::apply_primitive(
 			std::make_unique<DestructionTrackedPrimitive>(destroyed), inputs);
 
 		detail::RuntimeRegistry runtimes;
@@ -206,7 +205,7 @@ namespace minitensor::test
 		detail::KernelRegistry kernels;
 		std::size_t calls = 0;
 		kernels.register_kernel(
-			{ typeid(IdentitySpecPrimitive), DeviceType::Cpu },
+			{ IdentitySpecPrimitive::ID, DeviceType::Cpu },
 			[&calls](detail::DeviceRuntime&, const detail::Primitive&,
 				std::span<const detail::TensorView>, detail::MutableTensorView)
 			{
@@ -232,7 +231,7 @@ namespace minitensor::test
 		runtimes.register_runtime(std::move(runtime));
 		detail::KernelRegistry kernels;
 		kernels.register_kernel(
-			{ typeid(IdentitySpecPrimitive), DeviceType::Cpu },
+			{ IdentitySpecPrimitive::ID, DeviceType::Cpu },
 			[](detail::DeviceRuntime&, const detail::Primitive&,
 				std::span<const detail::TensorView>, detail::MutableTensorView)
 			{

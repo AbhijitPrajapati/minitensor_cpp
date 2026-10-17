@@ -2,7 +2,6 @@
 
 #include <span>
 #include <stdexcept>
-#include <typeinfo>
 #include <utility>
 
 #include <gtest/gtest.h>
@@ -21,11 +20,11 @@
 
 namespace minitensor::test
 {
-	TEST(KernelKeyTest, IncludesPrimitiveTypeAndDeviceType)
+	TEST(KernelKeyTest, IncludesPrimitiveIdAndDeviceType)
 	{
-		const detail::KernelKey key{ typeid(IdentitySpecPrimitive), DeviceType::Cpu };
-		const detail::KernelKey equal{ typeid(IdentitySpecPrimitive), DeviceType::Cpu };
-		const detail::KernelKey other{ typeid(DestructionTrackedPrimitive), DeviceType::Cpu };
+		const detail::KernelKey key{ IdentitySpecPrimitive::ID, DeviceType::Cpu };
+		const detail::KernelKey equal{ IdentitySpecPrimitive::ID, DeviceType::Cpu };
+		const detail::KernelKey other{ DestructionTrackedPrimitive::ID, DeviceType::Cpu };
 		EXPECT_EQ(key, equal);
 		EXPECT_NE(key, other);
 	}
@@ -33,7 +32,7 @@ namespace minitensor::test
 	TEST(KernelRegistryTest, RegistersAndRetrievesKernels)
 	{
 		detail::KernelRegistry registry;
-		const detail::KernelKey key{ typeid(IdentitySpecPrimitive), DeviceType::Cpu };
+		const detail::KernelKey key{ IdentitySpecPrimitive::ID, DeviceType::Cpu };
 		int calls = 0;
 		registry.register_kernel(
 			key,
@@ -59,7 +58,7 @@ namespace minitensor::test
 	TEST(KernelRegistryTest, RejectsMissingEmptyAndDuplicateEntries)
 	{
 		detail::KernelRegistry registry;
-		const detail::KernelKey key{ typeid(IdentitySpecPrimitive), DeviceType::Cpu };
+		const detail::KernelKey key{ IdentitySpecPrimitive::ID, DeviceType::Cpu };
 		EXPECT_FALSE(registry.contains(key));
 		EXPECT_THROW((void)registry.get(key), std::runtime_error);
 		EXPECT_THROW(

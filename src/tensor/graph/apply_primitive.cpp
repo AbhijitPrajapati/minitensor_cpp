@@ -1,4 +1,4 @@
-#include "apply_operation.hpp"
+#include "apply_primitive.hpp"
 
 #include <memory>
 #include <span>
@@ -14,12 +14,11 @@
 
 namespace minitensor::detail
 {
-	// This function creates a Node and Value in the graph by applying a given primitive.
-	ValueRef apply_operation(std::unique_ptr<Primitive> primitive, std::span<const ValueRef> inputs)
+	ValueRef apply_primitive(std::unique_ptr<Primitive> primitive, std::span<const ValueRef> inputs)
 	{
 		if (!primitive)
 		{
-			throw std::invalid_argument{ "apply_operation requires a primitive" };
+			throw std::invalid_argument{ "apply_primitive requires a primitive" };
 		}
 
 		std::vector<TensorSpec> input_specs;
@@ -32,16 +31,17 @@ namespace minitensor::detail
 		{
 			if (!input)
 			{
-				throw std::invalid_argument{ "operation inputs cannot be null" };
+				throw std::invalid_argument{ "primitive inputs cannot be null" };
 			}
+
 			input_specs.push_back(input->spec());
 			owned_inputs.push_back(input);
 		}
 
 		TensorSpec output_spec = primitive->infer(input_specs);
-
-		const NodeRef node = std::make_shared<Node>(std::move(primitive), std::move(owned_inputs));
-		const ValueRef output = std::make_shared<Value>(std::move(output_spec), std::move(node));
-		return output;
+		const NodeRef node = std::make_shared<Node>(
+			std::move(primitive), std::move(owned_inputs));
+		return std::make_shared<Value>(
+			std::move(output_spec), std::move(node));
 	}
 }

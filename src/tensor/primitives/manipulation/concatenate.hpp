@@ -16,6 +16,8 @@ namespace minitensor::detail
 	class ConcatenatePrimitive final : public Primitive
 	{
 	public:
+		static constexpr PrimitiveId ID{ 0x0205 };
+		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
 		explicit ConcatenatePrimitive(Axis axis, Shape::size_type input_rank);
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;

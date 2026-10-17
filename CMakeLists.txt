@@ -18,7 +18,8 @@ target_sources(
         src/tensor/core/shape_inference.cpp
         src/tensor/core/dense_size.cpp
         src/tensor/core/axis.cpp
-        src/tensor/graph/apply_operation.cpp
+        src/tensor/apply_operation.cpp
+        src/tensor/graph/apply_primitive.cpp
         src/tensor/graph/node.cpp
         src/tensor/graph/value.cpp
         src/tensor/graph/leaf.cpp
@@ -197,6 +198,7 @@ if(BUILD_TESTING)
         tests/tensor/internal/core/shape_inference_test.cpp
         tests/tensor/internal/graph/graph_test.cpp
         tests/tensor/internal/graph/ownership_test.cpp
+        tests/tensor/internal/graph/primitive_id_test.cpp
         tests/tensor/internal/storage/layout_test.cpp
         tests/tensor/internal/storage/materialization_test.cpp
         tests/tensor/internal/dispatch/kernel_registry_test.cpp

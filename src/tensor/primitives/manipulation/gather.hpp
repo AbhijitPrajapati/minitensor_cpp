@@ -16,6 +16,8 @@ namespace minitensor::detail
 	class GatherPrimitive final : public Primitive
 	{
 	public:
+		static constexpr PrimitiveId ID{ 0x0208 };
+		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
 		GatherPrimitive(Axis axis, Shape::size_type input_rank);
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] Shape::size_type axis() const noexcept;
@@ -31,6 +33,8 @@ namespace minitensor::detail
 	class GatherScatterAddPrimitive final : public Primitive
 	{
 	public:
+		static constexpr PrimitiveId ID{ 0x0209 };
+		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
 		GatherScatterAddPrimitive(Shape target_shape, Shape::size_type axis);
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] Shape::size_type axis() const noexcept;

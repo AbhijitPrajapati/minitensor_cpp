@@ -3,13 +3,13 @@
 #include <memory>
 #include <utility>
 
-#include <minitensor/random.hpp>
 #include <minitensor/host_scalar.hpp>
+#include <minitensor/random.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
-#include "apply_primitive.hpp"
 #include "tensor/core/tensor_spec.hpp"
+#include "tensor/apply_operation.hpp"
 #include "tensor/primitives/creation/full.hpp"
 #include "tensor/primitives/creation/normal.hpp"
 #include "tensor/primitives/creation/uniform.hpp"
@@ -31,7 +31,7 @@ namespace minitensor
 
 	Tensor full(Shape shape, HostScalar value, TensorOptions options)
 	{
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::FullPrimitive>(output_spec(std::move(shape), options), value));
 	}
 
@@ -78,14 +78,14 @@ namespace minitensor
 	Tensor uniform(Shape shape, float low, float high, RandomKey key, TensorOptions options)
 	{
 		detail::TensorSpec spec = output_spec(std::move(shape), options);
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::UniformPrimitive>(std::move(spec), low, high, key));
 	}
 
 	Tensor normal(Shape shape, float mean, float std_dev, RandomKey key, TensorOptions options)
 	{
 		detail::TensorSpec spec = output_spec(std::move(shape), options);
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::NormalPrimitive>(std::move(spec), mean, std_dev, key));
 	}
 

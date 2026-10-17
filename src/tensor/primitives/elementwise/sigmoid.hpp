@@ -15,6 +15,8 @@ namespace minitensor::detail
 	class SigmoidPrimitive final : public Primitive
 	{
 	public:
+		static constexpr PrimitiveId ID{ 0x0108 };
+		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;
 		[[nodiscard]] std::vector<std::optional<Tensor>> vjp(

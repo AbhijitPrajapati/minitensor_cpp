@@ -17,6 +17,8 @@ namespace minitensor::detail
 	class PermutePrimitive final : public Primitive
 	{
 	public:
+		static constexpr PrimitiveId ID{ 0x0203 };
+		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
 		explicit PermutePrimitive(std::span<const Axis> permutation, Shape::size_type input_rank);
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] bool requires_kernel_support() const noexcept override;

@@ -8,5 +8,5 @@
 namespace minitensor::detail
 {
 	class Primitive;
-	[[nodiscard]] ValueRef apply_operation(std::unique_ptr<Primitive> primitive, std::span<const ValueRef> inputs);
+	[[nodiscard]] ValueRef apply_primitive(std::unique_ptr<Primitive> primitive, std::span<const ValueRef> inputs);
 }

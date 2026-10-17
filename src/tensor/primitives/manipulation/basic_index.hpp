@@ -66,6 +66,8 @@ namespace minitensor::detail
 	class BasicIndexPrimitive final : public Primitive
 	{
 	public:
+		static constexpr PrimitiveId ID{ 0x0206 };
+		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
 		explicit BasicIndexPrimitive(BasicIndexParameters parameters);
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] bool requires_kernel_support() const noexcept override;
@@ -82,6 +84,8 @@ namespace minitensor::detail
 	class BasicIndexScatterPrimitive final : public Primitive
 	{
 	public:
+		static constexpr PrimitiveId ID{ 0x0207 };
+		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
 		explicit BasicIndexScatterPrimitive(BasicIndexParameters parameters);
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;

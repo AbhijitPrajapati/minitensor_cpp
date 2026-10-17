@@ -16,6 +16,8 @@ namespace minitensor::detail
 	class NormalPrimitive final : public Primitive
 	{
 	public:
+		static constexpr PrimitiveId ID{ 0x0003 };
+		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
 		explicit NormalPrimitive(TensorSpec output_spec, float mean, float std_dev, RandomKey key);
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;

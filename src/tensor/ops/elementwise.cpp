@@ -7,7 +7,7 @@
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
-#include "apply_primitive.hpp"
+#include "tensor/apply_operation.hpp"
 #include "tensor/primitives/elementwise/absolute_value.hpp"
 #include "tensor/primitives/elementwise/add.hpp"
 #include "tensor/primitives/elementwise/divide.hpp"
@@ -34,7 +34,7 @@ namespace minitensor
 
 	Tensor operator+(const Tensor& lhs, const Tensor& rhs)
 	{
-		return detail::apply_primitive(std::make_unique<detail::AddPrimitive>(), lhs, rhs);
+		return detail::apply_operation(std::make_unique<detail::AddPrimitive>(), lhs, rhs);
 	}
 
 	Tensor operator+(const Tensor& tensor, HostScalar scalar)
@@ -49,7 +49,7 @@ namespace minitensor
 
 	Tensor operator-(const Tensor& lhs, const Tensor& rhs)
 	{
-		return detail::apply_primitive(std::make_unique<detail::SubtractPrimitive>(), lhs, rhs);
+		return detail::apply_operation(std::make_unique<detail::SubtractPrimitive>(), lhs, rhs);
 	}
 
 	Tensor operator-(const Tensor& tensor, HostScalar scalar)
@@ -64,7 +64,7 @@ namespace minitensor
 
 	Tensor operator*(const Tensor& lhs, const Tensor& rhs)
 	{
-		return detail::apply_primitive(std::make_unique<detail::MultiplyPrimitive>(), lhs, rhs);
+		return detail::apply_operation(std::make_unique<detail::MultiplyPrimitive>(), lhs, rhs);
 	}
 
 	Tensor operator*(const Tensor& tensor, HostScalar scalar)
@@ -79,7 +79,7 @@ namespace minitensor
 
 	Tensor operator/(const Tensor& lhs, const Tensor& rhs)
 	{
-		return detail::apply_primitive(std::make_unique<detail::DividePrimitive>(), lhs, rhs);
+		return detail::apply_operation(std::make_unique<detail::DividePrimitive>(), lhs, rhs);
 	}
 
 	Tensor operator/(const Tensor& tensor, HostScalar scalar)
@@ -94,7 +94,7 @@ namespace minitensor
 
 	Tensor logaddexp(const Tensor& lhs, const Tensor& rhs)
 	{
-		return detail::apply_primitive(std::make_unique<detail::LogAddExpPrimitive>(), lhs, rhs);
+		return detail::apply_operation(std::make_unique<detail::LogAddExpPrimitive>(), lhs, rhs);
 	}
 
 	Tensor logaddexp(const Tensor& tensor, HostScalar scalar)
@@ -109,45 +109,45 @@ namespace minitensor
 
 	Tensor operator-(const Tensor& input)
 	{
-		return detail::apply_primitive(std::make_unique<detail::NegatePrimitive>(), input);
+		return detail::apply_operation(std::make_unique<detail::NegatePrimitive>(), input);
 	}
 
 	Tensor exp(const Tensor& input)
 	{
-		return detail::apply_primitive(std::make_unique<detail::ExponentialPrimitive>(), input);
+		return detail::apply_operation(std::make_unique<detail::ExponentialPrimitive>(), input);
 	}
 
 	Tensor log(const Tensor& input)
 	{
-		return detail::apply_primitive(std::make_unique<detail::LogarithmPrimitive>(), input);
+		return detail::apply_operation(std::make_unique<detail::LogarithmPrimitive>(), input);
 	}
 
 	Tensor sqrt(const Tensor& input)
 	{
-		return detail::apply_primitive(std::make_unique<detail::SquareRootPrimitive>(), input);
+		return detail::apply_operation(std::make_unique<detail::SquareRootPrimitive>(), input);
 	}
 
 	Tensor tanh(const Tensor& input)
 	{
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::HyperbolicTangentPrimitive>(), input);
 	}
 
 	Tensor sign(const Tensor& input)
 	{
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::SignPrimitive>(), input);
 	}
 
 	Tensor abs(const Tensor& input)
 	{
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::AbsoluteValuePrimitive>(), input);
 	}
 
 	Tensor sigmoid(const Tensor& input)
 	{
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::SigmoidPrimitive>(), input);
 	}
 }

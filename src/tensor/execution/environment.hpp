@@ -12,7 +12,7 @@ namespace minitensor::detail
 {
 	class DeviceRuntime;
 
-	// ExecutionEnvironment is a singleton that houses evaluation, as well as kernel/runtime management.
+	// ExecutionEnvironment is a singleton that houses evaluation, as well as device-specific kernel/runtime management.
 	class ExecutionEnvironment final
 	{
 	public:

@@ -1,19 +1,16 @@
 #pragma once
 
-#include <typeindex>
-
 #include <minitensor/types.hpp>
 
 #include "tensor/core/hash.hpp"
+#include "tensor/graph/primitive_id.hpp"
 
 namespace minitensor::detail
 {
-	using PrimitiveTypeId = std::type_index;
-
 	// Each kernel has a unique key.
 	struct KernelKey final
 	{
-		PrimitiveTypeId primitive_type;
+		PrimitiveId primitive_id;
 		DeviceType device_type;
 		friend bool operator==(const KernelKey&, const KernelKey&) = default;
 	};
@@ -22,7 +19,7 @@ namespace minitensor::detail
 	{
 		[[nodiscard]] std::size_t operator()(const KernelKey& key) const noexcept
 		{
-			std::size_t result = key.primitive_type.hash_code();
+			std::size_t result = PrimitiveIdHash{}(key.primitive_id);
 			combine_hash(result, key.device_type);
 			return result;
 		}

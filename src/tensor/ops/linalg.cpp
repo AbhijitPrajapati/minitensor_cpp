@@ -4,14 +4,14 @@
 
 #include <minitensor/tensor.hpp>
 
-#include "apply_primitive.hpp"
+#include "tensor/apply_operation.hpp"
 #include "tensor/primitives/linalg/matmul.hpp"
 
 namespace minitensor
 {
 	Tensor matmul(const Tensor& lhs, const Tensor& rhs)
 	{
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::MatmulPrimitive>(), lhs, rhs);
 	}
 }

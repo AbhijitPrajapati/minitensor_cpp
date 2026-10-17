@@ -16,6 +16,8 @@ namespace minitensor::detail
 	class SumPrimitive final : public Primitive
 	{
 	public:
+		static constexpr PrimitiveId ID{ 0x0301 };
+		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
 		explicit SumPrimitive(std::span<const Axis> axes, Shape::size_type input_rank, bool keep_dim);
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;

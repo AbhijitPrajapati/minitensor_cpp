@@ -11,7 +11,7 @@
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
-#include "apply_primitive.hpp"
+#include "tensor/apply_operation.hpp"
 #include "tensor/core/axis.hpp"
 #include "tensor/primitives/reduction/logsumexp.hpp"
 #include "tensor/primitives/reduction/sum.hpp"
@@ -45,7 +45,7 @@ namespace minitensor
 		{
 			return input;
 		}
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::SumPrimitive>(axes, input.rank(), keep_dim), input);
 	}
 
@@ -91,7 +91,7 @@ namespace minitensor
 		{
 			return input;
 		}
-		return detail::apply_primitive(
+		return detail::apply_operation(
 			std::make_unique<detail::LogSumExpPrimitive>(axes, input.rank(), keep_dim), input);
 	}
 

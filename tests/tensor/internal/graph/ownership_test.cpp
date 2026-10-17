@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "tensor/core/tensor_spec.hpp"
-#include "tensor/graph/apply_operation.hpp"
+#include "tensor/graph/apply_primitive.hpp"
 #include "tensor/graph/fwd.hpp"
 #include "tensor/graph/node.hpp"
 #include "tensor/graph/value.hpp"
@@ -59,11 +59,11 @@ namespace minitensor::test
 		bool second_destroyed = false;
 
 		std::array<detail::ValueRef, 1> first_inputs{ leaf };
-		detail::ValueRef intermediate = detail::apply_operation(
+		detail::ValueRef intermediate = detail::apply_primitive(
 			std::make_unique<DestructionTrackedPrimitive>(first_destroyed),
 			first_inputs);
 		std::array<detail::ValueRef, 1> second_inputs{ intermediate };
-		detail::ValueRef output = detail::apply_operation(
+		detail::ValueRef output = detail::apply_primitive(
 			std::make_unique<DestructionTrackedPrimitive>(second_destroyed),
 			second_inputs);
 
