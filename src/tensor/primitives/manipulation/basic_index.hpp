@@ -6,7 +6,6 @@
 #include <variant>
 #include <vector>
 
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
@@ -73,7 +72,7 @@ namespace minitensor::detail
 		[[nodiscard]] bool requires_kernel_support() const noexcept override;
 		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;
 		[[nodiscard]] std::optional<Layout> try_derive_shared_layout(const TensorSpec&, const Layout& input_layout, const TensorSpec&) const override;
-		[[nodiscard]] std::vector<std::optional<Tensor>> vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const override;
+		[[nodiscard]] const BasicIndexParameters& parameters() const noexcept;
 
 	private:
 		BasicIndexParameters parameters_;
@@ -90,7 +89,6 @@ namespace minitensor::detail
 		[[nodiscard]] std::string_view name() const noexcept override;
 		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;
 		[[nodiscard]] const BasicIndexParameters& parameters() const noexcept;
-		[[nodiscard]] std::vector<std::optional<Tensor>> vjp(std::span<const Tensor> inputs, const Tensor& output, const Tensor& output_cotangent) const override;
 
 	private:
 		BasicIndexParameters parameters_;

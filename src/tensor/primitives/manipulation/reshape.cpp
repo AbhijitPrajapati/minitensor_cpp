@@ -7,8 +7,6 @@
 #include <utility>
 #include <vector>
 
-#include <minitensor/ops/manipulation.hpp>
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
@@ -49,12 +47,4 @@ namespace minitensor::detail
 		return shape_;
 	}
 
-	std::vector<std::optional<Tensor>> ReshapePrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const
-	{
-		if (inputs.size() != 1)
-		{
-			throw std::logic_error{ "reshape VJP expects 1 input" };
-		}
-		return { reshape(output_cotangent, inputs.front().shape()) };
-	}
 }

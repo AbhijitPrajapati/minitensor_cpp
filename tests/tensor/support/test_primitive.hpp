@@ -145,12 +145,9 @@ namespace minitensor::test
 			return output_spec_;
 		}
 
-		[[nodiscard]] std::vector<std::optional<Tensor>> vjp(
-			std::span<const Tensor> inputs,
-			const Tensor& output,
-			const Tensor& output_cotangent) const override
+		[[nodiscard]] const Rule& rule() const noexcept
 		{
-			return rule_(inputs, output, output_cotangent);
+			return rule_;
 		}
 
 	private:

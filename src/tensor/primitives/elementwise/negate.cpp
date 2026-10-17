@@ -6,8 +6,6 @@
 #include <string_view>
 #include <vector>
 
-#include <minitensor/ops/elementwise.hpp>
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
@@ -32,12 +30,4 @@ namespace minitensor::detail
 		return inputs[0];
 	}
 
-	std::vector<std::optional<Tensor>> NegatePrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const
-	{
-		if (inputs.size() != 1)
-		{
-			throw std::logic_error{ "negate VJP expects 1 input" };
-		}
-		return { -output_cotangent };
-	}
 }

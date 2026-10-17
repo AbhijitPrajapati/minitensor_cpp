@@ -7,11 +7,8 @@
 #include <utility>
 #include <vector>
 
-#include <minitensor/ops/elementwise.hpp>
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
-#include "tensor/autograd/reduce_to_shape.hpp"
 #include "tensor/core/shape_inference.hpp"
 #include "tensor/core/tensor_spec.hpp"
 
@@ -49,14 +46,4 @@ namespace minitensor::detail
 		return TensorSpec{ std::move(output_shape), lhs.dtype, lhs.device };
 	}
 
-	std::vector<std::optional<Tensor>> SubtractPrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const
-	{
-		if (inputs.size() != 2)
-		{
-			throw std::logic_error{ "subtract VJP expects 2 inputs" };
-		}
-		return {
-			reduce_to_shape(output_cotangent, inputs[0].shape()),
-			reduce_to_shape(-output_cotangent, inputs[1].shape()) };
-	}
 }

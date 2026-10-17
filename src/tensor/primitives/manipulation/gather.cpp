@@ -1,6 +1,5 @@
 #include "gather.hpp"
 
-#include <memory>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -8,12 +7,10 @@
 #include <utility>
 #include <vector>
 
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "tensor/core/axis.hpp"
 #include "tensor/core/tensor_spec.hpp"
-#include "tensor/apply_operation.hpp"
 
 namespace minitensor::detail
 {
@@ -74,24 +71,6 @@ namespace minitensor::detail
 		}
 
 		return TensorSpec{ indices.shape, source.dtype, source.device };
-	}
-
-	std::vector<std::optional<Tensor>> GatherPrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const
-	{
-		if (inputs.size() != 2)
-		{
-			throw std::logic_error{ "gather VJP expects 2 inputs" };
-		}
-
-		return { apply_operation(
-				std::make_unique<GatherScatterAddPrimitive>(
-					inputs[0].shape(),
-					axis_),
-				output_cotangent,
-				inputs[1]
-			),
-			std::nullopt // Indices have no gradient.
-		};
 	}
 
 	GatherScatterAddPrimitive::GatherScatterAddPrimitive(Shape target_shape, Shape::size_type axis)
@@ -171,21 +150,4 @@ namespace minitensor::detail
 		return TensorSpec{ target_shape_, updates.dtype, updates.device };
 	}
 
-	std::vector<std::optional<Tensor>> GatherScatterAddPrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const
-	{
-		if (inputs.size() != 2)
-		{
-			throw std::logic_error{ "gather scatter add VJP expects 2 inputs" };
-		}
-
-		return { apply_operation(
-				std::make_unique<GatherPrimitive>(
-					static_cast<Axis>(axis_),
-					target_shape_.rank()),
-				output_cotangent,
-				inputs[1]
-			),
-			std::nullopt
-		};
-	}
 }

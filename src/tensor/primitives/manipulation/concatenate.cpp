@@ -8,8 +8,6 @@
 #include <utility>
 #include <vector>
 
-#include <minitensor/ops/manipulation.hpp>
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "tensor/core/axis.hpp"
@@ -96,26 +94,4 @@ namespace minitensor::detail
 		};
 	}
 
-	// The VJP for concatenation involves slicing the output cotangent to 
-	// recover the contributions from each input segment.
-	std::vector<std::optional<Tensor>> ConcatenatePrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const
-	{
-		if (inputs.empty())
-		{
-			throw std::logic_error{ "concatenate VJP expects at least 1 input" };
-		}
-
-		std::vector<std::optional<Tensor>> contributions;
-		contributions.reserve(inputs.size());
-
-		Extent start = 0;
-		for (const Tensor& input : inputs)
-		{
-			const Extent length = input.shape()[axis_];
-			contributions.emplace_back(
-				slice(output_cotangent, axis_, start, start + length, 1));
-			start += length;
-		}
-		return contributions;
-	}
 }

@@ -1,7 +1,6 @@
 #include "basic_index.hpp"
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -11,12 +10,10 @@
 #include <variant>
 #include <vector>
 
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "tensor/core/axis.hpp"
 #include "tensor/core/tensor_spec.hpp"
-#include "tensor/apply_operation.hpp"
 #include "tensor/storage/layout.hpp"
 
 namespace minitensor::detail
@@ -260,16 +257,9 @@ namespace minitensor::detail
 		return parameters_.derive_layout(input_layout);
 	}
 
-	std::vector<std::optional<Tensor>> BasicIndexPrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const
+	const BasicIndexParameters& BasicIndexPrimitive::parameters() const noexcept
 	{
-		if (inputs.size() != 1)
-		{
-			throw std::logic_error{ "basic index primitive VJP expects 1 input" };
-		}
-
-		return { apply_operation(
-			std::make_unique<BasicIndexScatterPrimitive>(parameters_),
-			output_cotangent) };
+		return parameters_;
 	}
 
 	BasicIndexScatterPrimitive::BasicIndexScatterPrimitive(BasicIndexParameters parameters)
@@ -303,18 +293,4 @@ namespace minitensor::detail
 		return parameters_;
 	}
 
-	std::vector<std::optional<Tensor>> BasicIndexScatterPrimitive::vjp(
-		std::span<const Tensor> inputs,
-		const Tensor&,
-		const Tensor& output_cotangent) const
-	{
-		if (inputs.size() != 1)
-		{
-			throw std::logic_error{ "basic index scatter VJP expects 1 input" };
-		}
-
-		return { apply_operation(
-			std::make_unique<BasicIndexPrimitive>(parameters_),
-			output_cotangent) };
-	}
 }

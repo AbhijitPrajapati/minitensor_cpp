@@ -76,6 +76,11 @@ target_sources(
         src/tensor/execution/host_transfer.cpp
         src/tensor/autograd/engine.cpp
         src/tensor/autograd/reduce_to_shape.cpp
+        src/tensor/autograd/vjp_registry.cpp
+        src/tensor/autograd/rules/elementwise.cpp
+        src/tensor/autograd/rules/linalg.cpp
+        src/tensor/autograd/rules/manipulation.cpp
+        src/tensor/autograd/rules/reduction.cpp
         src/tensor/autograd.cpp
         src/nn/parameter.cpp
         src/nn/modules/linear.cpp
@@ -207,6 +212,7 @@ if(BUILD_TESTING)
         tests/tensor/internal/execution/runtime_registry_test.cpp
         tests/tensor/internal/autograd/engine_test.cpp
         tests/tensor/internal/autograd/reduce_to_shape_test.cpp
+        tests/tensor/internal/autograd/vjp_registry_test.cpp
     )
     # Allow inclusion of internal source
     target_include_directories(

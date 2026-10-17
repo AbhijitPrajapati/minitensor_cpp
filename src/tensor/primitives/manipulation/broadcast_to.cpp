@@ -7,10 +7,8 @@
 #include <utility>
 #include <vector>
 
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
-#include "tensor/autograd/reduce_to_shape.hpp"
 #include "tensor/core/shape_inference.hpp"
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/storage/layout.hpp"
@@ -54,12 +52,4 @@ namespace minitensor::detail
 		return false;
 	}
 
-	std::vector<std::optional<Tensor>> BroadcastToPrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const
-	{
-		if (inputs.size() != 1)
-		{
-			throw std::logic_error{ "broadcast_to VJP expects 1 input" };
-		}
-		return { reduce_to_shape(output_cotangent, inputs.front().shape()) };
-	}
 }

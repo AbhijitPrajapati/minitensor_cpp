@@ -8,8 +8,6 @@
 #include <utility>
 #include <vector>
 
-#include <minitensor/ops/manipulation.hpp>
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "tensor/core/axis.hpp"
@@ -99,30 +97,4 @@ namespace minitensor::detail
 		return keep_dim_;
 	}
 
-	std::vector<std::optional<Tensor>> SumPrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const
-	{
-		if (inputs.size() != 1)
-		{
-			throw std::logic_error{ "sum VJP expects 1 input" };
-		}
-
-		const Shape& input_shape = inputs.front().shape();
-		Tensor expanded = output_cotangent;
-		if (!axes_.empty() && !keep_dim_)
-		{
-			// Expand the cotangent to match the input rank.
-			std::vector<Extent> expanded_dimensions(
-				input_shape.dimensions().begin(), input_shape.dimensions().end());
-			for (const Shape::size_type axis : axes_)
-			{
-				expanded_dimensions[axis] = Extent{ 1 };
-			}
-			expanded = reshape(output_cotangent, Shape{ std::move(expanded_dimensions) });
-		}
-
-		return {
-			expanded.shape() == input_shape
-				? expanded
-				: broadcast_to(expanded, input_shape) };
-	}
 }

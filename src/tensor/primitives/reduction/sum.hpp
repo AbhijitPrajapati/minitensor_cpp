@@ -5,7 +5,6 @@
 #include <string_view>
 #include <vector>
 
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
@@ -23,7 +22,6 @@ namespace minitensor::detail
 		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;
 		[[nodiscard]] const std::vector<Shape::size_type>& axes() const noexcept;
 		[[nodiscard]] bool keep_dim() const noexcept;
-		[[nodiscard]] std::vector<std::optional<Tensor>> vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const override;
 
 	private:
 		std::vector<Shape::size_type> axes_;

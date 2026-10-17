@@ -7,11 +7,8 @@
 #include <utility>
 #include <vector>
 
-#include <minitensor/ops/elementwise.hpp>
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
-#include "tensor/autograd/reduce_to_shape.hpp"
 #include "tensor/core/shape_inference.hpp"
 #include "tensor/core/tensor_spec.hpp"
 
@@ -49,18 +46,4 @@ namespace minitensor::detail
 		return TensorSpec{ std::move(output_shape), lhs.dtype, lhs.device };
 	}
 
-	std::vector<std::optional<Tensor>> LogAddExpPrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor& output_cotangent) const
-	{
-		if (inputs.size() != 2)
-		{
-			throw std::logic_error{ "log add exp VJP expects 2 inputs" };
-		}
-
-		const Tensor lhs_weight = sigmoid(inputs[0] - inputs[1]);
-		const Tensor rhs_weight = sigmoid(inputs[1] - inputs[0]);
-
-		return {
-			reduce_to_shape(output_cotangent * lhs_weight, inputs[0].shape()),
-			reduce_to_shape(output_cotangent * rhs_weight, inputs[1].shape()) };
-	}
 }

@@ -9,7 +9,6 @@
 #include <vector>
 
 #include <minitensor/random.hpp>
-#include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
@@ -62,12 +61,4 @@ namespace minitensor::detail
 		return key_;
 	}
 
-	std::vector<std::optional<Tensor>> NormalPrimitive::vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor&) const
-	{
-		if (!inputs.empty())
-		{
-			throw std::logic_error{ "normal VJP expects no inputs" };
-		}
-		return {};
-	}
 }

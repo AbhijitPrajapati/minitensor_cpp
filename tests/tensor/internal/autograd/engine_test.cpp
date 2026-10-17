@@ -14,6 +14,7 @@
 #include <gtest/gtest.h>
 
 #include "tensor/autograd/engine.hpp"
+#include "tensor/autograd/vjp_registry.hpp"
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/apply_operation.hpp"
 #include "tensor/graph/fwd.hpp"
@@ -34,6 +35,25 @@ namespace minitensor::test
 			return detail::apply_operation(std::make_unique<RuleBasedVjpPrimitive>(
 				inputs.size(), std::move(output_spec), std::move(rule)),
 				inputs);
+		}
+
+		const detail::VjpRegistry& test_vjp_registry()
+		{
+			static const detail::VjpRegistry registry = []
+			{
+				detail::VjpRegistry result;
+				result.register_rule<RuleBasedVjpPrimitive>(
+					[](const RuleBasedVjpPrimitive& primitive,
+						const detail::VjpContext& context)
+					{
+						return primitive.rule()(
+							context.inputs,
+							context.output,
+							context.output_cotangent);
+					});
+				return result;
+			}();
+			return registry;
 		}
 	}
 
@@ -77,7 +97,7 @@ namespace minitensor::test
 
 		const std::array<detail::ValueRef, 1> targets{ detail::TensorAccess::value(source) };
 		const std::vector<Tensor> result = detail::reverse_vjp(
-			detail::TensorAccess::value(output), targets, seed);
+			detail::TensorAccess::value(output), targets, seed, test_vjp_registry());
 
 		EXPECT_EQ(calls, (std::vector<int>{ 2, 1 }));
 		ASSERT_EQ(result.size(), 1);
@@ -103,7 +123,8 @@ namespace minitensor::test
 		const std::vector<Tensor> result = detail::reverse_vjp(
 			detail::TensorAccess::value(output),
 			std::span<const detail::ValueRef>{},
-			seed);
+			seed,
+			test_vjp_registry());
 		EXPECT_TRUE(result.empty());
 		EXPECT_EQ(calls, 0);
 	}
@@ -124,7 +145,10 @@ namespace minitensor::test
 		const std::array<detail::ValueRef, 1> targets{ detail::TensorAccess::value(source) };
 
 		const Tensor result = detail::reverse_vjp(
-			detail::TensorAccess::value(output), targets, seed).front();
+			detail::TensorAccess::value(output),
+			targets,
+			seed,
+			test_vjp_registry()).front();
 		const std::array<float, 2> expected{ 3.0F, -4.0F };
 		expect_tensor_eq(result, expected);
 	}
@@ -159,7 +183,7 @@ namespace minitensor::test
 		const Tensor seed = full(spec.shape, 1.0F);
 
 		const std::vector<Tensor> result = detail::reverse_vjp(
-			detail::TensorAccess::value(output), targets, seed);
+			detail::TensorAccess::value(output), targets, seed, test_vjp_registry());
 		EXPECT_EQ(result.size(), 1);
 		EXPECT_EQ(join_calls, 1);
 		EXPECT_EQ(unrelated_calls, 0);
@@ -182,7 +206,8 @@ namespace minitensor::test
 		const Tensor result = detail::reverse_vjp(
 			detail::TensorAccess::value(output),
 			targets,
-			full(spec.shape, 1.0F)).front();
+			full(spec.shape, 1.0F),
+			test_vjp_registry()).front();
 		const std::array<float, 2> expected{};
 		expect_tensor_eq(result, expected);
 	}
@@ -192,15 +217,51 @@ namespace minitensor::test
 		const Tensor seed = full(Shape{ 2 }, 1.0F);
 		EXPECT_THROW(
 			(void)detail::reverse_vjp(
-			detail::ValueRef{}, std::span<const detail::ValueRef>{}, seed),
+			detail::ValueRef{},
+			std::span<const detail::ValueRef>{},
+			seed,
+			test_vjp_registry()),
 			std::invalid_argument);
 
 		const Tensor output = full(Shape{ 2 }, 1.0F);
 		const std::array<detail::ValueRef, 1> null_targets{ detail::ValueRef{} };
 		EXPECT_THROW(
 			(void)detail::reverse_vjp(
-			detail::TensorAccess::value(output), null_targets, seed),
+			detail::TensorAccess::value(output),
+			null_targets,
+			seed,
+			test_vjp_registry()),
 			std::invalid_argument);
+	}
+
+	TEST(ReverseVjpTest, ResolvesEveryRequiredRuleBeforeInvokingAnyRule)
+	{
+		const detail::TensorSpec spec{ Shape{ 2 }, DType::Float32, Device::cpu() };
+		const Tensor source = full(spec.shape, 1.0F);
+		const Tensor unsupported = detail::apply_operation(
+			std::make_unique<IdentitySpecPrimitive>(),
+			source);
+		std::size_t calls = 0;
+		const std::array<Tensor, 1> inputs{ unsupported };
+		const Tensor output = apply_vjp_rule(
+			inputs,
+			spec,
+			[&calls](std::span<const Tensor>, const Tensor&, const Tensor& cotangent)
+			{
+				++calls;
+				return std::vector<std::optional<Tensor>>{ cotangent };
+			});
+		const std::array<detail::ValueRef, 1> targets{
+			detail::TensorAccess::value(source) };
+
+		EXPECT_THROW(
+			(void)detail::reverse_vjp(
+				detail::TensorAccess::value(output),
+				targets,
+				full(spec.shape, 1.0F),
+				test_vjp_registry()),
+			std::runtime_error);
+		EXPECT_EQ(calls, 0);
 	}
 
 	TEST(ReverseVjpTest, RejectsMalformedPrimitiveRules)
@@ -220,7 +281,10 @@ namespace minitensor::test
 			});
 		EXPECT_THROW(
 			(void)detail::reverse_vjp(
-			detail::TensorAccess::value(wrong_count), targets, seed),
+			detail::TensorAccess::value(wrong_count),
+			targets,
+			seed,
+			test_vjp_registry()),
 			std::logic_error);
 
 		const Tensor wrong_spec = apply_vjp_rule(
@@ -232,12 +296,19 @@ namespace minitensor::test
 			});
 		EXPECT_THROW(
 			(void)detail::reverse_vjp(
-			detail::TensorAccess::value(wrong_spec), targets, seed),
+			detail::TensorAccess::value(wrong_spec),
+			targets,
+			seed,
+			test_vjp_registry()),
 			std::logic_error);
 
 		const Tensor no_rule = detail::apply_operation(std::make_unique<IdentitySpecPrimitive>(), source);
 		EXPECT_THROW(
-			(void)detail::reverse_vjp(detail::TensorAccess::value(no_rule), targets, seed),
-			std::logic_error);
+			(void)detail::reverse_vjp(
+				detail::TensorAccess::value(no_rule),
+				targets,
+				seed,
+				test_vjp_registry()),
+			std::runtime_error);
 	}
 }

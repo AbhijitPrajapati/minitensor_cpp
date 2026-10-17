@@ -6,7 +6,6 @@
 #include <vector>
 
 #include <minitensor/random.hpp>
-#include <minitensor/tensor.hpp>
 
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/graph/primitive.hpp"
@@ -24,7 +23,6 @@ namespace minitensor::detail
 		[[nodiscard]] float low() const noexcept;
 		[[nodiscard]] float high() const noexcept;
 		[[nodiscard]] const RandomKey& key() const noexcept;
-		[[nodiscard]] std::vector<std::optional<Tensor>> vjp(std::span<const Tensor> inputs, const Tensor&, const Tensor&) const override;
 
 	private:
 		TensorSpec output_spec_;
