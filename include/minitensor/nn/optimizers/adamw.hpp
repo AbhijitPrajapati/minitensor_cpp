@@ -13,6 +13,8 @@
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
+#include "detail/parameter_updates.hpp"
+
 namespace minitensor::nn
 {
 	class AdamW final
@@ -67,11 +69,6 @@ namespace minitensor::nn
 						return;
 					}
 
-					if (!is_floating_point(parameter.value().dtype()))
-					{
-						throw std::invalid_argument{ "AdamW requires floating-point trainable parameters" };
-					}
-
 					const Tensor& value = parameter.value();
 					state.first_moments_.emplace(parameter.id(), zeros_like(value));
 					state.second_moments_.emplace(parameter.id(), zeros_like(value));
@@ -86,40 +83,19 @@ namespace minitensor::nn
 			const ParameterGradients& gradients) const
 		{
 			const StepCoefficients coefficients = step_coefficients(state.step_);
-			std::size_t update_count = 0;
 
-			Tree updated = transform_parameter_values(
-				std::move(parameters),
-				[&](const Parameter& parameter)
-				{
-					if (!parameter.metadata().trainable)
-					{
-						return parameter.value();
-					}
-
-					if (!is_floating_point(parameter.value().dtype()))
-					{
-						throw std::invalid_argument{ "AdamW requires floating-point trainable parameters" };
-					}
-
-					Tensor updated_value = update_parameter(
-						parameter,
-						gradients,
-						state,
-						coefficients);
-					++update_count;
-					return updated_value;
-				});
-
-			if (update_count != gradients.size())
-			{
-				throw std::invalid_argument{ "parameter gradients contain extra gradients" };
-			}
-			if (update_count != state.first_moments_.size()
-				|| update_count != state.second_moments_.size())
+			// Ensure consistency with AdamW state.
+			if (gradients.size() != state.first_moments_.size()
+				|| gradients.size() != state.second_moments_.size())
 			{
 				throw std::invalid_argument{ "AdamW state does not match trainable parameters" };
 			}
+
+			Tree updated = detail::transform_parameter_values_with_gradients(
+				std::move(parameters), gradients, [&](const Parameter& parameter, const Tensor& gradient)
+				{
+					return update_parameter(parameter, gradient, state, coefficients);
+				});
 
 			state.step_ = coefficients.step;
 			return { std::move(updated), std::move(state) };
@@ -135,7 +111,7 @@ namespace minitensor::nn
 		[[nodiscard]] StepCoefficients step_coefficients(std::uint64_t current_step) const;
 		[[nodiscard]] Tensor update_parameter(
 			const Parameter& parameter,
-			const ParameterGradients& gradients,
+			const Tensor& gradient,
 			State& state,
 			const StepCoefficients& coefficients) const;
 

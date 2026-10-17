@@ -92,7 +92,7 @@ namespace minitensor::nn::test
 			parameters,
 			optimizer.initialize(parameters),
 			gradients);
-		(void)state;
+		state = leafify_optimizer_state(std::move(state));
 
 		EXPECT_EQ(updated.weight().id(), parameters.weight().id());
 		ASSERT_NE(updated.bias(), nullptr);

@@ -79,25 +79,12 @@ namespace minitensor::nn
 
 	Tensor AdamW::update_parameter(
 		const Parameter& parameter,
-		const ParameterGradients& gradients,
+		const Tensor& gradient,
 		State& state,
 		const StepCoefficients& coefficients) const
 	{
 		const ParameterId id = parameter.id();
 		const Tensor& value = parameter.value();
-
-		const auto gradient_position = gradients.find(id);
-		if (gradient_position == gradients.end())
-		{
-			throw std::invalid_argument{ "parameter gradient not found" };
-		}
-		const Tensor& gradient = gradient_position->second;
-		if (gradient.shape() != value.shape()
-			|| gradient.dtype() != value.dtype()
-			|| gradient.device() != value.device())
-		{
-			throw std::invalid_argument{ "parameter gradient does not match parameter spec" };
-		}
 
 		// This lambda retrieves a moment tensor by id and ensures that it matches
 		// the specifications of the value.

@@ -1,15 +1,13 @@
 #pragma once
 
-#include <algorithm>
-#include <cstddef>
-#include <stdexcept>
 #include <utility>
 
 #include <minitensor/nn/gradients.hpp>
 #include <minitensor/nn/parameter.hpp>
-#include <minitensor/nn/parameter_tree.hpp>
 #include <minitensor/ops/elementwise.hpp>
 #include <minitensor/tensor.hpp>
+
+#include "detail/parameter_updates.hpp"
 
 namespace minitensor::nn
 {
@@ -34,39 +32,11 @@ namespace minitensor::nn
 			State state,
 			const ParameterGradients& gradients) const
 		{
-			std::size_t update_count = 0;
-
-			Tree updated = transform_parameter_values(
-				std::move(parameters),
-				[&](const Parameter& parameter)
+			Tree updated = detail::transform_parameter_values_with_gradients(
+				std::move(parameters), gradients, [&](const Parameter& parameter, const Tensor& gradient)
 				{
-					const Tensor& value = parameter.value();
-					if (!parameter.metadata().trainable)
-					{
-						return value;
-					}
-					const auto gradient_position = gradients.find(parameter.id());
-					if (gradient_position == gradients.end())
-					{
-						throw std::invalid_argument{ "parameter gradient not found" };
-					}
-					const Tensor& gradient = gradient_position->second;
-					if (gradient.device() != value.device()
-						|| gradient.dtype() != value.dtype()
-						|| gradient.shape() != value.shape())
-					{
-						throw std::invalid_argument{ "parameter gradient does not match parameter spec" };
-					}
-					++update_count;
-					return value - learning_rate_ * gradient;
+					return parameter.value() - learning_rate_ * gradient;
 				});
-
-			// Gradients must have exactly as many elements as there are parameters.
-			if (update_count != gradients.size())
-			{
-				throw std::invalid_argument{ "parameter gradients contain extra gradients" };
-			}
-
 			return { std::move(updated), std::move(state) };
 		}
 
@@ -75,4 +45,7 @@ namespace minitensor::nn
 	private:
 		float learning_rate_;
 	};
+
+	// SGD has no tensor-valued state, so leafification is a no-op.
+	[[nodiscard]] SGD::State leafify_optimizer_state(SGD::State state) noexcept;
 }
