@@ -12,33 +12,11 @@
 #include <minitensor/types.hpp>
 
 #include "tensor/apply_operation.hpp"
-#include "tensor/core/axis.hpp"
 #include "tensor/primitives/reduction/logsumexp.hpp"
 #include "tensor/primitives/reduction/sum.hpp"
 
 namespace minitensor
 {
-
-	// This helper is used by the composed mean operation.
-	// It currently repeats reduction logic in the operation layer,
-	// but this will be resolved once compiler IR is considered in the future
-	namespace
-	{
-		Shape::size_type reduction_element_count(
-			const Shape& input_shape,
-			std::span<const Axis> axes)
-		{
-			std::vector<Extent> reduced_extents;
-			reduced_extents.reserve(axes.size());
-			for (const Axis axis : axes)
-			{
-				reduced_extents.push_back(
-					input_shape[detail::normalize_axis(axis, input_shape.rank())]);
-			}
-			return Shape{ std::move(reduced_extents) }.numel();
-		}
-	}
-
 	Tensor sum(const Tensor& input, std::span<const Axis> axes, bool keep_dim)
 	{
 		if (axes.empty())
@@ -68,8 +46,27 @@ namespace minitensor
 			return input;
 		}
 
-		const Tensor total = sum(input, axes, keep_dim);
-		const Shape::size_type reduction_size = reduction_element_count(input.shape(), axes);
+		const Shape& input_shape = input.shape();
+		auto primitive = std::make_unique<detail::SumPrimitive>(
+			axes,
+			input_shape.rank(),
+			keep_dim);
+
+		// Collect the reduced extents to compute the reduction size.
+		const auto& reduced_axes = primitive->axes();
+		std::vector<Extent> reduced_extents;
+		reduced_extents.reserve(reduced_axes.size());
+		for (const Shape::size_type axis : reduced_axes)
+		{
+			reduced_extents.push_back(input_shape[axis]);
+		}
+
+		const Tensor total = detail::apply_operation(std::move(primitive), input);
+
+		// Constructing a Shape preserves the library's checked element-count semantics.
+		const Shape::size_type reduction_size =
+			Shape{ std::move(reduced_extents) }.numel();
+
 		return total / static_cast<float>(reduction_size);
 	}
 

@@ -15,7 +15,7 @@ target_sources(
         src/tensor/data.cpp
         src/tensor/evaluation.cpp
         src/tensor/random.cpp
-        src/tensor/core/shape_inference.cpp
+        src/tensor/core/broadcasting.cpp
         src/tensor/core/dense_size.cpp
         src/tensor/core/axis.cpp
         src/tensor/apply_operation.cpp
@@ -200,7 +200,7 @@ if(BUILD_TESTING)
         internal
         tests/tensor/internal/core/axis_test.cpp
         tests/tensor/internal/core/dense_size_test.cpp
-        tests/tensor/internal/core/shape_inference_test.cpp
+        tests/tensor/internal/core/broadcasting_test.cpp
         tests/tensor/internal/graph/graph_test.cpp
         tests/tensor/internal/graph/ownership_test.cpp
         tests/tensor/internal/graph/primitive_id_test.cpp

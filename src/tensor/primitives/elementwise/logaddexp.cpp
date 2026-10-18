@@ -9,7 +9,7 @@
 
 #include <minitensor/types.hpp>
 
-#include "tensor/core/shape_inference.hpp"
+#include "tensor/core/broadcasting.hpp"
 #include "tensor/core/tensor_spec.hpp"
 
 namespace minitensor::detail

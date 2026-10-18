@@ -5,7 +5,6 @@
 
 #include <minitensor/types.hpp>
 
-#include "tensor/core/shape_inference.hpp"
 #include "tensor/storage/layout.hpp"
 
 namespace minitensor::detail::cpu
@@ -46,11 +45,6 @@ namespace minitensor::detail::cpu
 			output_layout.rank() != output_shape.rank())
 		{
 			throw std::invalid_argument{ "matmul shape and layout ranks do not match" };
-		}
-
-		if (matmul_output_shape(lhs_shape, rhs_shape) != output_shape)
-		{
-			throw std::invalid_argument{ "matmul output shape does not match input shapes" };
 		}
 
 		const bool lhs_is_vector = lhs_shape.rank() == 1;

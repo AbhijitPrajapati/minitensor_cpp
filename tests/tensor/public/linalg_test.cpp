@@ -34,6 +34,16 @@ namespace minitensor::test
 				full(Shape{ 2, 1, 3, 4 }, 1.0F),
 				full(Shape{ 5, 4, 6 }, 1.0F)).shape(),
 			(Shape{ 2, 5, 3, 6 }));
+		EXPECT_EQ(
+			matmul(
+				full(Shape{ 4 }, 1.0F),
+				full(Shape{ 2, 5, 4, 6 }, 1.0F)).shape(),
+			(Shape{ 2, 5, 6 }));
+		EXPECT_EQ(
+			matmul(
+				full(Shape{ 2, 5, 3, 4 }, 1.0F),
+				full(Shape{ 4 }, 1.0F)).shape(),
+			(Shape{ 2, 5, 3 }));
 	}
 
 	TEST(MatmulTest, ComputesAllVectorAndMatrixForms)
