@@ -1,6 +1,7 @@
 #include <minitensor/nn/parameter_tree.hpp>
 
 #include <cstddef>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -74,6 +75,30 @@ namespace minitensor::nn::test
 
 		Parameter first_;
 		Parameter second_;
+	};
+
+	class MalformedParameterTree final
+	{
+	public:
+		MalformedParameterTree(std::string first_name, std::string second_name)
+			: first_name_{ std::move(first_name) },
+			  second_name_{ std::move(second_name) },
+			  parameter_{ full(Shape{ 1 }, 1.0F) }
+		{}
+
+	private:
+		template <typename Self, typename Visitor>
+		static void visit_members(Self& self, Visitor& visitor)
+		{
+			visitor.parameter(self.first_name_, self.parameter_);
+			visitor.parameter(self.second_name_, self.parameter_);
+		}
+
+		friend class ParameterTreeAccess;
+
+		std::string first_name_;
+		std::string second_name_;
+		Parameter parameter_;
 	};
 
 	TEST(ParameterTreeTest, EnumeratesLeafParameters)
@@ -199,5 +224,64 @@ namespace minitensor::nn::test
 		EXPECT_EQ(
 			to_vector(transformed.second().value()),
 			(std::vector<float>{ 7.0F, 7.0F }));
+	}
+
+	TEST(ParameterTreeTest, EnumeratesParametersWithStructuralPaths)
+	{
+		const Linear first{ 3, 4 };
+		const Linear second{ 4, 2, false };
+		const LinearParameterPair pair{
+			first.initialize(RandomKey{ 41 }),
+			second.initialize(RandomKey{ 43 })
+		};
+		std::vector<std::string> paths;
+		std::vector<ParameterId> ids;
+
+		for_each_named_parameter(
+			pair,
+			[&](std::string_view path, const Parameter& parameter)
+			{
+				paths.emplace_back(path);
+				ids.push_back(parameter.id());
+			});
+
+		EXPECT_EQ(
+			paths,
+			(std::vector<std::string>{ "first.weight", "first.bias", "second.weight" }));
+		ASSERT_EQ(ids.size(), 3);
+		EXPECT_EQ(ids[0], pair.first().weight().id());
+		ASSERT_NE(pair.first().bias(), nullptr);
+		EXPECT_EQ(ids[1], pair.first().bias()->id());
+		EXPECT_EQ(ids[2], pair.second().weight().id());
+	}
+
+	TEST(ParameterTreeTest, UniqueNamedTraversalUsesFirstPathForTiedParameters)
+	{
+		const TiedParameterTree tree{ Parameter{ full(Shape{ 1 }, 1.0F) } };
+		std::vector<std::string> paths;
+
+		for_each_unique_named_parameter(
+			tree,
+			[&](std::string_view path, const Parameter&)
+			{
+				paths.emplace_back(path);
+			});
+
+		EXPECT_EQ(paths, (std::vector<std::string>{ "first" }));
+	}
+
+	TEST(ParameterTreeTest, RejectsInvalidOrDuplicatePaths)
+	{
+		const auto ignore = [](std::string_view, const Parameter&) {};
+
+		EXPECT_THROW(
+			for_each_named_parameter(MalformedParameterTree{ "", "valid" }, ignore),
+			std::logic_error);
+		EXPECT_THROW(
+			for_each_named_parameter(MalformedParameterTree{ "invalid.name", "valid" }, ignore),
+			std::logic_error);
+		EXPECT_THROW(
+			for_each_named_parameter(MalformedParameterTree{ "duplicate", "duplicate" }, ignore),
+			std::logic_error);
 	}
 }
