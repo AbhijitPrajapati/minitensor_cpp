@@ -185,21 +185,22 @@ void gather_copy(const TensorView &source, const TensorView &indices, MutableTen
 
     const Layout source_base_layout(std::move(source_base_strides), source.layout().offset());
 
-    // Elementwise iteration over all three layouts supplies
-    // the information needed.
-    const std::array<Layout, 3> layouts{source_base_layout, indices.layout(), output.layout()};
+    // The output is contiguous, so the run's logical linear position is also
+    // its offset from the beginning of the output allocation.
+    const std::array<Layout, 2> layouts{source_base_layout, indices.layout()};
     const ElementwisePlan iteration(output.shape(), layouts);
+    assert(output.layout().offset() >= 0);
+    const auto output_offset = static_cast<std::size_t>(output.layout().offset());
 
-    iteration.for_each_run([&](Shape::size_type, std::span<const Layout::offset_type> offsets,
+    iteration.for_each_run([&](Shape::size_type linear, std::span<const Layout::offset_type> offsets,
                                std::span<const Layout::stride_type> strides, Shape::size_type run_size) {
         Layout::offset_type source_base_offset = offsets[0];
         Layout::offset_type index_offset = offsets[1];
-        Layout::offset_type output_offset = offsets[2];
+        T *run_output = output_data + output_offset + linear;
 
         for (Shape::size_type i = 0; i < run_size; ++i)
         {
             assert(index_offset >= 0);
-            assert(output_offset >= 0);
 
             const std::int64_t index = index_data[static_cast<std::size_t>(index_offset)];
             if (index < 0 || index >= source_axis_extent)
@@ -210,12 +211,10 @@ void gather_copy(const TensorView &source, const TensorView &indices, MutableTen
             const auto source_gather_offset = source_base_offset + index * source_axis_stride;
             assert(source_gather_offset >= 0);
 
-            output_data[static_cast<std::size_t>(output_offset)] =
-                source_data[static_cast<std::size_t>(source_gather_offset)];
+            run_output[i] = source_data[static_cast<std::size_t>(source_gather_offset)];
 
             source_base_offset += strides[0];
             index_offset += strides[1];
-            output_offset += strides[2];
         }
     });
 }

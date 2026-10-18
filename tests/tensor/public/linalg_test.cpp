@@ -93,6 +93,22 @@ namespace minitensor::test
 		expect_tensor_eq(matmul(lhs, rhs), expected);
 	}
 
+	TEST(MatmulTest, HandlesVectorFormsWithTransposedMatrices)
+	{
+		const Tensor matrix = transpose(from_data(
+			{ 1.0F, 4.0F, 2.0F, 5.0F, 3.0F, 6.0F }, Shape{ 3, 2 }));
+
+		const std::array<float, 2> matrix_vector{ -2.0F, -2.0F };
+		expect_tensor_eq(
+			matmul(matrix, from_data({ 1.0F, 0.0F, -1.0F }, Shape{ 3 })),
+			matrix_vector);
+
+		const std::array<float, 3> vector_matrix{ 9.0F, 12.0F, 15.0F };
+		expect_tensor_eq(
+			matmul(from_data({ 1.0F, 2.0F }, Shape{ 2 }), matrix),
+			vector_matrix);
+	}
+
 	TEST(MatmulTest, HandlesEmptyContractionsAndBatches)
 	{
 		EXPECT_FLOAT_EQ(

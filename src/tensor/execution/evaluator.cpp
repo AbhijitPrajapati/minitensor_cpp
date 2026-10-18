@@ -29,7 +29,7 @@ namespace
 struct PlannedKernel
 {
     DeviceRuntime *runtime;
-    KernelFn function;
+    const KernelFn *function;
 };
 struct PlannedStep final
 {
@@ -114,7 +114,7 @@ class EvaluationPlanner final
             const TensorSpec &output_spec = value->spec();
             DeviceRuntime &runtime = runtimes_.get(output_spec.device);
             const KernelKey key{node->primitive().id(), output_spec.device.type()};
-            kernel = PlannedKernel{&runtime, kernels_.get(key)};
+            kernel = PlannedKernel{&runtime, &kernels_.get(key)};
         }
 
         plan_.push_back(PlannedStep{value, node, std::move(kernel)});
@@ -180,7 +180,7 @@ void execute_step(const PlannedStep &step)
 
     {
         MutableTensorView output_view(output_spec, output_materialization);
-        planned_kernel.function(*planned_kernel.runtime, primitive, input_views, output_view);
+        (*planned_kernel.function)(*planned_kernel.runtime, primitive, input_views, output_view);
     }
 
     output.materialize(std::move(output_materialization));
