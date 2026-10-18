@@ -17,61 +17,34 @@
 
 namespace minitensor::detail::cpu
 {
-	namespace
-	{
-		void run_sum(
-			DeviceRuntime&,
-			const Primitive& primitive,
-			std::span<const TensorView> inputs,
-			MutableTensorView output)
-		{
-			assert(inputs.size() == 1);
-			const auto& sum = dynamic_cast<const SumPrimitive&>(primitive);
+namespace
+{
+void run_sum(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
+{
+    assert(inputs.size() == 1);
+    const auto &sum = dynamic_cast<const SumPrimitive &>(primitive);
 
-			dispatch_floating_dtype(
-				output.dtype(),
-				[&]<typename T>(std::type_identity<T>)
-			{
-				reduce_values<T>(
-					inputs.front(),
-					output,
-					sum.axes(),
-					T{},
-					[](T accumulator, T value)
-					{
-						return accumulator + value;
-					});
-			});
-		}
-
-		void run_logsumexp(
-			DeviceRuntime&,
-			const Primitive& primitive,
-			std::span<const TensorView> inputs,
-			MutableTensorView output)
-		{
-			assert(inputs.size() == 1);
-			const auto& logsumexp = dynamic_cast<const LogSumExpPrimitive&>(primitive);
-
-			dispatch_floating_dtype(
-				output.dtype(),
-				[&]<typename T>(std::type_identity<T>)
-			{
-				reduce_logsumexp<T>(
-					inputs.front(),
-					output,
-					logsumexp.axes());
-			});
-		}
-	}
-
-	void register_reduction_kernels(KernelRegistry& registry)
-	{
-		registry.register_kernel(
-			KernelKey{ SumPrimitive::ID, DeviceType::Cpu },
-			run_sum);
-		registry.register_kernel(
-			KernelKey{ LogSumExpPrimitive::ID, DeviceType::Cpu },
-			run_logsumexp);
-	}
+    dispatch_floating_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        reduce_values<T>(inputs.front(), output, sum.axes(), T{},
+                         [](T accumulator, T value) { return accumulator + value; });
+    });
 }
+
+void run_logsumexp(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                   MutableTensorView output)
+{
+    assert(inputs.size() == 1);
+    const auto &logsumexp = dynamic_cast<const LogSumExpPrimitive &>(primitive);
+
+    dispatch_floating_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        reduce_logsumexp<T>(inputs.front(), output, logsumexp.axes());
+    });
+}
+} // namespace
+
+void register_reduction_kernels(KernelRegistry &registry)
+{
+    registry.register_kernel(KernelKey{SumPrimitive::ID, DeviceType::Cpu}, run_sum);
+    registry.register_kernel(KernelKey{LogSumExpPrimitive::ID, DeviceType::Cpu}, run_logsumexp);
+}
+} // namespace minitensor::detail::cpu

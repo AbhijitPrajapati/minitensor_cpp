@@ -5,21 +5,21 @@
 
 namespace minitensor::nn
 {
-	SGD::SGD(float learning_rate) : learning_rate_(learning_rate)
-	{
-		if (!std::isfinite(learning_rate_) || learning_rate_ < 0.0F)
-		{
-			throw std::invalid_argument{ "SGD learning rate must be finite and non-negative" };
-		}
-	}
-
-	float SGD::learning_rate() const noexcept
-	{
-		return learning_rate_;
-	}
-
-	SGD::State leafify_optimizer_state(SGD::State state) noexcept
-	{
-		return state;
-	}
+SGD::SGD(float learning_rate) : learning_rate_(learning_rate)
+{
+    if (!std::isfinite(learning_rate_) || learning_rate_ < 0.0F)
+    {
+        throw std::invalid_argument{"SGD learning rate must be finite and non-negative"};
+    }
 }
+
+float SGD::learning_rate() const noexcept
+{
+    return learning_rate_;
+}
+
+SGD::State leafify_optimizer_state(SGD::State state) noexcept
+{
+    return state;
+}
+} // namespace minitensor::nn

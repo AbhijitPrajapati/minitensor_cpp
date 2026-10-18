@@ -5,23 +5,24 @@
 #include <string_view>
 #include <vector>
 
-
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/graph/primitive.hpp"
 #include "tensor/storage/layout.hpp"
 
 namespace minitensor::detail
 {
-	class ContiguousPrimitive final : public Primitive
-	{
-	public:
-		static constexpr PrimitiveId ID{ 0x0201 };
-		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
-		[[nodiscard]] std::string_view name() const noexcept override;
-		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;
-		[[nodiscard]] std::optional<Layout> try_derive_shared_layout(
-			const TensorSpec& input_spec,
-			const Layout& input_layout,
-			const TensorSpec& output_spec) const override;
-	};
-}
+class ContiguousPrimitive final : public Primitive
+{
+  public:
+    static constexpr PrimitiveId ID{0x0201};
+    [[nodiscard]] PrimitiveId id() const noexcept override
+    {
+        return ID;
+    }
+    [[nodiscard]] std::string_view name() const noexcept override;
+    [[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;
+    [[nodiscard]] std::optional<Layout> try_derive_shared_layout(const TensorSpec &input_spec,
+                                                                 const Layout &input_layout,
+                                                                 const TensorSpec &output_spec) const override;
+};
+} // namespace minitensor::detail

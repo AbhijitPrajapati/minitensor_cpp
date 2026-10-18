@@ -6,6 +6,6 @@
 
 namespace minitensor::detail
 {
-	[[nodiscard]] ValueRef make_materialized_leaf(TensorSpec spec, Materialization materialization);
-	[[nodiscard]] ValueRef leafify_materialized(const ValueRef& value);
-}
+[[nodiscard]] ValueRef make_materialized_leaf(TensorSpec spec, Materialization materialization);
+[[nodiscard]] ValueRef leafify_materialized(const ValueRef &value);
+} // namespace minitensor::detail

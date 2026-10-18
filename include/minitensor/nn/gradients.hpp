@@ -14,38 +14,36 @@
 
 namespace minitensor::nn
 {
-	using ParameterGradients = std::unordered_map<ParameterId, Tensor>;
 
-	// Produces gradients for each unique parameter in the tree.
-	template <typename Tree>
-	[[nodiscard]] ParameterGradients parameter_gradients(
-		const Tensor& loss,
-		const Tree& parameters)
-	{
-		// Collect parameter values
-		std::vector<ParameterId> ids;
-		std::vector<Tensor> values;
+using ParameterGradients = std::unordered_map<ParameterId, Tensor>;
 
-		for_each_unique_parameter(parameters, [&](const Parameter& parameter)
-			{
-				if (parameter.metadata().trainable)
-				{
-					ids.push_back(parameter.id());
-					values.push_back(parameter.value());
-				}
-			});
+// Produces gradients for each unique parameter in the tree.
+template <typename Tree>
+[[nodiscard]] ParameterGradients parameter_gradients(const Tensor &loss, const Tree &parameters)
+{
+    // Collect parameter values
+    std::vector<ParameterId> ids;
+    std::vector<Tensor> values;
 
-		std::vector<Tensor> gradients = grad(loss, values);
+    for_each_unique_parameter(parameters, [&](const Parameter &parameter) {
+        if (parameter.metadata().trainable)
+        {
+            ids.push_back(parameter.id());
+            values.push_back(parameter.value());
+        }
+    });
 
-		// Build the output mapping
-		ParameterGradients result;
-		result.reserve(ids.size());
+    std::vector<Tensor> gradients = grad(loss, values);
 
-		for (std::size_t index = 0; index < ids.size(); ++index)
-		{
-			result.emplace(ids[index], std::move(gradients[index]));
-		}
+    // Build the output mapping
+    ParameterGradients result;
+    result.reserve(ids.size());
 
-		return result;
-	}
+    for (std::size_t index = 0; index < ids.size(); ++index)
+    {
+        result.emplace(ids[index], std::move(gradients[index]));
+    }
+
+    return result;
 }
+} // namespace minitensor::nn

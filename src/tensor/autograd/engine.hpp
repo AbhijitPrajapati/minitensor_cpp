@@ -9,11 +9,8 @@
 
 namespace minitensor::detail
 {
-	class VjpRegistry;
+class VjpRegistry;
 
-	[[nodiscard]] std::vector<Tensor> reverse_vjp(
-		const ValueRef& output,
-		std::span<const ValueRef> targets,
-		const Tensor& output_cotangent,
-		const VjpRegistry& registry);
-}
+[[nodiscard]] std::vector<Tensor> reverse_vjp(const ValueRef &output, std::span<const ValueRef> targets,
+                                              const Tensor &output_cotangent, const VjpRegistry &registry);
+} // namespace minitensor::detail

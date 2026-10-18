@@ -18,62 +18,54 @@
 
 namespace minitensor::detail::cpu
 {
-	namespace
-	{
-		void run_full(DeviceRuntime&, const Primitive& primitive, std::span<const TensorView> inputs, MutableTensorView output)
-		{
-			assert(inputs.empty());
-			(void)inputs;
+namespace
+{
+void run_full(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
+{
+    assert(inputs.empty());
+    (void)inputs;
 
-			const auto& full = dynamic_cast<const FullPrimitive&>(primitive);
+    const auto &full = dynamic_cast<const FullPrimitive &>(primitive);
 
-			dispatch_dtype(
-				output.dtype(),
-				[&]<typename T>(std::type_identity<T>)
-			{
-				fill(output, full.fill_value().get<T>());
-			});
-		}
-
-		void run_uniform(DeviceRuntime&, const Primitive& primitive, std::span<const TensorView> inputs, MutableTensorView output)
-		{
-			assert(inputs.empty());
-			(void)inputs;
-
-			const auto& uniform_primitive = dynamic_cast<const UniformPrimitive&>(primitive);
-
-			dispatch_floating_dtype(
-				output.dtype(),
-				[&]<typename T>(std::type_identity<T>)
-			{
-				const auto low = static_cast<T>(uniform_primitive.low());
-				const auto high = static_cast<T>(uniform_primitive.high());
-				uniform(output, low, high, uniform_primitive.key());
-			});
-		}
-
-		void run_normal(DeviceRuntime&, const Primitive& primitive, std::span<const TensorView> inputs, MutableTensorView output)
-		{
-			assert(inputs.empty());
-			(void)inputs;
-
-			const auto& normal_primitive = dynamic_cast<const NormalPrimitive&>(primitive);
-
-			dispatch_floating_dtype(
-				output.dtype(),
-				[&]<typename T>(std::type_identity<T>)
-			{
-				const auto mean = static_cast<T>(normal_primitive.mean());
-				const auto std_dev = static_cast<T>(normal_primitive.std_dev());
-				normal(output, mean, std_dev, normal_primitive.key());
-			});
-		}
-	}
-
-	void register_creation_kernels(KernelRegistry& registry)
-	{
-		registry.register_kernel(KernelKey{ FullPrimitive::ID, DeviceType::Cpu }, run_full);
-		registry.register_kernel(KernelKey{ UniformPrimitive::ID, DeviceType::Cpu }, run_uniform);
-		registry.register_kernel(KernelKey{ NormalPrimitive::ID, DeviceType::Cpu }, run_normal);
-	}
+    dispatch_dtype(output.dtype(),
+                   [&]<typename T>(std::type_identity<T>) { fill(output, full.fill_value().get<T>()); });
 }
+
+void run_uniform(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                 MutableTensorView output)
+{
+    assert(inputs.empty());
+    (void)inputs;
+
+    const auto &uniform_primitive = dynamic_cast<const UniformPrimitive &>(primitive);
+
+    dispatch_floating_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        const auto low = static_cast<T>(uniform_primitive.low());
+        const auto high = static_cast<T>(uniform_primitive.high());
+        uniform(output, low, high, uniform_primitive.key());
+    });
+}
+
+void run_normal(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                MutableTensorView output)
+{
+    assert(inputs.empty());
+    (void)inputs;
+
+    const auto &normal_primitive = dynamic_cast<const NormalPrimitive &>(primitive);
+
+    dispatch_floating_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        const auto mean = static_cast<T>(normal_primitive.mean());
+        const auto std_dev = static_cast<T>(normal_primitive.std_dev());
+        normal(output, mean, std_dev, normal_primitive.key());
+    });
+}
+} // namespace
+
+void register_creation_kernels(KernelRegistry &registry)
+{
+    registry.register_kernel(KernelKey{FullPrimitive::ID, DeviceType::Cpu}, run_full);
+    registry.register_kernel(KernelKey{UniformPrimitive::ID, DeviceType::Cpu}, run_uniform);
+    registry.register_kernel(KernelKey{NormalPrimitive::ID, DeviceType::Cpu}, run_normal);
+}
+} // namespace minitensor::detail::cpu

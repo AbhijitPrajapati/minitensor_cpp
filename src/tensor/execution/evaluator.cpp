@@ -24,176 +24,184 @@
 
 namespace minitensor::detail
 {
-	namespace
-	{
-		struct PlannedKernel
-		{
-			DeviceRuntime* runtime;
-			KernelFn function;
-		};
-		struct PlannedStep final
-		{
-			ValueRef output;
-			NodeRef node;
-			std::optional<PlannedKernel> kernel; // View operations do not require kernels.
-		};
+namespace
+{
+struct PlannedKernel
+{
+    DeviceRuntime *runtime;
+    KernelFn function;
+};
+struct PlannedStep final
+{
+    ValueRef output;
+    NodeRef node;
+    std::optional<PlannedKernel> kernel; // View operations do not require kernels.
+};
 
-		using EvaluationPlan = std::vector<PlannedStep>;
+using EvaluationPlan = std::vector<PlannedStep>;
 
-		enum class VisitState
-		{
-			Visiting,
-			Finished
-		};
+enum class VisitState
+{
+    Visiting,
+    Finished
+};
 
-		class EvaluationPlanner final
-		{
-		public:
-			EvaluationPlanner(const RuntimeRegistry& runtimes, const KernelRegistry& kernels) noexcept : runtimes_{ runtimes }, kernels_{ kernels } {}
+class EvaluationPlanner final
+{
+  public:
+    EvaluationPlanner(const RuntimeRegistry &runtimes, const KernelRegistry &kernels) noexcept
+        : runtimes_{runtimes}, kernels_{kernels}
+    {
+    }
 
-			// An EvaluationPlan is constructed by traversing the depth-first,
-			// tracking any kernels that must be executed.
-			EvaluationPlan build(std::span<const ValueRef> roots)
-			{
-				for (const ValueRef& value : roots)
-				{
-					visit(value);
-				}
-				return std::move(plan_);
-			}
+    // An EvaluationPlan is constructed by traversing the depth-first,
+    // tracking any kernels that must be executed.
+    EvaluationPlan build(std::span<const ValueRef> roots)
+    {
+        for (const ValueRef &value : roots)
+        {
+            visit(value);
+        }
+        return std::move(plan_);
+    }
 
-		private:
-			void visit(const ValueRef& value)
-			{
-				if (!value)
-				{
-					throw std::invalid_argument{ "cannot evaluate an empty value" };
-				}
+  private:
+    void visit(const ValueRef &value)
+    {
+        if (!value)
+        {
+            throw std::invalid_argument{"cannot evaluate an empty value"};
+        }
 
-				// Empty materialization denotes a cached value.
-				if (value->materialization() != nullptr)
-				{
-					return;
-				}
+        // Empty materialization denotes a cached value.
+        if (value->materialization() != nullptr)
+        {
+            return;
+        }
 
-				const auto existing = states_.find(value.get());
-				if (existing != states_.end())
-				{
-					// If a value has already been visited, a cycle in the computation graph has occured.
-					if (existing->second == VisitState::Visiting)
-					{
-						throw std::logic_error{ "cycle in computation graph" };
-					}
-					return;
-				}
+        const auto existing = states_.find(value.get());
+        if (existing != states_.end())
+        {
+            // If a value has already been visited, a cycle in the computation graph has occured.
+            if (existing->second == VisitState::Visiting)
+            {
+                throw std::logic_error{"cycle in computation graph"};
+            }
+            return;
+        }
 
-				states_.emplace(value.get(), VisitState::Visiting);
+        states_.emplace(value.get(), VisitState::Visiting);
 
-				const NodeRef& node = value->producer_ref();
-				if (!node)
-				{
-					// Value is a leaf.
-					throw std::runtime_error{ "cannot evaluate unmaterialized leaf" };
-				}
+        const NodeRef &node = value->producer_ref();
+        if (!node)
+        {
+            // Value is a leaf.
+            throw std::runtime_error{"cannot evaluate unmaterialized leaf"};
+        }
 
-				// Recursively visit input values
-				for (const ValueRef& input : node->inputs())
-				{
-					visit(input);
-				}
+        // Recursively visit input values
+        for (const ValueRef &input : node->inputs())
+        {
+            visit(input);
+        }
 
-				const Primitive& primitive = node->primitive();
+        const Primitive &primitive = node->primitive();
 
-				// Retrieve the associated kernel if necessary.
-				std::optional<PlannedKernel> kernel;
-				if (primitive.requires_kernel_support())
-				{
-					const TensorSpec& output_spec = value->spec();
-					DeviceRuntime& runtime = runtimes_.get(output_spec.device);
-					const KernelKey key{ node->primitive().id(), output_spec.device.type() };
-					kernel = PlannedKernel{ &runtime, kernels_.get(key) };
-				}
+        // Retrieve the associated kernel if necessary.
+        std::optional<PlannedKernel> kernel;
+        if (primitive.requires_kernel_support())
+        {
+            const TensorSpec &output_spec = value->spec();
+            DeviceRuntime &runtime = runtimes_.get(output_spec.device);
+            const KernelKey key{node->primitive().id(), output_spec.device.type()};
+            kernel = PlannedKernel{&runtime, kernels_.get(key)};
+        }
 
-				plan_.push_back(PlannedStep{ value, node, std::move(kernel) });
-				states_.at(value.get()) = VisitState::Finished;
-			}
+        plan_.push_back(PlannedStep{value, node, std::move(kernel)});
+        states_.at(value.get()) = VisitState::Finished;
+    }
 
-			const RuntimeRegistry& runtimes_;
-			const KernelRegistry& kernels_;
-			std::unordered_map<const Value*, VisitState> states_;
-			EvaluationPlan plan_;
-		};
+    const RuntimeRegistry &runtimes_;
+    const KernelRegistry &kernels_;
+    std::unordered_map<const Value *, VisitState> states_;
+    EvaluationPlan plan_;
+};
 
-		void execute_step(const PlannedStep& step)
-		{
-			Value& output = *step.output;
-			const Node& node = *step.node;
-			const Primitive& primitive = node.primitive();
-			const auto& inputs = node.inputs();
+void execute_step(const PlannedStep &step)
+{
+    Value &output = *step.output;
+    const Node &node = *step.node;
+    const Primitive &primitive = node.primitive();
+    const auto &inputs = node.inputs();
 
-			// Construct input view
-			std::vector<TensorView> input_views;
-			input_views.reserve(inputs.size());
+    // Construct input view
+    std::vector<TensorView> input_views;
+    input_views.reserve(inputs.size());
 
-			for (const ValueRef& input : inputs)
-			{
-				const Materialization* materialization = input->materialization();
+    for (const ValueRef &input : inputs)
+    {
+        const Materialization *materialization = input->materialization();
 
-				if (materialization == nullptr)
-				{
-					// Steps were likely executed in the wrong order.
-					throw std::logic_error{ "planned operation has unmaterialized input" };
-				}
+        if (materialization == nullptr)
+        {
+            // Steps were likely executed in the wrong order.
+            throw std::logic_error{"planned operation has unmaterialized input"};
+        }
 
-				// All storage sharing operations have a single input.
-				if (inputs.size() == 1)
-				{
-					// Storage-sharing operations are handled once here.
-					auto shared_layout = primitive.try_derive_shared_layout(input->spec(), materialization->layout(), output.spec());
-					if (shared_layout)
-					{
-						Materialization output_materialization = Materialization(materialization->buffer_ref(), std::move(shared_layout.value()));
-						output.materialize(std::move(output_materialization));
-						return; // The rest of the function does not execute.
-					}
-				}
+        // All storage sharing operations have a single input.
+        if (inputs.size() == 1)
+        {
+            // Storage-sharing operations are handled once here.
+            auto shared_layout =
+                primitive.try_derive_shared_layout(input->spec(), materialization->layout(), output.spec());
+            if (shared_layout)
+            {
+                Materialization output_materialization =
+                    Materialization(materialization->buffer_ref(), std::move(shared_layout.value()));
+                output.materialize(std::move(output_materialization));
+                return; // The rest of the function does not execute.
+            }
+        }
 
-				input_views.emplace_back(input->spec(), *materialization);
-			}
+        input_views.emplace_back(input->spec(), *materialization);
+    }
 
-			// Storage-sharing operations have been handled by now. Therefore all 
-			// remaining operations should provide kernels.
-			if (!step.kernel)
-			{
-				throw std::logic_error{ "primitive must either share storage or plan a kernel" };
-			}
+    // Storage-sharing operations have been handled by now. Therefore all
+    // remaining operations should provide kernels.
+    if (!step.kernel)
+    {
+        throw std::logic_error{"primitive must either share storage or plan a kernel"};
+    }
 
-			const PlannedKernel& planned_kernel = step.kernel.value();
-			const TensorSpec& output_spec = output.spec();
-			BufferRef output_buffer = planned_kernel.runtime->allocate(dense_size_bytes(output_spec));
-			Materialization output_materialization(std::move(output_buffer), Layout::contiguous(output_spec.shape));
+    const PlannedKernel &planned_kernel = step.kernel.value();
+    const TensorSpec &output_spec = output.spec();
+    BufferRef output_buffer = planned_kernel.runtime->allocate(dense_size_bytes(output_spec));
+    Materialization output_materialization(std::move(output_buffer), Layout::contiguous(output_spec.shape));
 
-			{
-				MutableTensorView output_view(output_spec, output_materialization);
-				planned_kernel.function(*planned_kernel.runtime, primitive, input_views, output_view);
-			}
+    {
+        MutableTensorView output_view(output_spec, output_materialization);
+        planned_kernel.function(*planned_kernel.runtime, primitive, input_views, output_view);
+    }
 
-			output.materialize(std::move(output_materialization));
-		}
-
-	}
-
-	Evaluator::Evaluator(RuntimeRegistry& runtimes, const KernelRegistry& kernels) noexcept : runtimes_{ runtimes }, kernels_{ kernels } {}
-
-	void Evaluator::evaluate(std::span<const ValueRef> roots)
-	{
-		EvaluationPlanner planner(runtimes_, kernels_);
-		EvaluationPlan plan = planner.build(roots);
-
-		// Each step is executed sequentially after the plan is constructed.
-		for (const PlannedStep& step : plan)
-		{
-			execute_step(step);
-		}
-	}
+    output.materialize(std::move(output_materialization));
 }
+
+} // namespace
+
+Evaluator::Evaluator(RuntimeRegistry &runtimes, const KernelRegistry &kernels) noexcept
+    : runtimes_{runtimes}, kernels_{kernels}
+{
+}
+
+void Evaluator::evaluate(std::span<const ValueRef> roots)
+{
+    EvaluationPlanner planner(runtimes_, kernels_);
+    EvaluationPlan plan = planner.build(roots);
+
+    // Each step is executed sequentially after the plan is constructed.
+    for (const PlannedStep &step : plan)
+    {
+        execute_step(step);
+    }
+}
+} // namespace minitensor::detail

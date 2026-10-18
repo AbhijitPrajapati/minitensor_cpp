@@ -20,127 +20,74 @@
 
 namespace minitensor::detail::cpu
 {
-	namespace
-	{
-		void run_contiguous(
-			DeviceRuntime&,
-			const Primitive& primitive,
-			std::span<const TensorView> inputs,
-			MutableTensorView output)
-		{
-			assert(inputs.size() == 1);
-			assert(
-				dynamic_cast<const ContiguousPrimitive*>(&primitive) != nullptr ||
-				dynamic_cast<const ReshapePrimitive*>(&primitive) != nullptr);
+namespace
+{
+void run_contiguous(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                    MutableTensorView output)
+{
+    assert(inputs.size() == 1);
+    assert(dynamic_cast<const ContiguousPrimitive *>(&primitive) != nullptr ||
+           dynamic_cast<const ReshapePrimitive *>(&primitive) != nullptr);
 
-			dispatch_dtype(
-				output.dtype(),
-				[&]<typename T>(std::type_identity<T>)
-			{
-				copy_to_contiguous<T>(inputs.front(), output);
-			});
-		}
-
-		void run_concatenate(
-			DeviceRuntime&,
-			const Primitive& primitive,
-			std::span<const TensorView> inputs,
-			MutableTensorView output)
-		{
-			assert(!inputs.empty());
-			const auto& concatenate_primitive = dynamic_cast<const ConcatenatePrimitive&>(primitive);
-
-			dispatch_dtype(
-				output.dtype(),
-				[&]<typename T>(std::type_identity<T>)
-			{
-				concatenate_copy<T>(inputs, output, concatenate_primitive.axis());
-			});
-		}
-
-		void run_basic_index_scatter(
-			DeviceRuntime&,
-			const Primitive& primitive,
-			std::span<const TensorView> inputs,
-			MutableTensorView output)
-		{
-			assert(inputs.size() == 1);
-			const auto& basic_index_scatter = dynamic_cast<const BasicIndexScatterPrimitive&>(primitive);
-			const BasicIndexParameters& parameters = basic_index_scatter.parameters();
-			assert(inputs.front().shape() == parameters.output_shape());
-			assert(output.shape() == parameters.input_shape());
-
-			dispatch_dtype(
-				output.dtype(), [&]<typename T>(std::type_identity<T>)
-			{
-				basic_index_scatter_copy<T>(
-					inputs.front(),
-					output,
-					parameters.derive_layout(output.layout()));
-			});
-		}
-
-		void run_gather(
-			DeviceRuntime&,
-			const Primitive& primitive,
-			std::span<const TensorView> inputs,
-			MutableTensorView output)
-		{
-			assert(inputs.size() == 2);
-			const auto& gather = dynamic_cast<const GatherPrimitive&>(primitive);
-
-			dispatch_dtype(
-				output.dtype(), [&]<typename T>(std::type_identity<T>)
-			{
-				gather_copy<T>(
-					inputs[0],
-					inputs[1],
-					output,
-					gather.axis());
-			});
-		}
-
-		void run_gather_scatter_add(
-			DeviceRuntime&,
-			const Primitive& primitive,
-			std::span<const TensorView> inputs,
-			MutableTensorView output)
-		{
-			assert(inputs.size() == 2);
-			const auto& scatter =
-				dynamic_cast<const GatherScatterAddPrimitive&>(primitive);
-
-			dispatch_floating_dtype(
-				output.dtype(), [&]<typename T>(std::type_identity<T>)
-			{
-				gather_scatter_add<T>(
-					inputs[0],
-					inputs[1],
-					output,
-					scatter.axis());
-			});
-		}
-	}
-
-	void register_copy_kernels(KernelRegistry& registry)
-	{
-		registry.register_kernel(
-			KernelKey{ ContiguousPrimitive::ID, DeviceType::Cpu },
-			run_contiguous);
-		registry.register_kernel(
-			KernelKey{ ReshapePrimitive::ID, DeviceType::Cpu },
-			run_contiguous);
-		registry.register_kernel(
-			KernelKey{ ConcatenatePrimitive::ID, DeviceType::Cpu },
-			run_concatenate);
-		registry.register_kernel(
-			KernelKey{ BasicIndexScatterPrimitive::ID, DeviceType::Cpu },
-			run_basic_index_scatter);
-		registry.register_kernel(
-			KernelKey{ GatherPrimitive::ID, DeviceType::Cpu },
-			run_gather);
-		registry.register_kernel(
-			KernelKey{ GatherScatterAddPrimitive::ID, DeviceType::Cpu },
-			run_gather_scatter_add);
-	}
+    dispatch_dtype(output.dtype(),
+                   [&]<typename T>(std::type_identity<T>) { copy_to_contiguous<T>(inputs.front(), output); });
 }
+
+void run_concatenate(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                     MutableTensorView output)
+{
+    assert(!inputs.empty());
+    const auto &concatenate_primitive = dynamic_cast<const ConcatenatePrimitive &>(primitive);
+
+    dispatch_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        concatenate_copy<T>(inputs, output, concatenate_primitive.axis());
+    });
+}
+
+void run_basic_index_scatter(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                             MutableTensorView output)
+{
+    assert(inputs.size() == 1);
+    const auto &basic_index_scatter = dynamic_cast<const BasicIndexScatterPrimitive &>(primitive);
+    const BasicIndexParameters &parameters = basic_index_scatter.parameters();
+    assert(inputs.front().shape() == parameters.output_shape());
+    assert(output.shape() == parameters.input_shape());
+
+    dispatch_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        basic_index_scatter_copy<T>(inputs.front(), output, parameters.derive_layout(output.layout()));
+    });
+}
+
+void run_gather(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                MutableTensorView output)
+{
+    assert(inputs.size() == 2);
+    const auto &gather = dynamic_cast<const GatherPrimitive &>(primitive);
+
+    dispatch_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        gather_copy<T>(inputs[0], inputs[1], output, gather.axis());
+    });
+}
+
+void run_gather_scatter_add(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                            MutableTensorView output)
+{
+    assert(inputs.size() == 2);
+    const auto &scatter = dynamic_cast<const GatherScatterAddPrimitive &>(primitive);
+
+    dispatch_floating_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        gather_scatter_add<T>(inputs[0], inputs[1], output, scatter.axis());
+    });
+}
+} // namespace
+
+void register_copy_kernels(KernelRegistry &registry)
+{
+    registry.register_kernel(KernelKey{ContiguousPrimitive::ID, DeviceType::Cpu}, run_contiguous);
+    registry.register_kernel(KernelKey{ReshapePrimitive::ID, DeviceType::Cpu}, run_contiguous);
+    registry.register_kernel(KernelKey{ConcatenatePrimitive::ID, DeviceType::Cpu}, run_concatenate);
+    registry.register_kernel(KernelKey{BasicIndexScatterPrimitive::ID, DeviceType::Cpu}, run_basic_index_scatter);
+    registry.register_kernel(KernelKey{GatherPrimitive::ID, DeviceType::Cpu}, run_gather);
+    registry.register_kernel(KernelKey{GatherScatterAddPrimitive::ID, DeviceType::Cpu}, run_gather_scatter_add);
+}
+} // namespace minitensor::detail::cpu

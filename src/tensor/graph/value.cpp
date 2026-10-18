@@ -9,54 +9,55 @@
 #include "fwd.hpp"
 #include "node.hpp"
 
-
 namespace minitensor::detail
 {
-	Value::Value(TensorSpec spec) : spec_(std::move(spec)) {}
-
-	Value::Value(TensorSpec spec, NodeRef producer) : spec_(std::move(spec)), producer_(std::move(producer))
-	{
-		if (!producer_)
-		{
-			throw std::invalid_argument{ "a produced value require a producer node" };
-		}
-	}
-
-	const TensorSpec& Value::spec() const noexcept
-	{
-		return spec_;
-	}
-
-	const Materialization* Value::materialization() const noexcept
-	{
-		return materialization_ ? (&*materialization_) : nullptr;
-	}
-
-	// Materialization validation takes place here. Consumers of Value
-	// trust that the materialization within has been validated in order
-	// to avoid unreasonable duplication.
-	void Value::materialize(Materialization materialization) const
-	{
-		if (materialization_)
-		{
-			throw std::logic_error{ "value has already been materialized" };
-		}
-		materialization.validate(spec_);
-		materialization_.emplace(std::move(materialization));
-	}
-
-	bool Value::is_leaf() const noexcept
-	{
-		return !producer_;
-	}
-
-	const Node* Value::producer() const noexcept
-	{
-		return producer_.get();
-	}
-
-	const NodeRef& Value::producer_ref() const noexcept
-	{
-		return producer_;
-	}
+Value::Value(TensorSpec spec) : spec_(std::move(spec))
+{
 }
+
+Value::Value(TensorSpec spec, NodeRef producer) : spec_(std::move(spec)), producer_(std::move(producer))
+{
+    if (!producer_)
+    {
+        throw std::invalid_argument{"a produced value require a producer node"};
+    }
+}
+
+const TensorSpec &Value::spec() const noexcept
+{
+    return spec_;
+}
+
+const Materialization *Value::materialization() const noexcept
+{
+    return materialization_ ? (&*materialization_) : nullptr;
+}
+
+// Materialization validation takes place here. Consumers of Value
+// trust that the materialization within has been validated in order
+// to avoid unreasonable duplication.
+void Value::materialize(Materialization materialization) const
+{
+    if (materialization_)
+    {
+        throw std::logic_error{"value has already been materialized"};
+    }
+    materialization.validate(spec_);
+    materialization_.emplace(std::move(materialization));
+}
+
+bool Value::is_leaf() const noexcept
+{
+    return !producer_;
+}
+
+const Node *Value::producer() const noexcept
+{
+    return producer_.get();
+}
+
+const NodeRef &Value::producer_ref() const noexcept
+{
+    return producer_;
+}
+} // namespace minitensor::detail

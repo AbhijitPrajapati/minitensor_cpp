@@ -10,20 +10,20 @@
 
 namespace minitensor::detail
 {
-	class DeviceRuntime;
+class DeviceRuntime;
 
-	// ExecutionEnvironment is a singleton that houses evaluation, as well as device-specific kernel/runtime management.
-	class ExecutionEnvironment final
-	{
-	public:
-		ExecutionEnvironment();
-		void evaluate(std::span<const ValueRef> roots);
-		DeviceRuntime& runtime_for(const Device& device);
+// ExecutionEnvironment is a singleton that houses evaluation, as well as device-specific kernel/runtime management.
+class ExecutionEnvironment final
+{
+  public:
+    ExecutionEnvironment();
+    void evaluate(std::span<const ValueRef> roots);
+    DeviceRuntime &runtime_for(const Device &device);
 
-	private:
-		RuntimeRegistry runtimes_;
-		KernelRegistry kernels_;
-	};
+  private:
+    RuntimeRegistry runtimes_;
+    KernelRegistry kernels_;
+};
 
-	[[nodiscard]] ExecutionEnvironment& environment();
-}
+[[nodiscard]] ExecutionEnvironment &environment();
+} // namespace minitensor::detail

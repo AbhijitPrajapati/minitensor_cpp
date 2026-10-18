@@ -10,62 +10,61 @@
 
 namespace minitensor::detail::cpu
 {
-	ElementwisePlan::ElementwisePlan(const Shape& shape, std::span<const Layout> layouts)
-		: numel_(shape.numel())
-	{
-		if (layouts.size() == 0)
-		{
-			throw std::invalid_argument{ "must provide at least one layout" };
-		}
+ElementwisePlan::ElementwisePlan(const Shape &shape, std::span<const Layout> layouts) : numel_(shape.numel())
+{
+    if (layouts.size() == 0)
+    {
+        throw std::invalid_argument{"must provide at least one layout"};
+    }
 
-		initial_offsets_.reserve(layouts.size());
-		for (const Layout& layout : layouts)
-		{
-			if (layout.rank() != shape.rank())
-			{
-				throw std::invalid_argument{ "layout rank does not match shape rank" };
-			}
-			initial_offsets_.push_back(layout.offset());
-		}
+    initial_offsets_.reserve(layouts.size());
+    for (const Layout &layout : layouts)
+    {
+        if (layout.rank() != shape.rank())
+        {
+            throw std::invalid_argument{"layout rank does not match shape rank"};
+        }
+        initial_offsets_.push_back(layout.offset());
+    }
 
-		if (numel_ == 0)
-		{
-			return;
-		}
+    if (numel_ == 0)
+    {
+        return;
+    }
 
-		axes_.reserve(shape.rank());
-		for (Shape::size_type axis_idx = 0; axis_idx < shape.rank(); ++axis_idx)
-		{
-			const Extent extent = shape[axis_idx];
-			if (extent == 1)
-			{
-				continue;
-			}
+    axes_.reserve(shape.rank());
+    for (Shape::size_type axis_idx = 0; axis_idx < shape.rank(); ++axis_idx)
+    {
+        const Extent extent = shape[axis_idx];
+        if (extent == 1)
+        {
+            continue;
+        }
 
-			Axis axis;
-			axis.extent = extent;
-			axis.steps.reserve(layouts.size());
-			axis.resets.reserve(layouts.size());
+        Axis axis;
+        axis.extent = extent;
+        axis.steps.reserve(layouts.size());
+        axis.resets.reserve(layouts.size());
 
-			for (const Layout& layout : layouts)
-			{
-				const offset_type step = layout.stride(axis_idx);
-				axis.steps.push_back(step);
-				const auto reset = step * static_cast<offset_type>(extent - 1);
-				axis.resets.push_back(reset);
-			}
+        for (const Layout &layout : layouts)
+        {
+            const offset_type step = layout.stride(axis_idx);
+            axis.steps.push_back(step);
+            const auto reset = step * static_cast<offset_type>(extent - 1);
+            axis.resets.push_back(reset);
+        }
 
-			axes_.push_back(std::move(axis));
-		}
-	}
-
-	ElementwisePlan::size_type ElementwisePlan::numel() const noexcept
-	{
-		return numel_;
-	}
-
-	std::size_t ElementwisePlan::layout_count() const noexcept
-	{
-		return initial_offsets_.size();
-	}
+        axes_.push_back(std::move(axis));
+    }
 }
+
+ElementwisePlan::size_type ElementwisePlan::numel() const noexcept
+{
+    return numel_;
+}
+
+std::size_t ElementwisePlan::layout_count() const noexcept
+{
+    return initial_offsets_.size();
+}
+} // namespace minitensor::detail::cpu

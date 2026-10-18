@@ -14,19 +14,16 @@
 
 namespace minitensor::detail
 {
-	Tensor apply_operation(
-		std::unique_ptr<Primitive> primitive,
-		std::span<const Tensor> inputs)
-	{
-		std::vector<ValueRef> input_values;
-		input_values.reserve(inputs.size());
+Tensor apply_operation(std::unique_ptr<Primitive> primitive, std::span<const Tensor> inputs)
+{
+    std::vector<ValueRef> input_values;
+    input_values.reserve(inputs.size());
 
-		for (const Tensor& input : inputs)
-		{
-			input_values.push_back(TensorAccess::value(input));
-		}
+    for (const Tensor &input : inputs)
+    {
+        input_values.push_back(TensorAccess::value(input));
+    }
 
-		return TensorAccess::make(
-			apply_primitive(std::move(primitive), input_values));
-	}
+    return TensorAccess::make(apply_primitive(std::move(primitive), input_values));
 }
+} // namespace minitensor::detail

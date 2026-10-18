@@ -9,23 +9,23 @@
 
 namespace minitensor::detail
 {
-	// Value is the internal representation of a Tensor value, or an edge
-	// in the computation graph.
-	class Value final
-	{
-	public:
-		Value(TensorSpec spec);
-		Value(TensorSpec spec, NodeRef producer);
-		[[nodiscard]] const TensorSpec& spec() const noexcept;
-		[[nodiscard]] const Materialization* materialization() const noexcept;
-		void materialize(Materialization materialization) const;
-		[[nodiscard]] bool is_leaf() const noexcept;
-		[[nodiscard]] const Node* producer() const noexcept;
-		[[nodiscard]] const NodeRef& producer_ref() const noexcept;
+// Value is the internal representation of a Tensor value, or an edge
+// in the computation graph.
+class Value final
+{
+  public:
+    Value(TensorSpec spec);
+    Value(TensorSpec spec, NodeRef producer);
+    [[nodiscard]] const TensorSpec &spec() const noexcept;
+    [[nodiscard]] const Materialization *materialization() const noexcept;
+    void materialize(Materialization materialization) const;
+    [[nodiscard]] bool is_leaf() const noexcept;
+    [[nodiscard]] const Node *producer() const noexcept;
+    [[nodiscard]] const NodeRef &producer_ref() const noexcept;
 
-	private:
-		TensorSpec spec_;
-		NodeRef producer_;
-		mutable std::optional<Materialization> materialization_;
-	};
-}
+  private:
+    TensorSpec spec_;
+    NodeRef producer_;
+    mutable std::optional<Materialization> materialization_;
+};
+} // namespace minitensor::detail

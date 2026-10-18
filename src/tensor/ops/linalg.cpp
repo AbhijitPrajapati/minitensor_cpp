@@ -9,9 +9,8 @@
 
 namespace minitensor
 {
-	Tensor matmul(const Tensor& lhs, const Tensor& rhs)
-	{
-		return detail::apply_operation(
-			std::make_unique<detail::MatmulPrimitive>(), lhs, rhs);
-	}
+Tensor matmul(const Tensor &lhs, const Tensor &rhs)
+{
+    return detail::apply_operation(std::make_unique<detail::MatmulPrimitive>(), lhs, rhs);
 }
+} // namespace minitensor

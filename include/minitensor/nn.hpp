@@ -9,5 +9,5 @@
 #include "nn/parameter.hpp"
 #include "nn/parameter_tree.hpp"
 
-// Parameter trees are seperate from composed module heirachies for flexibility. Optimizer state is 
+// Parameter trees are seperate from composed module heirachies for flexibility. Optimizer state is
 // also seperate from the constant optimizer.

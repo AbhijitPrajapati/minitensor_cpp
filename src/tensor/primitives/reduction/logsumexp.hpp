@@ -12,20 +12,23 @@
 
 namespace minitensor::detail
 {
-	class LogSumExpPrimitive final : public Primitive
-	{
-	public:
-		static constexpr PrimitiveId ID{ 0x0302 };
-		[[nodiscard]] PrimitiveId id() const noexcept override { return ID; }
-		explicit LogSumExpPrimitive(std::span<const Axis> axes, Shape::size_type input_rank, bool keep_dim);
-		[[nodiscard]] std::string_view name() const noexcept override;
-		[[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;
-		[[nodiscard]] const std::vector<Shape::size_type>& axes() const noexcept;
-		[[nodiscard]] bool keep_dim() const noexcept;
+class LogSumExpPrimitive final : public Primitive
+{
+  public:
+    static constexpr PrimitiveId ID{0x0302};
+    [[nodiscard]] PrimitiveId id() const noexcept override
+    {
+        return ID;
+    }
+    explicit LogSumExpPrimitive(std::span<const Axis> axes, Shape::size_type input_rank, bool keep_dim);
+    [[nodiscard]] std::string_view name() const noexcept override;
+    [[nodiscard]] TensorSpec infer(std::span<const TensorSpec> inputs) const override;
+    [[nodiscard]] const std::vector<Shape::size_type> &axes() const noexcept;
+    [[nodiscard]] bool keep_dim() const noexcept;
 
-	private:
-		std::vector<Shape::size_type> axes_;
-		Shape::size_type input_rank_;
-		bool keep_dim_;
-	};
-}
+  private:
+    std::vector<Shape::size_type> axes_;
+    Shape::size_type input_rank_;
+    bool keep_dim_;
+};
+} // namespace minitensor::detail

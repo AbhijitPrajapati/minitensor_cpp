@@ -5,5 +5,5 @@
 
 namespace minitensor::detail
 {
-	[[nodiscard]] Tensor reduce_to_shape(const Tensor& cotangent, const Shape& target_shape);
+[[nodiscard]] Tensor reduce_to_shape(const Tensor &cotangent, const Shape &target_shape);
 }

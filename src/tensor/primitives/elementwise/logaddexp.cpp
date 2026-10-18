@@ -14,36 +14,36 @@
 
 namespace minitensor::detail
 {
-	std::string_view LogAddExpPrimitive::name() const noexcept
-	{
-		return "log_add_exp";
-	}
-
-	TensorSpec LogAddExpPrimitive::infer(std::span<const TensorSpec> inputs) const
-	{
-		if (inputs.size() != 2)
-		{
-			throw std::invalid_argument{ "log add exp expects 2 input tensors" };
-		}
-
-		const TensorSpec& lhs = inputs[0];
-		const TensorSpec& rhs = inputs[1];
-
-		if (lhs.dtype != rhs.dtype)
-		{
-			throw std::invalid_argument{ "log add exp requires matching dtypes" };
-		}
-		if (!is_floating_point(lhs.dtype))
-		{
-			throw std::invalid_argument{ "log add exp requires floating-point inputs" };
-		}
-		if (lhs.device != rhs.device)
-		{
-			throw std::invalid_argument{ "log add exp requires input tensors on the same device" };
-		}
-
-		Shape output_shape = broadcast_shape(lhs.shape, rhs.shape);
-		return TensorSpec{ std::move(output_shape), lhs.dtype, lhs.device };
-	}
-
+std::string_view LogAddExpPrimitive::name() const noexcept
+{
+    return "log_add_exp";
 }
+
+TensorSpec LogAddExpPrimitive::infer(std::span<const TensorSpec> inputs) const
+{
+    if (inputs.size() != 2)
+    {
+        throw std::invalid_argument{"log add exp expects 2 input tensors"};
+    }
+
+    const TensorSpec &lhs = inputs[0];
+    const TensorSpec &rhs = inputs[1];
+
+    if (lhs.dtype != rhs.dtype)
+    {
+        throw std::invalid_argument{"log add exp requires matching dtypes"};
+    }
+    if (!is_floating_point(lhs.dtype))
+    {
+        throw std::invalid_argument{"log add exp requires floating-point inputs"};
+    }
+    if (lhs.device != rhs.device)
+    {
+        throw std::invalid_argument{"log add exp requires input tensors on the same device"};
+    }
+
+    Shape output_shape = broadcast_shape(lhs.shape, rhs.shape);
+    return TensorSpec{std::move(output_shape), lhs.dtype, lhs.device};
+}
+
+} // namespace minitensor::detail

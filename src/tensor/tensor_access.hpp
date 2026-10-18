@@ -8,18 +8,18 @@
 
 namespace minitensor::detail
 {
-	// TensorAccess is the interface between the public Tensor handle and 
-	// the internal graph Value.
-	struct TensorAccess final
-	{
-		[[nodiscard]] static const ValueRef& value(const Tensor& tensor) noexcept
-		{
-			return tensor.value_;
-		}
+// TensorAccess is the interface between the public Tensor handle and
+// the internal graph Value.
+struct TensorAccess final
+{
+    [[nodiscard]] static const ValueRef &value(const Tensor &tensor) noexcept
+    {
+        return tensor.value_;
+    }
 
-		[[nodiscard]] static Tensor make(ValueRef value)
-		{
-			return Tensor{ std::move(value) };
-		}
-	};
-}
+    [[nodiscard]] static Tensor make(ValueRef value)
+    {
+        return Tensor{std::move(value)};
+    }
+};
+} // namespace minitensor::detail

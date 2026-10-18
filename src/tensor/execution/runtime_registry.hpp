@@ -10,15 +10,15 @@
 
 namespace minitensor::detail
 {
-	// Each device has its own runtime.
-	class RuntimeRegistry final
-	{
-	public:
-		void register_runtime(std::unique_ptr<DeviceRuntime> runtime);
-		[[nodiscard]] bool contains(const Device& device) const;
-		[[nodiscard]] DeviceRuntime& get(const Device& device) const;
+// Each device has its own runtime.
+class RuntimeRegistry final
+{
+  public:
+    void register_runtime(std::unique_ptr<DeviceRuntime> runtime);
+    [[nodiscard]] bool contains(const Device &device) const;
+    [[nodiscard]] DeviceRuntime &get(const Device &device) const;
 
-	private:
-		std::unordered_map<Device, std::unique_ptr<DeviceRuntime>, DeviceHash> runtimes_;
-	};
-}
+  private:
+    std::unordered_map<Device, std::unique_ptr<DeviceRuntime>, DeviceHash> runtimes_;
+};
+} // namespace minitensor::detail
