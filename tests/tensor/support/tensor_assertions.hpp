@@ -20,13 +20,15 @@ namespace minitensor
 inline void PrintTo(const Shape &shape, std::ostream *stream)
 {
     *stream << "Shape{";
-    for (std::size_t axis = 0; axis < shape.rank(); ++axis)
+    bool first = true;
+    for (const Extent extent : shape)
     {
-        if (axis != 0)
+        if (!first)
         {
             *stream << ", ";
         }
-        *stream << shape[axis];
+        *stream << extent;
+        first = false;
     }
     *stream << '}';
 }

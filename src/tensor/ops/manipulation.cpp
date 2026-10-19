@@ -122,12 +122,12 @@ Tensor flatten(const Tensor &input, Axis start_axis, Axis end_axis)
     {
         return input;
     }
-    const auto dimensions = input.shape().dimensions();
+    const Shape &shape = input.shape();
     std::vector<Extent> output_dimensions;
     output_dimensions.reserve(input.rank() - (normalized_end - normalized_start));
-    output_dimensions.insert(output_dimensions.end(), dimensions.begin(), dimensions.begin() + normalized_start);
+    output_dimensions.insert(output_dimensions.end(), shape.begin(), shape.begin() + normalized_start);
     output_dimensions.push_back(flattened_extent(input.shape(), normalized_start, normalized_end));
-    output_dimensions.insert(output_dimensions.end(), dimensions.begin() + normalized_end + 1, dimensions.end());
+    output_dimensions.insert(output_dimensions.end(), shape.begin() + normalized_end + 1, shape.end());
     return reshape(input, Shape{std::move(output_dimensions)});
 }
 
@@ -135,7 +135,7 @@ Tensor squeeze(const Tensor &input)
 {
     std::vector<Extent> output_dimensions;
     output_dimensions.reserve(input.rank());
-    for (const Extent extent : input.shape().dimensions())
+    for (const Extent extent : input.shape())
     {
         if (extent != 1)
         {
@@ -199,13 +199,13 @@ Tensor unsqueeze(const Tensor &input, Axis axis)
 {
     const Shape::size_type output_rank = input.rank() + 1;
     const Shape::size_type normalized = detail::normalize_axis(axis, output_rank);
-    const auto dimensions = input.shape().dimensions();
+    const Shape &shape = input.shape();
 
     std::vector<Extent> output_dimensions;
     output_dimensions.reserve(output_rank);
-    output_dimensions.insert(output_dimensions.end(), dimensions.begin(), dimensions.begin() + normalized);
+    output_dimensions.insert(output_dimensions.end(), shape.begin(), shape.begin() + normalized);
     output_dimensions.push_back(1);
-    output_dimensions.insert(output_dimensions.end(), dimensions.begin() + normalized, dimensions.end());
+    output_dimensions.insert(output_dimensions.end(), shape.begin() + normalized, shape.end());
     return reshape(input, Shape{std::move(output_dimensions)});
 }
 

@@ -83,7 +83,7 @@ TensorSpec ConcatenatePrimitive::infer(std::span<const TensorSpec> inputs) const
         concatenation_axis_extent += input_axis_extent;
     }
 
-    std::vector<Extent> output_extents(first.shape.dimensions().begin(), first.shape.dimensions().end());
+    std::vector<Extent> output_extents(first.shape.begin(), first.shape.end());
     output_extents[axis_] = concatenation_axis_extent;
     return TensorSpec{Shape{std::move(output_extents)}, first.dtype, first.device};
 }

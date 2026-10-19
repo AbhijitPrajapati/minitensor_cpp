@@ -25,7 +25,7 @@ void register_reduction_vjps(VjpRegistry &registry)
         Tensor expanded = context.output_cotangent;
         if (!primitive.axes().empty() && !primitive.keep_dim())
         {
-            std::vector<Extent> expanded_dimensions(input_shape.dimensions().begin(), input_shape.dimensions().end());
+            std::vector<Extent> expanded_dimensions(input_shape.begin(), input_shape.end());
             for (const Shape::size_type axis : primitive.axes())
             {
                 expanded_dimensions[axis] = Extent{1};
@@ -47,7 +47,7 @@ void register_reduction_vjps(VjpRegistry &registry)
         Tensor expanded_cotangent = context.output_cotangent;
         if (!primitive.keep_dim())
         {
-            std::vector<Extent> expanded_extents(input.shape().dimensions().begin(), input.shape().dimensions().end());
+            std::vector<Extent> expanded_extents(input.shape().begin(), input.shape().end());
             for (const Shape::size_type axis : primitive.axes())
             {
                 expanded_extents[axis] = Extent{1};

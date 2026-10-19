@@ -60,8 +60,7 @@ TensorSpec SumPrimitive::infer(std::span<const TensorSpec> inputs) const
     std::vector<Extent> output_extents;
     if (keep_dim_)
     {
-        const auto input_dimensions = input.shape.dimensions();
-        output_extents.assign(input_dimensions.begin(), input_dimensions.end());
+        output_extents.assign(input.shape.begin(), input.shape.end());
         for (const Shape::size_type axis : axes_)
         {
             output_extents[axis] = Extent{1};

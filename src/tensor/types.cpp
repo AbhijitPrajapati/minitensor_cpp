@@ -41,6 +41,26 @@ std::span<const Shape::value_type> Shape::dimensions() const noexcept
     return dimensions_;
 }
 
+Shape::const_iterator Shape::begin() const noexcept
+{
+    return dimensions_.cbegin();
+}
+
+Shape::const_iterator Shape::end() const noexcept
+{
+    return dimensions_.cend();
+}
+
+Shape::const_iterator Shape::cbegin() const noexcept
+{
+    return dimensions_.cbegin();
+}
+
+Shape::const_iterator Shape::cend() const noexcept
+{
+    return dimensions_.cend();
+}
+
 Shape::size_type Shape::validate_and_count(std::span<const value_type> dimensions)
 {
     bool contains_zero = false;

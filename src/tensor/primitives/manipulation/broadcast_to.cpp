@@ -31,10 +31,13 @@ TensorSpec BroadcastToPrimitive::infer(std::span<const TensorSpec> inputs) const
         throw std::invalid_argument{"broadcast_to requires a single input"};
     }
     const TensorSpec &input = inputs.front();
-    if (broadcast_shape(input.shape, shape_) != shape_)
+
+    const Shape broadcasted_shape{broadcast_extents(input.shape.dimensions(), shape_.dimensions())};
+    if (broadcasted_shape != shape_)
     {
         throw std::invalid_argument{"requested shape is incompatible for broadcasting"};
     }
+
     return TensorSpec{shape_, input.dtype, input.device};
 }
 

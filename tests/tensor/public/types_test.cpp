@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <array>
+#include <concepts>
 #include <limits>
+#include <ranges>
 #include <stdexcept>
 #include <vector>
 
@@ -12,13 +14,17 @@
 
 namespace minitensor::test
 {
+static_assert(std::ranges::random_access_range<Shape>);
+static_assert(std::ranges::random_access_range<const Shape>);
+static_assert(std::same_as<std::ranges::range_reference_t<const Shape>, const Extent &>);
+
 TEST(ShapeTest, RepresentsScalars)
 {
     const Shape shape;
 
     EXPECT_EQ(shape.rank(), 0);
     EXPECT_TRUE(shape.is_scalar());
-    EXPECT_TRUE(shape.dimensions().empty());
+    EXPECT_TRUE(std::ranges::empty(shape));
     EXPECT_EQ(shape.numel(), 1);
 }
 
@@ -27,13 +33,13 @@ TEST(ShapeTest, PreservesDimensionsAndCountsElements)
     const Shape from_list{2, 3, 4};
     const std::array<Extent, 3> expected{2, 3, 4};
     EXPECT_EQ(from_list.rank(), expected.size());
-    EXPECT_TRUE(std::ranges::equal(from_list.dimensions(), expected));
+    EXPECT_TRUE(std::ranges::equal(from_list, expected));
     EXPECT_EQ(from_list[1], 3);
     EXPECT_EQ(from_list.numel(), 24);
 
     const std::vector<Extent> dimensions{5, 2, 3};
     const Shape from_vector{dimensions};
-    EXPECT_TRUE(std::ranges::equal(from_vector.dimensions(), dimensions));
+    EXPECT_TRUE(std::ranges::equal(from_vector, dimensions));
     EXPECT_EQ(from_vector.numel(), 30);
 }
 

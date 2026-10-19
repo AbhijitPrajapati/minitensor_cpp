@@ -42,7 +42,7 @@ TensorSpec SubtractPrimitive::infer(std::span<const TensorSpec> inputs) const
         throw std::invalid_argument{"subtract requires input tensors on the same device"};
     }
 
-    Shape output_shape = broadcast_shape(lhs.shape, rhs.shape);
+    Shape output_shape{broadcast_extents(lhs.shape.dimensions(), rhs.shape.dimensions())};
     return TensorSpec{std::move(output_shape), lhs.dtype, lhs.device};
 }
 

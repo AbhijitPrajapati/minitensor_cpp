@@ -126,7 +126,7 @@ BasicIndexParameters BasicIndexParameters::for_slice(Axis axis, std::optional<Ex
     std::vector<Component> components(input_shape.rank(), AllIndex{});
     components[normalized.axis] = SliceIndex{normalized.start, normalized.length, normalized.step};
 
-    std::vector<Extent> output_extents(input_shape.dimensions().begin(), input_shape.dimensions().end());
+    std::vector<Extent> output_extents(input_shape.begin(), input_shape.end());
     output_extents[normalized.axis] = normalized.length;
 
     return BasicIndexParameters(input_shape, Shape{std::move(output_extents)}, std::move(components));
@@ -138,11 +138,10 @@ BasicIndexParameters BasicIndexParameters::for_select(Axis axis, Extent index, c
     const Shape::size_type normalized_axis = normalize_axis(axis, input_shape.rank());
     index = normalize_index(index, input_shape[normalized_axis]);
 
-    const auto input_extents = input_shape.dimensions();
     std::vector<Extent> output_extents;
     output_extents.reserve(input_shape.rank() - 1);
-    output_extents.insert(output_extents.end(), input_extents.begin(), input_extents.begin() + normalized_axis);
-    output_extents.insert(output_extents.end(), input_extents.begin() + normalized_axis + 1, input_extents.end());
+    output_extents.insert(output_extents.end(), input_shape.begin(), input_shape.begin() + normalized_axis);
+    output_extents.insert(output_extents.end(), input_shape.begin() + normalized_axis + 1, input_shape.end());
 
     std::vector<Component> components(input_shape.rank(), AllIndex{});
     components[normalized_axis] = SelectIndex{index};

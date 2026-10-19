@@ -43,9 +43,4 @@ std::vector<Extent> broadcast_extents(std::span<const Extent> lhs, std::span<con
 
     return output_extents;
 }
-
-Shape broadcast_shape(const Shape &lhs, const Shape &rhs)
-{
-    return Shape{broadcast_extents(lhs.dimensions(), rhs.dimensions())};
-}
 } // namespace minitensor::detail

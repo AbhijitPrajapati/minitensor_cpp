@@ -21,6 +21,7 @@ class Shape final
   public:
     using value_type = Extent;
     using size_type = std::size_t;
+    using const_iterator = std::vector<value_type>::const_iterator;
 
     // The default constructor constructs a scalar shape.
     Shape() = default;
@@ -34,6 +35,11 @@ class Shape final
     [[nodiscard]] value_type operator[](size_type axis) const noexcept;
 
     [[nodiscard]] std::span<const value_type> dimensions() const noexcept;
+
+    [[nodiscard]] const_iterator begin() const noexcept;
+    [[nodiscard]] const_iterator end() const noexcept;
+    [[nodiscard]] const_iterator cbegin() const noexcept;
+    [[nodiscard]] const_iterator cend() const noexcept;
 
     [[nodiscard]] size_type numel() const noexcept;
 
