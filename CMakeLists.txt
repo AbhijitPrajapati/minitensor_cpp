@@ -15,7 +15,6 @@ target_sources(
         src/tensor/data.cpp
         src/tensor/evaluation.cpp
         src/tensor/random.cpp
-        src/tensor/core/broadcasting.cpp
         src/tensor/core/dense_size.cpp
         src/tensor/core/axis.cpp
         src/tensor/apply_operation.cpp

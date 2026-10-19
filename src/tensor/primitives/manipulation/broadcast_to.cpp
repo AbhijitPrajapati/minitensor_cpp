@@ -32,7 +32,7 @@ TensorSpec BroadcastToPrimitive::infer(std::span<const TensorSpec> inputs) const
     }
     const TensorSpec &input = inputs.front();
 
-    const Shape broadcasted_shape{broadcast_extents(input.shape.dimensions(), shape_.dimensions())};
+    const Shape broadcasted_shape{broadcast_extents(input.shape, shape_)};
     if (broadcasted_shape != shape_)
     {
         throw std::invalid_argument{"requested shape is incompatible for broadcasting"};

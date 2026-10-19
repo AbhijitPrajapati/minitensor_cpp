@@ -42,7 +42,7 @@ TensorSpec MultiplyPrimitive::infer(std::span<const TensorSpec> inputs) const
         throw std::invalid_argument{"multiply requires input tensors on the same device"};
     }
 
-    Shape output_shape{broadcast_extents(lhs.shape.dimensions(), rhs.shape.dimensions())};
+    Shape output_shape{broadcast_extents(lhs.shape, rhs.shape)};
     return TensorSpec{std::move(output_shape), lhs.dtype, lhs.device};
 }
 
