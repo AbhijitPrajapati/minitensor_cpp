@@ -112,7 +112,7 @@ else()
 endif()
 
 # Add demo executable
-add_executable(minitensor_demo main.cpp)
+add_executable(minitensor_demo demo.cpp)
 # Link demo executable to library
 target_link_libraries(minitensor_demo PRIVATE minitensor)
 

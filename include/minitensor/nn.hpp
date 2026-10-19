@@ -3,9 +3,8 @@
 #include "nn/gradients.hpp"
 #include "nn/leafification.hpp"
 #include "nn/loss.hpp"
-#include "nn/modules/linear.hpp"
-#include "nn/optimizers/adamw.hpp"
-#include "nn/optimizers/sgd.hpp"
+#include "nn/modules.hpp"
+#include "nn/optimizers.hpp"
 #include "nn/parameter.hpp"
 #include "nn/parameter_tree.hpp"
 
