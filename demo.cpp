@@ -172,8 +172,11 @@ int main()
         mt::Tensor logits = model(parameters, train_inputs);
         mt::Tensor loss = mt::nn::categorical_cross_entropy_with_logits(logits, train_classes);
 
-        // No computation is performed until the loss is requested.
-        std::cout << "Epoch: " << epoch << " Loss: " << mt::item<float>(loss) << "\n";
+        if (epoch % 25 == 0)
+        {
+            // No computation is performed until the loss is requested.
+            std::cout << "Epoch: " << epoch << " Loss: " << mt::item<float>(loss) << "\n";
+        }
 
         // Gradient computation only adds to the lazy graph. It does not execute
         // until resulting Tensors are evaluated.
@@ -198,5 +201,5 @@ int main()
     mt::Tensor test_logits = model(parameters, test_inputs);
     mt::Tensor test_loss = mt::nn::categorical_cross_entropy_with_logits(test_logits, test_classes);
 
-    std::cout << "\n" << "Test Loss: " << mt::item<float>(test_loss);
+    std::cout << "\n" << "Test Loss: " << mt::item<float>(test_loss) << "\n";
 }
