@@ -16,56 +16,54 @@
 
 namespace minitensor::test
 {
-	TEST(EvaluationTest, AcceptsNoRoots)
-	{
-		EXPECT_NO_THROW(eval(std::span<const Tensor>{}));
-	}
-
-	TEST(EvaluationTest, EvaluatesSingleAndSharedRoots)
-	{
-		const Tensor lhs = full(Shape{ 2, 1 }, 1.5F);
-		const Tensor rhs = full(Shape{ 1, 3 }, 2.5F);
-		const Tensor sum = lhs + rhs;
-		const Tensor result = sum + 4.0F;
-		const std::array<Tensor, 4> roots{ lhs, sum, result, result };
-
-		EXPECT_NO_THROW(eval(roots));
-		const std::array<float, 6> expected{ 8.0F, 8.0F, 8.0F, 8.0F, 8.0F, 8.0F };
-		expect_tensor_eq(result, expected);
-		EXPECT_NO_THROW(eval(result));
-	}
-
-	TEST(EvaluationTest, SupportsInitializerListsAndEmptyStorage)
-	{
-		const Tensor scalar = full(Shape{}, 3.5F);
-		const Tensor empty = full(Shape{ 2, 0, 3 }, 7.0F);
-
-		EXPECT_NO_THROW(eval({ scalar, empty }));
-		EXPECT_FLOAT_EQ(item(scalar), 3.5F);
-		EXPECT_TRUE(to_vector(empty).empty());
-	}
-
-	TEST(EvaluationTest, ReportsUnavailableDevices)
-	{
-		const Tensor unsupported = full(
-			Shape{ 1 }, 1.0F,
-			TensorOptions{ DType::Float32, Device::cpu(1) });
-		EXPECT_THROW(eval(unsupported), std::runtime_error);
-	}
-
-	TEST(EvaluationTest, LeafifiesSingleAndBatchedLazyResults)
-	{
-		const Tensor single_source = full(Shape{ 2 }, 1.5F) + 2.0F;
-		const Tensor single = leafify(single_source);
-		EXPECT_EQ(to_vector(single), (std::vector<float>{ 3.5F, 3.5F }));
-
-		const Tensor shared = full(Shape{ 2 }, 2.0F) + 1.0F;
-		const std::array<Tensor, 2> sources{ shared, shared * 3.0F };
-		const std::vector<Tensor> batch = leafify(sources);
-
-		ASSERT_EQ(batch.size(), 2);
-		EXPECT_EQ(to_vector(batch[0]), (std::vector<float>{ 3.0F, 3.0F }));
-		EXPECT_EQ(to_vector(batch[1]), (std::vector<float>{ 9.0F, 9.0F }));
-		EXPECT_TRUE(leafify(std::span<const Tensor>{}).empty());
-	}
+TEST(EvaluationTest, AcceptsNoRoots)
+{
+    EXPECT_NO_THROW(eval(std::span<const Tensor>{}));
 }
+
+TEST(EvaluationTest, EvaluatesSingleAndSharedRoots)
+{
+    const Tensor lhs = full(Shape{2, 1}, 1.5F);
+    const Tensor rhs = full(Shape{1, 3}, 2.5F);
+    const Tensor sum = lhs + rhs;
+    const Tensor result = sum + 4.0F;
+    const std::array<Tensor, 4> roots{lhs, sum, result, result};
+
+    EXPECT_NO_THROW(eval(roots));
+    const std::array<float, 6> expected{8.0F, 8.0F, 8.0F, 8.0F, 8.0F, 8.0F};
+    expect_tensor_eq(result, expected);
+    EXPECT_NO_THROW(eval(result));
+}
+
+TEST(EvaluationTest, SupportsInitializerListsAndEmptyStorage)
+{
+    const Tensor scalar = full(Shape{}, 3.5F);
+    const Tensor empty = full(Shape{2, 0, 3}, 7.0F);
+
+    EXPECT_NO_THROW(eval({scalar, empty}));
+    EXPECT_FLOAT_EQ(item(scalar), 3.5F);
+    EXPECT_TRUE(to_vector(empty).empty());
+}
+
+TEST(EvaluationTest, ReportsUnavailableDevices)
+{
+    const Tensor unsupported = full(Shape{1}, 1.0F, TensorOptions{DType::Float32, Device::cpu(1)});
+    EXPECT_THROW(eval(unsupported), std::runtime_error);
+}
+
+TEST(EvaluationTest, LeafifiesSingleAndBatchedLazyResults)
+{
+    const Tensor single_source = full(Shape{2}, 1.5F) + 2.0F;
+    const Tensor single = leafify(single_source);
+    EXPECT_EQ(to_vector(single), (std::vector<float>{3.5F, 3.5F}));
+
+    const Tensor shared = full(Shape{2}, 2.0F) + 1.0F;
+    const std::array<Tensor, 2> sources{shared, shared * 3.0F};
+    const std::vector<Tensor> batch = leafify(sources);
+
+    ASSERT_EQ(batch.size(), 2);
+    EXPECT_EQ(to_vector(batch[0]), (std::vector<float>{3.0F, 3.0F}));
+    EXPECT_EQ(to_vector(batch[1]), (std::vector<float>{9.0F, 9.0F}));
+    EXPECT_TRUE(leafify(std::span<const Tensor>{}).empty());
+}
+} // namespace minitensor::test

@@ -17,142 +17,147 @@
 
 namespace minitensor::test
 {
-	class IdentitySpecPrimitive final : public detail::Primitive
-	{
-	public:
-		static constexpr detail::PrimitiveId ID{ 0x80000001 };
-		[[nodiscard]] detail::PrimitiveId id() const noexcept override { return ID; }
+class IdentitySpecPrimitive final : public detail::Primitive
+{
+  public:
+    static constexpr detail::PrimitiveId ID{0x80000001};
+    [[nodiscard]] detail::PrimitiveId id() const noexcept override
+    {
+        return ID;
+    }
 
-		[[nodiscard]] std::string_view name() const noexcept override
-		{
-			return "test_identity";
-		}
+    [[nodiscard]] std::string_view name() const noexcept override
+    {
+        return "test_identity";
+    }
 
-		[[nodiscard]] detail::TensorSpec infer(std::span<const detail::TensorSpec> inputs) const override
-		{
-			if (inputs.size() != 1)
-			{
-				throw std::invalid_argument{ "expected one input" };
-			}
-			return inputs.front();
-		}
-	};
+    [[nodiscard]] detail::TensorSpec infer(std::span<const detail::TensorSpec> inputs) const override
+    {
+        if (inputs.size() != 1)
+        {
+            throw std::invalid_argument{"expected one input"};
+        }
+        return inputs.front();
+    }
+};
 
-	class DestructionTrackedPrimitive final : public detail::Primitive
-	{
-	public:
-		static constexpr detail::PrimitiveId ID{ 0x80000002 };
-		[[nodiscard]] detail::PrimitiveId id() const noexcept override { return ID; }
+class DestructionTrackedPrimitive final : public detail::Primitive
+{
+  public:
+    static constexpr detail::PrimitiveId ID{0x80000002};
+    [[nodiscard]] detail::PrimitiveId id() const noexcept override
+    {
+        return ID;
+    }
 
-		explicit DestructionTrackedPrimitive(bool& destroyed) noexcept : destroyed_{ destroyed }
-		{
-			destroyed_ = false;
-		}
+    explicit DestructionTrackedPrimitive(bool &destroyed) noexcept : destroyed_{destroyed}
+    {
+        destroyed_ = false;
+    }
 
-		~DestructionTrackedPrimitive() override
-		{
-			destroyed_ = true;
-		}
+    ~DestructionTrackedPrimitive() override
+    {
+        destroyed_ = true;
+    }
 
-		[[nodiscard]] std::string_view name() const noexcept override
-		{
-			return "test_destruction_tracked_identity";
-		}
+    [[nodiscard]] std::string_view name() const noexcept override
+    {
+        return "test_destruction_tracked_identity";
+    }
 
-		[[nodiscard]] detail::TensorSpec infer(std::span<const detail::TensorSpec> inputs) const override
-		{
-			if (inputs.size() != 1)
-			{
-				throw std::invalid_argument{ "expected one input" };
-			}
-			return inputs.front();
-		}
+    [[nodiscard]] detail::TensorSpec infer(std::span<const detail::TensorSpec> inputs) const override
+    {
+        if (inputs.size() != 1)
+        {
+            throw std::invalid_argument{"expected one input"};
+        }
+        return inputs.front();
+    }
 
-	private:
-		bool& destroyed_;
-	};
+  private:
+    bool &destroyed_;
+};
 
-	class IdentityStorageSharingPrimitive final : public detail::Primitive
-	{
-	public:
-		static constexpr detail::PrimitiveId ID{ 0x80000003 };
-		[[nodiscard]] detail::PrimitiveId id() const noexcept override { return ID; }
+class IdentityStorageSharingPrimitive final : public detail::Primitive
+{
+  public:
+    static constexpr detail::PrimitiveId ID{0x80000003};
+    [[nodiscard]] detail::PrimitiveId id() const noexcept override
+    {
+        return ID;
+    }
 
-		[[nodiscard]] std::string_view name() const noexcept override
-		{
-			return "test_identity_storage_sharing";
-		}
+    [[nodiscard]] std::string_view name() const noexcept override
+    {
+        return "test_identity_storage_sharing";
+    }
 
-		[[nodiscard]] detail::TensorSpec infer(std::span<const detail::TensorSpec> inputs) const override
-		{
-			if (inputs.size() != 1)
-			{
-				throw std::invalid_argument{ "expected one input" };
-			}
+    [[nodiscard]] detail::TensorSpec infer(std::span<const detail::TensorSpec> inputs) const override
+    {
+        if (inputs.size() != 1)
+        {
+            throw std::invalid_argument{"expected one input"};
+        }
 
-			return inputs.front();
-		}
+        return inputs.front();
+    }
 
-		[[nodiscard]] std::optional<detail::Layout> try_derive_shared_layout(
-			const detail::TensorSpec&,
-			const detail::Layout& input_layout,
-			const detail::TensorSpec&) const override
-		{
-			return input_layout;
-		}
+    [[nodiscard]] std::optional<detail::Layout> try_derive_shared_layout(const detail::TensorSpec &,
+                                                                         const detail::Layout &input_layout,
+                                                                         const detail::TensorSpec &) const override
+    {
+        return input_layout;
+    }
 
-		[[nodiscard]] bool requires_kernel_support() const noexcept override
-		{
-			return false;
-		}
-	};
+    [[nodiscard]] bool requires_kernel_support() const noexcept override
+    {
+        return false;
+    }
+};
 
-	class RuleBasedVjpPrimitive final : public detail::Primitive
-	{
-	public:
-		static constexpr detail::PrimitiveId ID{ 0x80000004 };
-		[[nodiscard]] detail::PrimitiveId id() const noexcept override { return ID; }
+class RuleBasedVjpPrimitive final : public detail::Primitive
+{
+  public:
+    static constexpr detail::PrimitiveId ID{0x80000004};
+    [[nodiscard]] detail::PrimitiveId id() const noexcept override
+    {
+        return ID;
+    }
 
-		using Rule = std::function<std::vector<std::optional<Tensor>>(
-			std::span<const Tensor>, const Tensor&, const Tensor&)>;
+    using Rule =
+        std::function<std::vector<std::optional<Tensor>>(std::span<const Tensor>, const Tensor &, const Tensor &)>;
 
-		RuleBasedVjpPrimitive(
-			std::size_t input_count,
-			detail::TensorSpec output_spec,
-			Rule rule)
-			: input_count_{ input_count },
-			output_spec_{ std::move(output_spec) },
-			rule_{ std::move(rule) }
-		{
-			if (!rule_)
-			{
-				throw std::invalid_argument{ "test VJP rule cannot be empty" };
-			}
-		}
+    RuleBasedVjpPrimitive(std::size_t input_count, detail::TensorSpec output_spec, Rule rule)
+        : input_count_{input_count}, output_spec_{std::move(output_spec)}, rule_{std::move(rule)}
+    {
+        if (!rule_)
+        {
+            throw std::invalid_argument{"test VJP rule cannot be empty"};
+        }
+    }
 
-		[[nodiscard]] std::string_view name() const noexcept override
-		{
-			return "test_rule_based_vjp";
-		}
+    [[nodiscard]] std::string_view name() const noexcept override
+    {
+        return "test_rule_based_vjp";
+    }
 
-		[[nodiscard]] detail::TensorSpec infer(
-			std::span<const detail::TensorSpec> inputs) const override
-		{
-			if (inputs.size() != input_count_)
-			{
-				throw std::invalid_argument{ "unexpected test VJP input count" };
-			}
-			return output_spec_;
-		}
+    [[nodiscard]] detail::TensorSpec infer(std::span<const detail::TensorSpec> inputs) const override
+    {
+        if (inputs.size() != input_count_)
+        {
+            throw std::invalid_argument{"unexpected test VJP input count"};
+        }
+        return output_spec_;
+    }
 
-		[[nodiscard]] const Rule& rule() const noexcept
-		{
-			return rule_;
-		}
+    [[nodiscard]] const Rule &rule() const noexcept
+    {
+        return rule_;
+    }
 
-	private:
-		std::size_t input_count_;
-		detail::TensorSpec output_spec_;
-		Rule rule_;
-	};
-}
+  private:
+    std::size_t input_count_;
+    detail::TensorSpec output_spec_;
+    Rule rule_;
+};
+} // namespace minitensor::test

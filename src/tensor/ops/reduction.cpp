@@ -59,7 +59,7 @@ Tensor mean(const Tensor &input, std::span<const Axis> axes, bool keep_dim)
 
     const Tensor total = detail::apply_operation(std::move(primitive), input);
 
-    // Constructing a Shape preserves the library's checked element-count semantics.
+    // Constructing a Shape preserves checked element-count semantics.
     const Shape::size_type reduction_size = Shape{std::move(reduced_extents)}.numel();
 
     return total / static_cast<float>(reduction_size);

@@ -33,46 +33,43 @@
 
 namespace minitensor::test
 {
-	TEST(PrimitiveIdTest, BuiltInPrimitivesHaveUniqueNonzeroIds)
-	{
-		const std::array<detail::PrimitiveId, 28> ids{
-			detail::FullPrimitive::ID,
-			detail::UniformPrimitive::ID,
-			detail::NormalPrimitive::ID,
-			detail::AbsoluteValuePrimitive::ID,
-			detail::SignPrimitive::ID,
-			detail::NegatePrimitive::ID,
-			detail::ExponentialPrimitive::ID,
-			detail::LogarithmPrimitive::ID,
-			detail::SquareRootPrimitive::ID,
-			detail::HyperbolicTangentPrimitive::ID,
-			detail::SigmoidPrimitive::ID,
-			detail::AddPrimitive::ID,
-			detail::SubtractPrimitive::ID,
-			detail::MultiplyPrimitive::ID,
-			detail::DividePrimitive::ID,
-			detail::LogAddExpPrimitive::ID,
-			detail::ContiguousPrimitive::ID,
-			detail::ReshapePrimitive::ID,
-			detail::PermutePrimitive::ID,
-			detail::BroadcastToPrimitive::ID,
-			detail::ConcatenatePrimitive::ID,
-			detail::BasicIndexPrimitive::ID,
-			detail::BasicIndexScatterPrimitive::ID,
-			detail::GatherPrimitive::ID,
-			detail::GatherScatterAddPrimitive::ID,
-			detail::SumPrimitive::ID,
-			detail::LogSumExpPrimitive::ID,
-			detail::MatmulPrimitive::ID
-		};
+TEST(PrimitiveIdTest, BuiltInPrimitivesHaveUniqueNonzeroIds)
+{
+    const std::array<detail::PrimitiveId, 28> ids{detail::FullPrimitive::ID,
+                                                  detail::UniformPrimitive::ID,
+                                                  detail::NormalPrimitive::ID,
+                                                  detail::AbsoluteValuePrimitive::ID,
+                                                  detail::SignPrimitive::ID,
+                                                  detail::NegatePrimitive::ID,
+                                                  detail::ExponentialPrimitive::ID,
+                                                  detail::LogarithmPrimitive::ID,
+                                                  detail::SquareRootPrimitive::ID,
+                                                  detail::HyperbolicTangentPrimitive::ID,
+                                                  detail::SigmoidPrimitive::ID,
+                                                  detail::AddPrimitive::ID,
+                                                  detail::SubtractPrimitive::ID,
+                                                  detail::MultiplyPrimitive::ID,
+                                                  detail::DividePrimitive::ID,
+                                                  detail::LogAddExpPrimitive::ID,
+                                                  detail::ContiguousPrimitive::ID,
+                                                  detail::ReshapePrimitive::ID,
+                                                  detail::PermutePrimitive::ID,
+                                                  detail::BroadcastToPrimitive::ID,
+                                                  detail::ConcatenatePrimitive::ID,
+                                                  detail::BasicIndexPrimitive::ID,
+                                                  detail::BasicIndexScatterPrimitive::ID,
+                                                  detail::GatherPrimitive::ID,
+                                                  detail::GatherScatterAddPrimitive::ID,
+                                                  detail::SumPrimitive::ID,
+                                                  detail::LogSumExpPrimitive::ID,
+                                                  detail::MatmulPrimitive::ID};
 
-		const std::unordered_set<detail::PrimitiveId, detail::PrimitiveIdHash>
-			unique_ids{ ids.begin(), ids.end() };
+    const std::unordered_set<detail::PrimitiveId, detail::PrimitiveIdHash> unique_ids{ids.begin(), ids.end()};
 
-		EXPECT_EQ(unique_ids.size(), ids.size());
-		for (const detail::PrimitiveId id : ids)
-		{
-			EXPECT_NE(id.value(), 0);
-		}
-	}
+    EXPECT_EQ(unique_ids.size(), ids.size());
+    for (const detail::PrimitiveId id : ids)
+    {
+        EXPECT_NE(id.value(), 0);
+    }
 }
+} // namespace minitensor::test
