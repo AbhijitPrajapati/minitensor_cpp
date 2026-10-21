@@ -6,8 +6,8 @@
 
 #include <gtest/gtest.h>
 
-#include "tensor/core/dense_size.hpp"
 #include "tensor/core/tensor_spec.hpp"
+#include "tensor/storage/dense_size.hpp"
 
 namespace minitensor::test
 {

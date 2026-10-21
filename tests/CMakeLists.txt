@@ -66,13 +66,13 @@ minitensor_add_test_executable(
     tensor.internal
     "tensor;internal"
     tensor/internal/core/axis_test.cpp
-    tensor/internal/core/dense_size_test.cpp
     tensor/internal/core/broadcasting_test.cpp
     tensor/internal/graph/graph_test.cpp
     tensor/internal/graph/ownership_test.cpp
     tensor/internal/graph/primitive_id_test.cpp
     tensor/internal/storage/layout_test.cpp
     tensor/internal/storage/materialization_test.cpp
+    tensor/internal/storage/dense_size_test.cpp
     tensor/internal/dispatch/kernel_registry_test.cpp
     tensor/internal/dispatch/tensor_view_test.cpp
     tensor/internal/execution/evaluator_test.cpp

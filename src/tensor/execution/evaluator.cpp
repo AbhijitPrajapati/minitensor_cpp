@@ -9,7 +9,6 @@
 
 #include "runtime_registry.hpp"
 #include "tensor/backend/device_runtime.hpp"
-#include "tensor/core/dense_size.hpp"
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
@@ -19,6 +18,7 @@
 #include "tensor/graph/primitive.hpp"
 #include "tensor/graph/value.hpp"
 #include "tensor/storage/buffer.hpp"
+#include "tensor/storage/dense_size.hpp"
 #include "tensor/storage/layout.hpp"
 #include "tensor/storage/materialization.hpp"
 

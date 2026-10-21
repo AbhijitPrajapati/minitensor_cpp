@@ -5,7 +5,7 @@
 
 #include <minitensor/types.hpp>
 
-#include "tensor_spec.hpp"
+#include "tensor/core/tensor_spec.hpp"
 
 namespace minitensor::detail
 {

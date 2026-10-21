@@ -15,7 +15,6 @@ target_sources(
         src/tensor/data.cpp
         src/tensor/evaluation.cpp
         src/tensor/random.cpp
-        src/tensor/core/dense_size.cpp
         src/tensor/core/axis.cpp
         src/tensor/apply_operation.cpp
         src/tensor/graph/apply_primitive.cpp
@@ -55,6 +54,7 @@ target_sources(
         src/tensor/primitives/reduction/logsumexp.cpp
         src/tensor/storage/layout.cpp
         src/tensor/storage/materialization.cpp
+        src/tensor/storage/dense_size.cpp
         src/tensor/backend/cpu/cpu_buffer.cpp
         src/tensor/backend/cpu/cpu_runtime.cpp
         src/tensor/backend/cpu/register_kernels.cpp
