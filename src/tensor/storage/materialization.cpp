@@ -55,7 +55,7 @@ offset_type checked_contribution(stride_type stride, Extent dist)
 } // namespace
 
 Materialization::Materialization(BufferRef buffer, Layout layout)
-    : buffer_(std::move(buffer)), layout_(std::move(layout))
+    : layout_(std::move(layout)), buffer_(std::move(buffer))
 {
     if (!buffer_)
     {

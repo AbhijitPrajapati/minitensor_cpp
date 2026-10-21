@@ -10,7 +10,7 @@ namespace minitensor::detail::cpu
 {
 // The CpuBuffer internally allocates and deallocates memory manually using the global
 // ::operator new and ::operator delete.
-CpuBuffer::CpuBuffer(std::size_t size_bytes, Device device) : size_bytes_(size_bytes), device_(device)
+CpuBuffer::CpuBuffer(std::size_t size_bytes, Device device) : device_(device), size_bytes_(size_bytes)
 {
     if (device_.type() != DeviceType::Cpu)
     {
