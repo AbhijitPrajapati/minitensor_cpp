@@ -42,7 +42,7 @@ class TiedParameterTree final
     Parameter first_;
     Parameter second_;
 
-    friend class ParameterTreeAccess;
+    friend class ::minitensor::nn::ParameterTreeAccess;
 };
 } // namespace
 

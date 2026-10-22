@@ -41,7 +41,7 @@ class LinearParameterPair final
         visitor.child("second", self.second_);
     }
 
-    friend class ParameterTreeAccess;
+    friend class ::minitensor::nn::ParameterTreeAccess;
 
     Linear::Parameters first_;
     Linear::Parameters second_;
@@ -72,7 +72,7 @@ class TiedParameterTree final
         visitor.parameter("second", self.second_);
     }
 
-    friend class ParameterTreeAccess;
+    friend class ::minitensor::nn::ParameterTreeAccess;
 
     Parameter first_;
     Parameter second_;
@@ -94,7 +94,7 @@ class MalformedParameterTree final
         visitor.parameter(self.second_name_, self.parameter_);
     }
 
-    friend class ParameterTreeAccess;
+    friend class ::minitensor::nn::ParameterTreeAccess;
 
     std::string first_name_;
     std::string second_name_;

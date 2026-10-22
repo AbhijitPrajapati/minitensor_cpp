@@ -46,7 +46,7 @@ class ParameterPair final
     Parameter first_;
     Parameter second_;
 
-    friend class ParameterTreeAccess;
+    friend class ::minitensor::nn::ParameterTreeAccess;
 };
 
 class MixedParameterTree final
@@ -85,7 +85,7 @@ class MixedParameterTree final
     Parameter second_;
     Parameter frozen_;
 
-    friend class ParameterTreeAccess;
+    friend class ::minitensor::nn::ParameterTreeAccess;
 };
 } // namespace
 

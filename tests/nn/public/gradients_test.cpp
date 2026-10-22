@@ -53,7 +53,7 @@ class TiedGradientTree final
     Parameter second_;
     Parameter frozen_;
 
-    friend class ParameterTreeAccess;
+    friend class ::minitensor::nn::ParameterTreeAccess;
 };
 } // namespace
 

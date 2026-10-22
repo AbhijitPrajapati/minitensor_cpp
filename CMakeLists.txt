@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.0.2)
+cmake_minimum_required(VERSION 3.24...4.0)
 
 project(minitensor_cpp VERSION 0.1.0 LANGUAGES CXX)
 
@@ -124,9 +124,10 @@ if(BUILD_TESTING)
     FetchContent_Declare(
         googletest
         URL https://github.com/google/googletest/archive/refs/tags/v1.18.0.zip
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    if(MSVC)
+        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    endif()
     set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
     add_subdirectory(tests)
