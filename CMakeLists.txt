@@ -104,10 +104,10 @@ target_compile_features(minitensor PUBLIC cxx_std_20)
 # No compiler-specific extentions are used
 set_target_properties(minitensor PROPERTIES CXX_EXTENSIONS OFF)
 
-# Set compile-specific flags to catch mistakes
+# Set compiler-specific flags for MSVC
 if(MSVC)
     target_compile_options(minitensor PRIVATE /W4 /permissive-)
-else()
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
     target_compile_options(minitensor PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 

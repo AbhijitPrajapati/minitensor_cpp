@@ -1,3 +1,4 @@
+# Function to add test executable
 function(minitensor_add_test_executable target test_name labels)
     add_executable(${target} ${ARGN})
     target_link_libraries(${target} PRIVATE minitensor GTest::gtest_main)
@@ -5,9 +6,10 @@ function(minitensor_add_test_executable target test_name labels)
     target_compile_features(${target} PRIVATE cxx_std_20)
     set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
 
+    # Same compiler-specific flags for MSVC
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /permissive-)
-    else()
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
         target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
     endif()
 

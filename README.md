@@ -10,18 +10,18 @@ See [`demo.cpp`](demo.cpp) for a complete training demonstration of a composite 
 
 ## Building
 
-MiniTensor requires a C++20 compiler, CMake 4.0.2 or newer, and Ninja. The included CMake presets currently target MSVC on Windows and should be run from a Visual Studio developer environment.
+MiniTensor requires a C++20 compiler, CMake 3.24 or newer, and Ninja. The included CMake presets support GCC, Clang, and MSVC.
 
 ```powershell
-cmake --preset x64-release
-cmake --build --preset x64-release
-ctest --preset x64-release
+cmake --preset gcc-release
+cmake --build --preset gcc-release
+ctest --preset gcc-release
 ```
 
 The training demonstration can then be run with:
 
 ```powershell
-.\out\build\x64-release\minitensor_demo.exe
+.\build\gcc-release\minitensor_demo.exe
 ```
 
 GoogleTest is downloaded by CMake when the test suite is configured.
