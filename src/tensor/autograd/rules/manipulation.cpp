@@ -3,7 +3,6 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
-#include <utility>
 #include <vector>
 
 #include <minitensor/ops/manipulation.hpp>

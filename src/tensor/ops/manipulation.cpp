@@ -1,7 +1,6 @@
 #include <minitensor/ops/manipulation.hpp>
 
 #include <algorithm>
-#include <array>
 #include <initializer_list>
 #include <limits>
 #include <memory>

@@ -1,11 +1,9 @@
 #include "gather.hpp"
 
-#include <optional>
 #include <span>
 #include <stdexcept>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 #include <minitensor/types.hpp>
 

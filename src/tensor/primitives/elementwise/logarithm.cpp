@@ -1,10 +1,8 @@
 #include "logarithm.hpp"
 
-#include <optional>
 #include <span>
 #include <stdexcept>
 #include <string_view>
-#include <vector>
 
 #include <minitensor/types.hpp>
 
