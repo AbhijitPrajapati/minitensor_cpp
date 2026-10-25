@@ -69,6 +69,7 @@ minitensor_add_test_executable(
     "tensor;internal"
     tensor/internal/core/axis_test.cpp
     tensor/internal/core/broadcasting_test.cpp
+    tensor/internal/core/reduction_test.cpp
     tensor/internal/graph/graph_test.cpp
     tensor/internal/graph/ownership_test.cpp
     tensor/internal/graph/primitive_id_test.cpp
