@@ -8,11 +8,14 @@
 
 #include <gtest/gtest.h>
 
+#include <minitensor/nn/module.hpp>
+
 #include <minitensor/data.hpp>
 #include <minitensor/nn/gradients.hpp>
 #include <minitensor/nn/modules/linear.hpp>
 #include <minitensor/nn/parameter.hpp>
 #include <minitensor/nn/parameter_tree.hpp>
+#include <minitensor/ops/creation.hpp>
 #include <minitensor/ops/elementwise.hpp>
 #include <minitensor/ops/reduction.hpp>
 #include <minitensor/random.hpp>
@@ -24,22 +27,22 @@ namespace
 class MixedParameterTree final
 {
   public:
-    MixedParameterTree(Parameter shared, Parameter frozen)
+    MixedParameterTree(ParameterId shared, ParameterId frozen)
         : first_{shared}, second_{std::move(shared)}, frozen_{std::move(frozen)}
     {
     }
 
-    [[nodiscard]] const Parameter &first() const noexcept
+    [[nodiscard]] const ParameterId &first() const noexcept
     {
         return first_;
     }
 
-    [[nodiscard]] const Parameter &second() const noexcept
+    [[nodiscard]] const ParameterId &second() const noexcept
     {
         return second_;
     }
 
-    [[nodiscard]] const Parameter &frozen() const noexcept
+    [[nodiscard]] const ParameterId &frozen() const noexcept
     {
         return frozen_;
     }
@@ -53,9 +56,9 @@ class MixedParameterTree final
         visitor.parameter("frozen", self.frozen_);
     }
 
-    Parameter first_;
-    Parameter second_;
-    Parameter frozen_;
+    ParameterId first_;
+    ParameterId second_;
+    ParameterId frozen_;
 
     friend class ::minitensor::nn::ParameterTreeAccess;
 };
@@ -74,23 +77,24 @@ TEST(SGDTest, ValidatesLearningRate)
 TEST(SGDTest, AppliesGradientsWithoutChangingTheSourceTree)
 {
     const Linear linear{2, 1};
-    const Linear::Parameters parameters = linear.initialize(RandomKey{61});
-    ASSERT_NE(parameters.bias(), nullptr);
-    const std::vector<float> source_weight = to_vector(parameters.weight().value());
-    const std::vector<float> source_bias = to_vector(parameters.bias()->value());
-    const Tensor loss = sum(parameters.weight().value() * parameters.weight().value()) +
-                        sum(parameters.bias()->value() * parameters.bias()->value());
+    const auto parameters = initialize(linear, RandomKey{61});
+    ASSERT_NE(parameters.tree().bias(), nullptr);
+    const std::vector<float> source_weight = to_vector(parameters.value(parameters.tree().weight()));
+    const std::vector<float> source_bias = to_vector(parameters.value(*parameters.tree().bias()));
+    const Tensor loss =
+        sum(parameters.value(parameters.tree().weight()) * parameters.value(parameters.tree().weight())) +
+        sum(parameters.value(*parameters.tree().bias()) * parameters.value(*parameters.tree().bias()));
     const ParameterGradients gradients = parameter_gradients(loss, parameters);
     const SGD optimizer{0.25F};
 
     auto [updated, state] = optimizer.step(parameters, optimizer.initialize(parameters), gradients);
     state = leafify_optimizer_state(std::move(state));
 
-    EXPECT_EQ(updated.weight().id(), parameters.weight().id());
-    ASSERT_NE(updated.bias(), nullptr);
-    EXPECT_EQ(updated.bias()->id(), parameters.bias()->id());
-    const std::vector<float> updated_weight = to_vector(updated.weight().value());
-    const std::vector<float> updated_bias = to_vector(updated.bias()->value());
+    EXPECT_EQ(updated.tree().weight(), parameters.tree().weight());
+    ASSERT_NE(updated.tree().bias(), nullptr);
+    EXPECT_EQ(*updated.tree().bias(), *parameters.tree().bias());
+    const std::vector<float> updated_weight = to_vector(updated.value(updated.tree().weight()));
+    const std::vector<float> updated_bias = to_vector(updated.value(*updated.tree().bias()));
     ASSERT_EQ(updated_weight.size(), source_weight.size());
     ASSERT_EQ(updated_bias.size(), source_bias.size());
     for (std::size_t index = 0; index < source_weight.size(); ++index)
@@ -101,53 +105,92 @@ TEST(SGDTest, AppliesGradientsWithoutChangingTheSourceTree)
     {
         EXPECT_FLOAT_EQ(updated_bias[index], 0.5F * source_bias[index]);
     }
-    EXPECT_EQ(to_vector(parameters.weight().value()), source_weight);
-    EXPECT_EQ(to_vector(parameters.bias()->value()), source_bias);
+    EXPECT_EQ(to_vector(parameters.value(parameters.tree().weight())), source_weight);
+    EXPECT_EQ(to_vector(parameters.value(*parameters.tree().bias())), source_bias);
 }
 
 TEST(SGDTest, UpdatesTiedParametersOnceAndLeavesFrozenParametersUnchanged)
 {
-    const Parameter shared{from_data({1.0F, 2.0F}, Shape{2})};
-    const Parameter frozen{from_data({3.0F, 4.0F}, Shape{2}), ParameterMetadata{.trainable = false}};
-    const MixedParameterTree parameters{shared, frozen};
+    ParameterBuilder builder;
+    const ParameterId shared = builder.add(ParameterState{from_data({1.0F, 2.0F}, Shape{2})});
+    const ParameterId frozen =
+        builder.add(ParameterState{from_data({3.0F, 4.0F}, Shape{2}), ParameterMetadata{.trainable = false}});
+    const auto parameters = std::move(builder).finish(MixedParameterTree{shared, frozen});
     ParameterGradients gradients;
-    gradients.emplace(shared.id(), from_data({0.5F, 1.0F}, Shape{2}));
+    gradients.emplace(shared, from_data({0.5F, 1.0F}, Shape{2}));
     const SGD optimizer{0.5F};
 
     auto [updated, state] = optimizer.step(parameters, optimizer.initialize(parameters), gradients);
     (void)state;
 
-    EXPECT_EQ(updated.first().id(), shared.id());
-    EXPECT_EQ(updated.second().id(), shared.id());
-    EXPECT_EQ(to_vector(updated.first().value()), (std::vector<float>{0.75F, 1.5F}));
-    EXPECT_EQ(to_vector(updated.second().value()), (std::vector<float>{0.75F, 1.5F}));
-    EXPECT_EQ(updated.frozen().id(), frozen.id());
-    EXPECT_FALSE(updated.frozen().metadata().trainable);
-    EXPECT_EQ(to_vector(updated.frozen().value()), (std::vector<float>{3.0F, 4.0F}));
+    EXPECT_EQ(updated.tree().first(), shared);
+    EXPECT_EQ(updated.tree().second(), shared);
+    EXPECT_EQ(to_vector(updated.value(updated.tree().first())), (std::vector<float>{0.75F, 1.5F}));
+    EXPECT_EQ(to_vector(updated.value(updated.tree().second())), (std::vector<float>{0.75F, 1.5F}));
+    EXPECT_EQ(updated.tree().frozen(), frozen);
+    EXPECT_FALSE(updated.get(updated.tree().frozen()).metadata.trainable);
+    EXPECT_EQ(to_vector(updated.value(updated.tree().frozen())), (std::vector<float>{3.0F, 4.0F}));
+
+    gradients.emplace(frozen, parameters.value(frozen));
+    EXPECT_THROW((void)optimizer.step(parameters, state, gradients), std::invalid_argument);
 }
 
 TEST(SGDTest, RejectsIncompleteMismatchedAndExtraGradientMaps)
 {
+    ParameterBuilder builder;
     const Linear linear{2, 1};
-    const Linear::Parameters parameters = linear.initialize(RandomKey{67});
-    ASSERT_NE(parameters.bias(), nullptr);
-    const Tensor loss = sum(parameters.weight().value() * parameters.weight().value()) +
-                        sum(parameters.bias()->value() * parameters.bias()->value());
+    const auto parameters = initialize(linear, RandomKey{67});
+    ASSERT_NE(parameters.tree().bias(), nullptr);
+    const Tensor loss =
+        sum(parameters.value(parameters.tree().weight()) * parameters.value(parameters.tree().weight())) +
+        sum(parameters.value(*parameters.tree().bias()) * parameters.value(*parameters.tree().bias()));
     const ParameterGradients valid = parameter_gradients(loss, parameters);
     const SGD optimizer{0.1F};
     const SGD::State state = optimizer.initialize(parameters);
 
     ParameterGradients missing = valid;
-    missing.erase(parameters.bias()->id());
+    missing.erase(*parameters.tree().bias());
     EXPECT_THROW((void)optimizer.step(parameters, state, missing), std::invalid_argument);
 
     ParameterGradients mismatched = valid;
-    mismatched.insert_or_assign(parameters.weight().id(), from_data({1.0F}, Shape{}));
+    mismatched.insert_or_assign(parameters.tree().weight(), from_data({1.0F}, Shape{}));
     EXPECT_THROW((void)optimizer.step(parameters, state, mismatched), std::invalid_argument);
 
     ParameterGradients extra = valid;
-    const Parameter unrelated{from_data({1.0F}, Shape{})};
-    extra.emplace(unrelated.id(), unrelated.value());
+    const ParameterId unrelated = builder.add(ParameterState{from_data({1.0F}, Shape{})});
+    extra.emplace(unrelated, from_data({1.0F}, Shape{}));
     EXPECT_THROW((void)optimizer.step(parameters, state, extra), std::invalid_argument);
+}
+
+TEST(SGDTest, RejectsGradientDTypeAndDeviceMismatches)
+{
+    const Linear linear{2, 1, false};
+    const auto parameters = initialize(linear, RandomKey{71});
+    const auto id = parameters.tree().weight();
+    const SGD optimizer{0.1F};
+    const auto state = optimizer.initialize(parameters);
+
+    ParameterGradients gradients{{id, full(Shape{1, 2}, 1, TensorOptions{DType::Int64, Device::cpu()})}};
+    EXPECT_THROW((void)optimizer.step(parameters, state, gradients), std::invalid_argument);
+    gradients.insert_or_assign(id, full(Shape{1, 2}, 1.0F, TensorOptions{DType::Float32, Device::cpu(1)}));
+    EXPECT_THROW((void)optimizer.step(parameters, state, gradients), std::invalid_argument);
+}
+
+TEST(SGDTest, RejectsIntegralTrainableParametersAndPreservesFrozenIntegralParameters)
+{
+    ParameterBuilder builder;
+    const auto shared = builder.add({full(Shape{2}, 1, TensorOptions{DType::Int64})});
+    const auto frozen = builder.add({full(Shape{2}, 3, TensorOptions{DType::Int64}), {.trainable = false}});
+    const auto parameters = std::move(builder).finish(MixedParameterTree{shared, frozen});
+    const SGD optimizer{0.1F};
+    EXPECT_THROW((void)optimizer.step(parameters, optimizer.initialize(parameters), {}), std::invalid_argument);
+
+    const auto all_frozen = transform_parameters(parameters, [](ParameterId, const ParameterState &state) {
+        return ParameterState{state.value, {.trainable = false}};
+    });
+    const auto [updated, state] = optimizer.step(all_frozen, optimizer.initialize(all_frozen), {});
+    (void)state;
+    EXPECT_EQ(to_vector<std::int64_t>(updated.value(shared)), (std::vector<std::int64_t>{1, 1}));
+    EXPECT_EQ(to_vector<std::int64_t>(updated.value(frozen)), (std::vector<std::int64_t>{3, 3}));
 }
 } // namespace minitensor::nn::test

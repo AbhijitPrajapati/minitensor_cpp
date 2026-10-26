@@ -58,6 +58,7 @@ minitensor_add_test_executable(
     nn/public/gradients_test.cpp
     nn/public/leafification_test.cpp
     nn/public/linear_test.cpp
+    nn/public/module_test.cpp
     nn/public/loss_test.cpp
     nn/public/adamw_test.cpp
     nn/public/sgd_test.cpp

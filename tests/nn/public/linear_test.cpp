@@ -5,6 +5,8 @@
 
 #include <gtest/gtest.h>
 
+#include <minitensor/nn/module.hpp>
+
 #include <minitensor/data.hpp>
 #include <minitensor/random.hpp>
 #include <minitensor/tensor.hpp>
@@ -15,24 +17,24 @@ namespace minitensor::nn::test
 TEST(LinearTest, InitializesExpectedParameterShapes)
 {
     const Linear linear{3, 2};
-    const Linear::Parameters parameters = linear.initialize(RandomKey{11});
+    const auto parameters = initialize(linear, RandomKey{11});
 
     EXPECT_EQ(linear.input_features(), 3);
     EXPECT_EQ(linear.output_features(), 2);
     EXPECT_TRUE(linear.use_bias());
-    EXPECT_EQ(parameters.weight().value().shape(), (Shape{2, 3}));
-    ASSERT_NE(parameters.bias(), nullptr);
-    EXPECT_EQ(parameters.bias()->value().shape(), (Shape{2}));
+    EXPECT_EQ(parameters.value(parameters.tree().weight()).shape(), (Shape{2, 3}));
+    ASSERT_NE(parameters.tree().bias(), nullptr);
+    EXPECT_EQ(parameters.value(*parameters.tree().bias()).shape(), (Shape{2}));
 }
 
 TEST(LinearTest, CanOmitBias)
 {
     const Linear linear{3, 2, false};
-    const Linear::Parameters parameters = linear.initialize(RandomKey{13});
+    const auto parameters = initialize(linear, RandomKey{13});
 
     EXPECT_FALSE(linear.use_bias());
-    EXPECT_EQ(parameters.weight().value().shape(), (Shape{2, 3}));
-    EXPECT_EQ(parameters.bias(), nullptr);
+    EXPECT_EQ(parameters.value(parameters.tree().weight()).shape(), (Shape{2, 3}));
+    EXPECT_EQ(parameters.tree().bias(), nullptr);
 }
 
 TEST(LinearTest, RejectsNonPositiveFeatureCounts)
@@ -47,26 +49,26 @@ TEST(LinearTest, SameKeyReproducesInitialValues)
 {
     const RandomKey key{17};
     const Linear linear{3, 2};
-    const Linear::Parameters first = linear.initialize(key);
-    const Linear::Parameters second = linear.initialize(key);
+    const auto first = initialize(linear, key);
+    const auto second = initialize(linear, key);
 
-    EXPECT_EQ(to_vector(first.weight().value()), to_vector(second.weight().value()));
-    ASSERT_NE(first.bias(), nullptr);
-    ASSERT_NE(second.bias(), nullptr);
-    EXPECT_EQ(to_vector(first.bias()->value()), to_vector(second.bias()->value()));
+    EXPECT_EQ(to_vector(first.value(first.tree().weight())), to_vector(second.value(second.tree().weight())));
+    ASSERT_NE(first.tree().bias(), nullptr);
+    ASSERT_NE(second.tree().bias(), nullptr);
+    EXPECT_EQ(to_vector(first.value(*first.tree().bias())), to_vector(second.value(*second.tree().bias())));
 }
 
 TEST(LinearTest, AppliesWeightAndBias)
 {
     const Linear linear{3, 2};
-    const Linear::Parameters parameters = linear.initialize(RandomKey{42});
+    const auto parameters = initialize(linear, RandomKey{42});
     const std::vector<float> input_values{1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F};
     const Tensor input = from_data(input_values, Shape{2, 3});
 
-    const std::vector<float> weight = to_vector(parameters.weight().value());
-    ASSERT_NE(parameters.bias(), nullptr);
-    const std::vector<float> bias = to_vector(parameters.bias()->value());
-    const std::vector<float> output = to_vector(linear(parameters, input));
+    const std::vector<float> weight = to_vector(parameters.value(parameters.tree().weight()));
+    ASSERT_NE(parameters.tree().bias(), nullptr);
+    const std::vector<float> bias = to_vector(parameters.value(*parameters.tree().bias()));
+    const std::vector<float> output = to_vector(forward(linear, parameters, input));
 
     ASSERT_EQ(output.size(), 4);
     for (std::size_t row = 0; row < 2; ++row)
@@ -90,8 +92,8 @@ TEST(LinearTest, RejectsIncompatibleParameterTrees)
     const Linear without_bias{3, 2, false};
     const Tensor input = from_data({1.0F, 2.0F, 3.0F}, Shape{1, 3});
 
-    EXPECT_THROW((void)linear(different_output.initialize(RandomKey{43}), input), std::invalid_argument);
-    EXPECT_THROW((void)linear(without_bias.initialize(RandomKey{47}), input), std::invalid_argument);
-    EXPECT_THROW((void)without_bias(linear.initialize(RandomKey{53}), input), std::invalid_argument);
+    EXPECT_THROW((void)forward(linear, initialize(different_output, RandomKey{43}), input), std::invalid_argument);
+    EXPECT_THROW((void)forward(linear, initialize(without_bias, RandomKey{47}), input), std::invalid_argument);
+    EXPECT_THROW((void)forward(without_bias, initialize(linear, RandomKey{53}), input), std::invalid_argument);
 }
 } // namespace minitensor::nn::test

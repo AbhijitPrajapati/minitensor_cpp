@@ -1,13 +1,10 @@
 #pragma once
 
-#include <algorithm>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include <minitensor/evaluation.hpp>
 #include <minitensor/nn/parameter.hpp>
-#include <minitensor/nn/parameter_tree.hpp>
 #include <minitensor/tensor.hpp>
 
 namespace minitensor::nn
@@ -16,30 +13,30 @@ namespace minitensor::nn
 // release graphs from the previous step.
 
 template <typename Tree>
-[[nodiscard]] Tree leafify_parameter_values(Tree parameters)
+[[nodiscard]] ParameterSnapshot<Tree> leafify_parameter_values(const ParameterSnapshot<Tree> &snapshot)
 {
     // Collect IDs and values
     std::vector<ParameterId> ids;
     std::vector<Tensor> values;
+    ids.reserve(snapshot.parameters().size());
+    values.reserve(snapshot.parameters().size());
 
-    for_each_unique_parameter(parameters, [&](const Parameter &parameter) {
-        ids.push_back(parameter.id());
-        values.push_back(parameter.value());
-    });
+    for (const auto &[id, state] : snapshot.parameters())
+    {
+        ids.push_back(id);
+        values.push_back(state.value);
+    }
 
     std::vector<Tensor> leafified = leafify(values);
 
-    // Create map
-    std::unordered_map<ParameterId, Tensor> leafified_map;
-    leafified_map.reserve(ids.size());
+    ParameterMap::Map states;
+    states.reserve(ids.size());
 
     for (std::size_t i = 0; i < ids.size(); ++i)
     {
-        leafified_map.emplace(ids[i], std::move(leafified[i]));
+        states.emplace(ids[i], ParameterState{std::move(leafified[i]), snapshot.get(ids[i]).metadata});
     }
 
-    // Transform values
-    return transform_parameter_values(std::move(parameters),
-                                      [&](const Parameter &parameter) { return leafified_map.at(parameter.id()); });
+    return ParameterSnapshot<Tree>{snapshot.tree(), ParameterMap{std::move(states)}};
 }
 } // namespace minitensor::nn

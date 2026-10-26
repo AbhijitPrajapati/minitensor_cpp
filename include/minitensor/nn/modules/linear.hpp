@@ -15,11 +15,11 @@ class Linear final
     class Parameters final
     {
       public:
-        [[nodiscard]] const Parameter &weight() const noexcept;
-        [[nodiscard]] const Parameter *bias() const noexcept;
+        [[nodiscard]] const ParameterId &weight() const noexcept;
+        [[nodiscard]] const ParameterId *bias() const noexcept;
 
       private:
-        Parameters(Parameter weight, std::optional<Parameter> bias) noexcept;
+        Parameters(ParameterId weight, std::optional<ParameterId> bias) noexcept;
 
         template <typename Self, typename Visitor>
         static void visit_members(Self &self, Visitor &visitor)
@@ -31,8 +31,8 @@ class Linear final
             }
         }
 
-        Parameter weight_;
-        std::optional<Parameter> bias_;
+        ParameterId weight_;
+        std::optional<ParameterId> bias_;
 
         friend class Linear;
         friend class ParameterTreeAccess;
@@ -40,16 +40,16 @@ class Linear final
 
     Linear(Extent input_features, Extent output_features, bool use_bias = true);
 
-    [[nodiscard]] Parameters initialize(RandomKey key, TensorOptions options = {}) const;
+    [[nodiscard]] Parameters initialize(ParameterBuilder &builder, RandomKey key, TensorOptions options = {}) const;
 
-    [[nodiscard]] Tensor operator()(const Parameters &parameters, const Tensor &input) const;
+    [[nodiscard]] Tensor operator()(const ParameterMap &parameters, const Parameters &tree, const Tensor &input) const;
 
     [[nodiscard]] Extent input_features() const noexcept;
     [[nodiscard]] Extent output_features() const noexcept;
     [[nodiscard]] bool use_bias() const noexcept;
 
   private:
-    void validate_parameters(const Parameters &parameters) const;
+    void validate_parameters(const ParameterMap &parameters, const Parameters &tree) const;
 
     Extent input_features_;
     Extent output_features_;

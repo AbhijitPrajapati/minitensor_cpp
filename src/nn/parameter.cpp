@@ -9,27 +9,7 @@
 
 namespace minitensor::nn
 {
-Parameter::Parameter(ParameterId id, Tensor value, ParameterMetadata metadata)
-    : id_(id), value_(std::move(value)), metadata_(metadata)
-{
-}
-
-ParameterId Parameter::id() const noexcept
-{
-    return id_;
-}
-
-const Tensor &Parameter::value() const noexcept
-{
-    return value_;
-}
-
-const ParameterMetadata &Parameter::metadata() const noexcept
-{
-    return metadata_;
-}
-
-ParameterId Parameter::make_id()
+ParameterId ParameterBuilder::make_id()
 {
     using value_type = ParameterId::value_type;
     static std::atomic<value_type> next{1};
@@ -46,33 +26,36 @@ ParameterId Parameter::make_id()
     return ParameterId{current};
 }
 
-Parameter::Parameter(Tensor value, ParameterMetadata metadata)
-    : id_(make_id()), value_(std::move(value)), metadata_(metadata)
+ParameterMap::ParameterMap(ParameterMap::Map states) : states_(std::move(states))
 {
 }
 
-Parameter Parameter::with_metadata(ParameterMetadata metadata) const
+bool ParameterMap::contains(ParameterId id) const
 {
-    return Parameter{id_, value_, metadata};
+    return states_.contains(id);
 }
 
-Parameter Parameter::with_value(Tensor value) const
+const ParameterState &ParameterMap::get(ParameterId id) const
 {
-    if (value.shape() != value_.shape())
-    {
-        throw std::invalid_argument{"replacement value must have the same shape"};
-    }
-
-    if (value.dtype() != value_.dtype())
-    {
-        throw std::invalid_argument{"replacement value must have the same dtype"};
-    }
-
-    if (value.device() != value_.device())
-    {
-        throw std::invalid_argument{"replacement value must be on the same device"};
-    }
-
-    return Parameter{id_, std::move(value), metadata_};
+    return states_.at(id);
 }
+
+std::size_t ParameterMap::size() const noexcept
+{
+    return states_.size();
+}
+
+ParameterId ParameterBuilder::add(ParameterState state)
+{
+    ParameterId id = make_id();
+    auto [it, inserted] = parameters_.emplace(id, std::move(state));
+
+    if (!inserted)
+    {
+        throw std::logic_error{"duplicate parameter ID"};
+    }
+
+    return id;
+}
+
 } // namespace minitensor::nn

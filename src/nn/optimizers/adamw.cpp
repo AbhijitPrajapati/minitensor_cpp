@@ -66,12 +66,9 @@ AdamW::StepCoefficients AdamW::step_coefficients(std::uint64_t current_step) con
                             1.0F - static_cast<float>(std::pow(beta2_, exponent))};
 }
 
-Tensor AdamW::update_parameter(const Parameter &parameter, const Tensor &gradient, State &state,
+Tensor AdamW::update_parameter(ParameterId id, const Tensor &value, const Tensor &gradient, State &state,
                                const StepCoefficients &coefficients) const
 {
-    const ParameterId id = parameter.id();
-    const Tensor &value = parameter.value();
-
     // This lambda retrieves a moment tensor by id and ensures that it matches
     // the specifications of the value.
     auto checked_moment = [id, &value](MomentMap &moments, std::string_view name) -> Tensor & {

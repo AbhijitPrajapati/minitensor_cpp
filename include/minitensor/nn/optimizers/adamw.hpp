@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <cstdint>
 #include <stdexcept>
 #include <unordered_map>
@@ -54,24 +53,26 @@ class AdamW final
     AdamW(float learning_rate, float weight_decay, float beta1 = 0.9F, float beta2 = 0.999F, float epsilon = 1e-8F);
 
     template <typename Tree>
-    [[nodiscard]] State initialize(const Tree &parameters) const
+    [[nodiscard]] State initialize(const ParameterSnapshot<Tree> &snapshot) const
     {
         State state;
-        for_each_unique_parameter(parameters, [&](const Parameter &parameter) {
-            if (!parameter.metadata().trainable)
+        for (const auto &[id, parameter] : snapshot.parameters())
+        {
+            if (!parameter.metadata.trainable)
             {
-                return;
+                continue;
             }
 
-            const Tensor &value = parameter.value();
-            state.first_moments_.emplace(parameter.id(), zeros_like(value));
-            state.second_moments_.emplace(parameter.id(), zeros_like(value));
-        });
+            const Tensor &value = parameter.value;
+            state.first_moments_.emplace(id, zeros_like(value));
+            state.second_moments_.emplace(id, zeros_like(value));
+        }
         return state;
     }
 
     template <typename Tree>
-    [[nodiscard]] std::pair<Tree, State> step(Tree parameters, State state, const ParameterGradients &gradients) const
+    [[nodiscard]] std::pair<ParameterSnapshot<Tree>, State> step(const ParameterSnapshot<Tree> &snapshot, State state,
+                                                                 const ParameterGradients &gradients) const
     {
         const StepCoefficients coefficients = step_coefficients(state.step_);
 
@@ -81,9 +82,9 @@ class AdamW final
             throw std::invalid_argument{"AdamW state does not match trainable parameters"};
         }
 
-        Tree updated = detail::transform_parameter_values_with_gradients(
-            std::move(parameters), gradients, [&](const Parameter &parameter, const Tensor &gradient) {
-                return update_parameter(parameter, gradient, state, coefficients);
+        auto updated = detail::transform_parameter_values_with_gradients(
+            snapshot, gradients, [&](ParameterId id, const Tensor &value, const Tensor &gradient) {
+                return update_parameter(id, value, gradient, state, coefficients);
             });
 
         state.step_ = coefficients.step;
@@ -98,7 +99,7 @@ class AdamW final
 
   private:
     [[nodiscard]] StepCoefficients step_coefficients(std::uint64_t current_step) const;
-    [[nodiscard]] Tensor update_parameter(const Parameter &parameter, const Tensor &gradient, State &state,
+    [[nodiscard]] Tensor update_parameter(ParameterId id, const Tensor &value, const Tensor &gradient, State &state,
                                           const StepCoefficients &coefficients) const;
 
     float learning_rate_;

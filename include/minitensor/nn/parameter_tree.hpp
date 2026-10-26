@@ -6,12 +6,10 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
-#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
-#include <minitensor/nn/parameter.hpp>
-#include <minitensor/tensor.hpp>
+#include <minitensor/nn/parameter_id.hpp>
 
 namespace minitensor::nn
 {
@@ -19,9 +17,6 @@ namespace detail
 {
 template <typename Function>
 class ConstParameterTraversal;
-
-template <typename Function>
-class ParameterTransformTraversal;
 
 template <typename Function>
 class NamedConstParameterTraversal;
@@ -42,9 +37,6 @@ class ParameterTreeAccess final
 
     template <typename Function>
     friend class detail::ConstParameterTraversal;
-
-    template <typename Function>
-    friend class detail::ParameterTransformTraversal;
 
     template <typename Function>
     friend class detail::NamedConstParameterTraversal;
@@ -68,9 +60,9 @@ class ConstParameterTraversal final
         ParameterTreeAccess::visit(tree, *this);
     }
 
-    void parameter(std::string_view, const Parameter &parameter)
+    void parameter(std::string_view, const ParameterId parameter_id)
     {
-        std::invoke(function_, parameter);
+        std::invoke(function_, parameter_id);
     }
 
     template <typename Tree>
@@ -81,50 +73,6 @@ class ConstParameterTraversal final
 
   private:
     Function &function_;
-};
-
-template <typename Function>
-class ParameterTransformTraversal final
-{
-  public:
-    explicit ParameterTransformTraversal(Function &function) noexcept : function_{function}
-    {
-    }
-
-    template <typename Tree>
-    void visit(Tree &tree)
-    {
-        ParameterTreeAccess::visit(tree, *this);
-    }
-
-    void parameter(std::string_view, Parameter &parameter)
-    {
-        auto position = transformed_values_.find(parameter.id());
-        if (position == transformed_values_.end())
-        {
-            Tensor transformed_value = std::invoke(function_, std::as_const(parameter));
-
-            // Validate that the transformed value is valid for the parameter
-            parameter = parameter.with_value(transformed_value);
-
-            transformed_values_.emplace(parameter.id(), std::move(transformed_value));
-        }
-        else
-        {
-            // Assign the same Tensor handle if the parameter is already seen
-            parameter = parameter.with_value(position->second);
-        }
-    }
-
-    template <typename Tree>
-    void child(std::string_view, Tree &tree)
-    {
-        visit(tree);
-    }
-
-  private:
-    Function &function_;
-    std::unordered_map<ParameterId, Tensor> transformed_values_;
 };
 
 template <typename Function>
@@ -141,7 +89,7 @@ class NamedConstParameterTraversal final
         ParameterTreeAccess::visit(tree, *this);
     }
 
-    void parameter(std::string_view name, const Parameter &parameter)
+    void parameter(std::string_view name, const ParameterId parameter_id)
     {
         with_component(name, [&] {
             if (!visited_paths_.insert(path_).second)
@@ -149,7 +97,7 @@ class NamedConstParameterTraversal final
                 throw std::logic_error{"duplicate parameter path"};
             }
 
-            std::invoke(function_, std::string_view{path_}, parameter);
+            std::invoke(function_, std::string_view{path_}, parameter_id);
         });
     }
 
@@ -214,14 +162,10 @@ class NamedConstParameterTraversal final
 } // namespace detail
 
 template <typename Function>
-concept ParameterCallback = std::invocable<Function &, const Parameter &>;
+concept ParameterCallback = std::invocable<Function &, const ParameterId>;
 
 template <typename Function>
-concept ParameterValueTransform =
-    ParameterCallback<Function> && std::convertible_to<std::invoke_result_t<Function &, const Parameter &>, Tensor>;
-
-template <typename Function>
-concept NamedParameterCallback = std::invocable<Function &, std::string_view, const Parameter &>;
+concept NamedParameterCallback = std::invocable<Function &, std::string_view, const ParameterId>;
 
 // Visits every parameter in depth-first hook order
 template <typename Tree, ParameterCallback Function>
@@ -238,23 +182,12 @@ void for_each_unique_parameter(const Tree &tree, Function &&function)
 {
     std::unordered_set<ParameterId> seen;
 
-    for_each_parameter(tree, [&](const Parameter &parameter) {
-        if (seen.insert(parameter.id()).second)
+    for_each_parameter(tree, [&](const ParameterId parameter_id) {
+        if (seen.insert(parameter_id).second)
         {
-            std::invoke(function, parameter);
+            std::invoke(function, parameter_id);
         }
     });
-}
-
-// Transforms each unique parameter in a tree. Taking the tree by value allows
-// useful move semantics to safe memory.
-template <typename Tree, ParameterValueTransform Function>
-Tree transform_parameter_values(Tree tree, Function &&function)
-{
-    using FunctionType = std::remove_reference_t<Function>;
-    detail::ParameterTransformTraversal<FunctionType> traversal{function};
-    traversal.visit(tree);
-    return tree;
 }
 
 // Visits every parameter with a named callback constructed using its
@@ -276,10 +209,10 @@ void for_each_unique_named_parameter(const Tree &tree, Function &&function)
 {
     std::unordered_set<ParameterId> seen;
 
-    for_each_named_parameter(tree, [&](std::string_view path, const Parameter &parameter) {
-        if (seen.insert(parameter.id()).second)
+    for_each_named_parameter(tree, [&](std::string_view path, const ParameterId parameter_id) {
+        if (seen.insert(parameter_id).second)
         {
-            std::invoke(function, path, parameter);
+            std::invoke(function, path, parameter_id);
         }
     });
 }

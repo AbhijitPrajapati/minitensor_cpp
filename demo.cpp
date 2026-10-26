@@ -9,8 +9,10 @@
 #include "minitensor/nn/gradients.hpp"
 #include "minitensor/nn/leafification.hpp"
 #include "minitensor/nn/loss.hpp"
+#include "minitensor/nn/module.hpp"
 #include "minitensor/nn/modules/linear.hpp"
 #include "minitensor/nn/optimizers/adamw.hpp"
+#include "minitensor/nn/parameter.hpp"
 #include "minitensor/ops/creation.hpp"
 #include "minitensor/ops/elementwise.hpp"
 #include "minitensor/random.hpp"
@@ -122,24 +124,26 @@ class ThreeSpiralModel final
     }
 
     // The user retains and manages the full set of model parameters.
-    [[nodiscard]] Parameters initialize(mt::RandomKey key, mt::TensorOptions options = {}) const
+    [[nodiscard]] Parameters initialize(mt::nn::ParameterBuilder &builder, mt::RandomKey key,
+                                        mt::TensorOptions options = {}) const
     {
         // Seperate key for each Linear module
         auto [hidden_key, output_key] = mt::split(key);
 
         return Parameters{
-            hidden_.initialize(hidden_key, options),
-            output_.initialize(output_key, options),
+            hidden_.initialize(builder, hidden_key, options),
+            output_.initialize(builder, output_key, options),
         };
     }
 
-    [[nodiscard]] mt::Tensor operator()(const Parameters &parameters, const mt::Tensor &input) const
+    [[nodiscard]] mt::Tensor operator()(const mt::nn::ParameterMap &parameters, const Parameters &tree,
+                                        const mt::Tensor &input) const
     {
         // TanH introduces non-linearity, which is essential for learning non-linear
         // relationships. Without it, the two linear transformations would compose to
         // form a single one.
-        mt::Tensor hidden = mt::tanh(hidden_(parameters.hidden(), input));
-        return output_(parameters.output(), hidden);
+        mt::Tensor hidden = mt::tanh(hidden_(parameters, tree.hidden(), input));
+        return output_(parameters, tree.output(), hidden);
     }
 
   private:
@@ -160,7 +164,7 @@ int main()
     const mt::Tensor &train_classes = train_set.classes;
 
     ThreeSpiralModel model(64);
-    auto parameters = model.initialize(model_key);
+    auto parameters = mt::nn::initialize(model, model_key);
 
     // Optimizer state is seperately managed from the optimizer instance.
     mt::nn::AdamW optimizer(0.01F, 0.0001F);
@@ -169,7 +173,7 @@ int main()
     for (std::size_t epoch = 1; epoch <= 500; ++epoch)
     {
         // The user provides the parameters along with the inputs during the forward pass.
-        mt::Tensor logits = model(parameters, train_inputs);
+        mt::Tensor logits = mt::nn::forward(model, parameters, train_inputs);
         mt::Tensor loss = mt::nn::categorical_cross_entropy_with_logits(logits, train_classes);
 
         if (epoch % 25 == 0)
@@ -198,7 +202,7 @@ int main()
     const mt::Tensor &test_inputs = test_set.inputs;
     const mt::Tensor &test_classes = test_set.classes;
 
-    mt::Tensor test_logits = model(parameters, test_inputs);
+    mt::Tensor test_logits = mt::nn::forward(model, parameters, test_inputs);
     mt::Tensor test_loss = mt::nn::categorical_cross_entropy_with_logits(test_logits, test_classes);
 
     std::cout << "\n" << "Test Loss: " << mt::item<float>(test_loss) << "\n";

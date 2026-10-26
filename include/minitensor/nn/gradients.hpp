@@ -18,17 +18,18 @@ using ParameterGradients = std::unordered_map<ParameterId, Tensor>;
 
 // Produces gradients for each unique parameter in the tree.
 template <typename Tree>
-[[nodiscard]] ParameterGradients parameter_gradients(const Tensor &loss, const Tree &parameters)
+[[nodiscard]] ParameterGradients parameter_gradients(const Tensor &loss, const ParameterSnapshot<Tree> &snapshot)
 {
     // Collect parameter values
     std::vector<ParameterId> ids;
     std::vector<Tensor> values;
 
-    for_each_unique_parameter(parameters, [&](const Parameter &parameter) {
-        if (parameter.metadata().trainable)
+    for_each_unique_parameter(snapshot.tree(), [&](const ParameterId parameter_id) {
+        const ParameterState &state = snapshot.get(parameter_id);
+        if (state.metadata.trainable)
         {
-            ids.push_back(parameter.id());
-            values.push_back(parameter.value());
+            ids.push_back(parameter_id);
+            values.push_back(state.value);
         }
     });
 

@@ -1,7 +1,6 @@
 #include <minitensor/nn/optimizers/adamw.hpp>
 
 #include <cmath>
-#include <cstdint>
 #include <limits>
 #include <stdexcept>
 #include <utility>
@@ -13,6 +12,7 @@
 #include <minitensor/nn/leafification.hpp>
 #include <minitensor/nn/parameter.hpp>
 #include <minitensor/nn/parameter_tree.hpp>
+#include <minitensor/ops/creation.hpp>
 
 namespace minitensor::nn::test
 {
@@ -21,16 +21,16 @@ namespace
 class ParameterPair final
 {
   public:
-    ParameterPair(Parameter first, Parameter second) : first_{std::move(first)}, second_{std::move(second)}
+    ParameterPair(ParameterId first, ParameterId second) : first_{std::move(first)}, second_{std::move(second)}
     {
     }
 
-    [[nodiscard]] const Parameter &first() const noexcept
+    [[nodiscard]] const ParameterId &first() const noexcept
     {
         return first_;
     }
 
-    [[nodiscard]] const Parameter &second() const noexcept
+    [[nodiscard]] const ParameterId &second() const noexcept
     {
         return second_;
     }
@@ -43,8 +43,8 @@ class ParameterPair final
         visitor.parameter("second", self.second_);
     }
 
-    Parameter first_;
-    Parameter second_;
+    ParameterId first_;
+    ParameterId second_;
 
     friend class ::minitensor::nn::ParameterTreeAccess;
 };
@@ -52,22 +52,22 @@ class ParameterPair final
 class MixedParameterTree final
 {
   public:
-    MixedParameterTree(Parameter shared, Parameter frozen)
+    MixedParameterTree(ParameterId shared, ParameterId frozen)
         : first_{shared}, second_{std::move(shared)}, frozen_{std::move(frozen)}
     {
     }
 
-    [[nodiscard]] const Parameter &first() const noexcept
+    [[nodiscard]] const ParameterId &first() const noexcept
     {
         return first_;
     }
 
-    [[nodiscard]] const Parameter &second() const noexcept
+    [[nodiscard]] const ParameterId &second() const noexcept
     {
         return second_;
     }
 
-    [[nodiscard]] const Parameter &frozen() const noexcept
+    [[nodiscard]] const ParameterId &frozen() const noexcept
     {
         return frozen_;
     }
@@ -81,9 +81,9 @@ class MixedParameterTree final
         visitor.parameter("frozen", self.frozen_);
     }
 
-    Parameter first_;
-    Parameter second_;
-    Parameter frozen_;
+    ParameterId first_;
+    ParameterId second_;
+    ParameterId frozen_;
 
     friend class ::minitensor::nn::ParameterTreeAccess;
 };
@@ -110,12 +110,13 @@ TEST(AdamWTest, ValidatesHyperparameters)
 
 TEST(AdamWTest, AppliesOneGlobalBiasCorrectedStep)
 {
-    const Parameter first{from_data({1.0F}, Shape{})};
-    const Parameter second{from_data({-2.0F}, Shape{})};
-    const ParameterPair parameters{first, second};
+    ParameterBuilder builder;
+    const ParameterId first = builder.add(ParameterState{from_data({1.0F}, Shape{})});
+    const ParameterId second = builder.add(ParameterState{from_data({-2.0F}, Shape{})});
+    const auto parameters = std::move(builder).finish(ParameterPair{first, second});
     ParameterGradients gradients;
-    gradients.emplace(first.id(), from_data({2.0F}, Shape{}));
-    gradients.emplace(second.id(), from_data({-4.0F}, Shape{}));
+    gradients.emplace(first, from_data({2.0F}, Shape{}));
+    gradients.emplace(second, from_data({-4.0F}, Shape{}));
     const AdamW optimizer{0.1F, 0.2F, 0.5F, 0.25F, 0.01F};
 
     auto [updated, state] = optimizer.step(parameters, optimizer.initialize(parameters), gradients);
@@ -124,27 +125,29 @@ TEST(AdamWTest, AppliesOneGlobalBiasCorrectedStep)
     const float expected_first = decay * 1.0F - 0.1F * 2.0F / 2.01F;
     const float expected_second = decay * -2.0F + 0.1F * 4.0F / 4.01F;
     EXPECT_EQ(state.step(), 1U);
-    EXPECT_NEAR(to_vector(updated.first().value()).front(), expected_first, 1e-6F);
-    EXPECT_NEAR(to_vector(updated.second().value()).front(), expected_second, 1e-6F);
-    EXPECT_FLOAT_EQ(to_vector(parameters.first().value()).front(), 1.0F);
-    EXPECT_FLOAT_EQ(to_vector(parameters.second().value()).front(), -2.0F);
+    EXPECT_NEAR(to_vector(updated.value(updated.tree().first())).front(), expected_first, 1e-6F);
+    EXPECT_NEAR(to_vector(updated.value(updated.tree().second())).front(), expected_second, 1e-6F);
+    EXPECT_FLOAT_EQ(to_vector(parameters.value(parameters.tree().first())).front(), 1.0F);
+    EXPECT_FLOAT_EQ(to_vector(parameters.value(parameters.tree().second())).front(), -2.0F);
 }
 
 TEST(AdamWTest, AccumulatesAndLeafifiesMomentState)
 {
-    const Parameter first{from_data({1.0F}, Shape{})};
-    const Parameter frozen{from_data({8.0F}, Shape{}), ParameterMetadata{.trainable = false}};
-    const ParameterPair parameters{first, frozen};
+    ParameterBuilder builder;
+    const ParameterId first = builder.add(ParameterState{from_data({1.0F}, Shape{})});
+    const ParameterId frozen =
+        builder.add(ParameterState{from_data({8.0F}, Shape{}), ParameterMetadata{.trainable = false}});
+    const auto parameters = std::move(builder).finish(ParameterPair{first, frozen});
     const AdamW optimizer{0.1F, 0.2F, 0.5F, 0.25F, 0.01F};
     ParameterGradients first_gradients;
-    first_gradients.emplace(first.id(), from_data({2.0F}, Shape{}));
+    first_gradients.emplace(first, from_data({2.0F}, Shape{}));
 
     auto [once_updated, state] = optimizer.step(parameters, optimizer.initialize(parameters), first_gradients);
     state = leafify_optimizer_state(std::move(state));
     EXPECT_EQ(state.step(), 1U);
 
     ParameterGradients second_gradients;
-    second_gradients.emplace(first.id(), from_data({1.0F}, Shape{}));
+    second_gradients.emplace(first, from_data({1.0F}, Shape{}));
     auto [twice_updated, next_state] =
         optimizer.step(leafify_parameter_values(std::move(once_updated)), std::move(state), second_gradients);
 
@@ -155,32 +158,48 @@ TEST(AdamWTest, AccumulatesAndLeafifiesMomentState)
         0.98F * first_value - 0.1F * corrected_first_moment / (std::sqrt(corrected_second_moment) + 0.01F);
 
     EXPECT_EQ(next_state.step(), 2U);
-    EXPECT_NEAR(to_vector(twice_updated.first().value()).front(), expected, 1e-6F);
-    EXPECT_FLOAT_EQ(to_vector(twice_updated.second().value()).front(), 8.0F);
+    EXPECT_NEAR(to_vector(twice_updated.value(twice_updated.tree().first())).front(), expected, 1e-6F);
+    EXPECT_FLOAT_EQ(to_vector(twice_updated.value(twice_updated.tree().second())).front(), 8.0F);
 }
 
 TEST(AdamWTest, HandlesTiesAndRejectsMismatchedInputs)
 {
-    const Parameter shared{from_data({1.0F, 2.0F}, Shape{2})};
-    const Parameter frozen{from_data({3.0F, 4.0F}, Shape{2}), ParameterMetadata{.trainable = false}};
-    const MixedParameterTree parameters{shared, frozen};
+    ParameterBuilder builder;
+    const ParameterId shared = builder.add(ParameterState{from_data({1.0F, 2.0F}, Shape{2})});
+    const ParameterId frozen =
+        builder.add(ParameterState{from_data({3.0F, 4.0F}, Shape{2}), ParameterMetadata{.trainable = false}});
+    const auto parameters = std::move(builder).finish(MixedParameterTree{shared, frozen});
     ParameterGradients gradients;
-    gradients.emplace(shared.id(), from_data({0.5F, 1.0F}, Shape{2}));
+    gradients.emplace(shared, from_data({0.5F, 1.0F}, Shape{2}));
     const AdamW optimizer{0.1F, 0.0F};
 
     auto [updated, state] = optimizer.step(parameters, optimizer.initialize(parameters), gradients);
-    EXPECT_EQ(updated.first().id(), updated.second().id());
-    EXPECT_EQ(to_vector(updated.first().value()), to_vector(updated.second().value()));
-    EXPECT_EQ(to_vector(updated.frozen().value()), (std::vector<float>{3.0F, 4.0F}));
+    EXPECT_EQ(updated.tree().first(), updated.tree().second());
+    EXPECT_EQ(to_vector(updated.value(updated.tree().first())), to_vector(updated.value(updated.tree().second())));
+    EXPECT_EQ(to_vector(updated.value(updated.tree().frozen())), (std::vector<float>{3.0F, 4.0F}));
 
     ParameterGradients mismatched = gradients;
-    mismatched.insert_or_assign(shared.id(), from_data({1.0F}, Shape{}));
+    mismatched.insert_or_assign(shared, from_data({1.0F}, Shape{}));
     EXPECT_THROW((void)optimizer.step(parameters, state, mismatched), std::invalid_argument);
 
-    const Parameter other{from_data({1.0F, 2.0F}, Shape{2})};
-    const MixedParameterTree other_parameters{other, frozen};
+    ParameterBuilder other_builder;
+    const auto other = other_builder.add({from_data({1.0F, 2.0F}, Shape{2})});
+    const auto other_frozen = other_builder.add({from_data({3.0F, 4.0F}, Shape{2}), {.trainable = false}});
+    const auto other_parameters = std::move(other_builder).finish(MixedParameterTree{other, other_frozen});
     ParameterGradients other_gradients;
-    other_gradients.emplace(other.id(), from_data({0.5F, 1.0F}, Shape{2}));
+    other_gradients.emplace(other, from_data({0.5F, 1.0F}, Shape{2}));
     EXPECT_THROW((void)optimizer.step(other_parameters, state, other_gradients), std::invalid_argument);
+
+    const auto reshaped = transform_parameters(parameters, [&](ParameterId id, const ParameterState &parameter) {
+        return ParameterState{id == shared ? full(Shape{1, 2}, 1.0F) : parameter.value, parameter.metadata};
+    });
+    const ParameterGradients reshaped_gradients{{shared, full(Shape{1, 2}, 1.0F)}};
+    EXPECT_THROW((void)optimizer.step(reshaped, state, reshaped_gradients), std::invalid_argument);
+
+    const auto all_frozen = transform_parameters(parameters, [](ParameterId, const ParameterState &parameter) {
+        return ParameterState{parameter.value, {.trainable = false}};
+    });
+    EXPECT_THROW((void)optimizer.step(all_frozen, state, {}), std::invalid_argument);
+    EXPECT_EQ(state.step(), 1U);
 }
 } // namespace minitensor::nn::test

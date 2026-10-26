@@ -11,97 +11,155 @@
 
 #include <minitensor/data.hpp>
 #include <minitensor/ops/creation.hpp>
-#include <minitensor/tensor.hpp>
-#include <minitensor/types.hpp>
 
 namespace minitensor::nn::test
 {
+namespace
+{
+struct ParameterPair
+{
+    ParameterId first;
+    ParameterId second;
+
+  private:
+    template <typename Self, typename Visitor>
+    static void visit_members(Self &self, Visitor &visitor)
+    {
+        visitor.parameter("first", self.first);
+        visitor.parameter("second", self.second);
+    }
+
+    friend class ::minitensor::nn::ParameterTreeAccess;
+};
+
+struct EmptyTree
+{
+    template <typename Self, typename Visitor>
+    static void visit_members(Self &, Visitor &)
+    {
+    }
+};
+} // namespace
+
 static_assert(!std::is_default_constructible_v<ParameterId>);
 static_assert(!std::is_constructible_v<ParameterId, ParameterId::value_type>);
+static_assert(!std::is_copy_constructible_v<ParameterBuilder>);
 
 TEST(ParameterIdTest, IsOpaqueComparableAndHashable)
 {
-    const Parameter first{full(Shape{2}, 1.0F)};
-    const Parameter copied = first;
-    const Parameter second{full(Shape{2}, 1.0F)};
+    ParameterBuilder builder;
+    const ParameterId first = builder.add({full(Shape{2}, 1.0F)});
+    const ParameterId copied = first;
+    const ParameterId second = builder.add({full(Shape{2}, 1.0F)});
 
-    EXPECT_EQ(copied.id(), first.id());
-    EXPECT_NE(second.id(), first.id());
-    EXPECT_EQ(std::hash<ParameterId>{}(copied.id()), std::hash<ParameterId>{}(first.id()));
+    EXPECT_EQ(copied, first);
+    EXPECT_NE(second, first);
+    EXPECT_EQ(std::hash<ParameterId>{}(copied), std::hash<ParameterId>{}(first));
+    EXPECT_EQ((std::unordered_set<ParameterId>{first, copied, second}).size(), 2U);
 
-    const std::unordered_set<ParameterId> ids{first.id(), copied.id(), second.id()};
-    EXPECT_EQ(ids.size(), 2);
-    EXPECT_TRUE(ids.contains(first.id()));
-    EXPECT_TRUE(ids.contains(second.id()));
+    ParameterBuilder other_builder;
+    EXPECT_NE(other_builder.add({full(Shape{}, 1.0F)}), first);
 }
 
-TEST(ParameterTest, ExposesItsValueAndConstructionMetadata)
+TEST(ParameterSnapshotTest, ExposesValuesAndMetadataFromTheMap)
 {
-    const Parameter defaults{full(Shape{2, 1}, 3.0F)};
-    EXPECT_TRUE(defaults.metadata().trainable);
-    EXPECT_EQ(defaults.value().shape(), (Shape{2, 1}));
-    EXPECT_EQ(defaults.value().dtype(), DType::Float32);
-    EXPECT_EQ(defaults.value().device(), Device::cpu());
-    EXPECT_EQ(to_vector(defaults.value()), (std::vector<float>{3.0F, 3.0F}));
+    ParameterBuilder builder;
+    const auto defaults = builder.add({full(Shape{2, 1}, 3.0F)});
+    const auto frozen = builder.add({full(Shape{}, 4.0F), {.trainable = false}});
+    const auto snapshot = std::move(builder).finish(ParameterPair{defaults, frozen});
 
-    const Parameter frozen{full(Shape{}, 4.0F), ParameterMetadata{.trainable = false}};
-    EXPECT_FALSE(frozen.metadata().trainable);
-    EXPECT_FLOAT_EQ(item(frozen.value()), 4.0F);
+    EXPECT_TRUE(snapshot.get(defaults).metadata.trainable);
+    EXPECT_EQ(snapshot.value(defaults).shape(), (Shape{2, 1}));
+    EXPECT_EQ(snapshot.value(defaults).dtype(), DType::Float32);
+    EXPECT_EQ(snapshot.value(defaults).device(), Device::cpu());
+    EXPECT_EQ(to_vector(snapshot.value(defaults)), (std::vector<float>{3.0F, 3.0F}));
+    EXPECT_FALSE(snapshot.get(frozen).metadata.trainable);
+    EXPECT_FLOAT_EQ(item(snapshot.value(frozen)), 4.0F);
+    EXPECT_EQ(snapshot.parameters().size(), 2U);
+    EXPECT_TRUE(snapshot.parameters().contains(defaults));
 }
 
-TEST(ParameterTest, CopyAndMovePreserveIdentityAndState)
+TEST(ParameterSnapshotTest, CopyAndMovePreserveIdentityAndState)
 {
-    const Parameter original{full(Shape{2}, 2.0F), ParameterMetadata{.trainable = false}};
-    const ParameterId id = original.id();
+    ParameterBuilder builder;
+    const auto id = builder.add({full(Shape{2}, 2.0F), {.trainable = false}});
+    const auto original = std::move(builder).finish(ParameterPair{id, id});
+    auto copied = original;
+    auto moved = std::move(copied);
 
-    Parameter copied = original;
-    EXPECT_EQ(copied.id(), id);
-    EXPECT_FALSE(copied.metadata().trainable);
-    EXPECT_EQ(to_vector(copied.value()), (std::vector<float>{2.0F, 2.0F}));
-
-    Parameter moved = std::move(copied);
-    EXPECT_EQ(moved.id(), id);
-    EXPECT_FALSE(moved.metadata().trainable);
-    EXPECT_EQ(to_vector(moved.value()), (std::vector<float>{2.0F, 2.0F}));
-
-    Parameter copy_assigned{full(Shape{}, 0.0F)};
-    copy_assigned = original;
-    EXPECT_EQ(copy_assigned.id(), id);
-
-    Parameter move_assigned{full(Shape{}, 0.0F)};
-    move_assigned = std::move(copy_assigned);
-    EXPECT_EQ(move_assigned.id(), id);
-    EXPECT_FALSE(move_assigned.metadata().trainable);
+    EXPECT_EQ(moved.tree().first, id);
+    EXPECT_EQ(moved.tree().second, id);
+    EXPECT_EQ(moved.parameters().size(), 1U);
+    EXPECT_FALSE(moved.get(id).metadata.trainable);
+    EXPECT_EQ(to_vector(moved.value(id)), (std::vector<float>{2.0F, 2.0F}));
+    EXPECT_EQ(to_vector(original.value(id)), to_vector(moved.value(id)));
 }
 
-TEST(ParameterTest, WithValuePreservesIdentityAndMetadata)
+TEST(ParameterSnapshotTest, RejectsUnknownIdsEvenWhenMapSizeMatches)
 {
-    const Parameter original{full(Shape{2}, 1.0F), ParameterMetadata{.trainable = false}};
-    const Parameter updated = original.with_value(full(Shape{2}, 7.0F));
+    ParameterBuilder builder;
+    const auto known = builder.add({full(Shape{}, 1.0F)});
+    ParameterBuilder other;
+    const auto unknown = other.add({full(Shape{}, 2.0F)});
 
-    EXPECT_EQ(updated.id(), original.id());
-    EXPECT_EQ(updated.metadata(), original.metadata());
-    EXPECT_EQ(to_vector(updated.value()), (std::vector<float>{7.0F, 7.0F}));
-    EXPECT_EQ(to_vector(original.value()), (std::vector<float>{1.0F, 1.0F}));
-}
-
-TEST(ParameterTest, WithValueRejectsIncompatibleSpecifications)
-{
-    const Parameter parameter{full(Shape{2}, 1.0F)};
-
-    EXPECT_THROW((void)parameter.with_value(full(Shape{2, 1}, 1.0F)), std::invalid_argument);
-    EXPECT_THROW((void)parameter.with_value(full(Shape{2}, 1.0F, TensorOptions{DType::Float32, Device::cpu(1)})),
+    EXPECT_THROW((void)std::move(builder).finish(ParameterPair{known, unknown}), std::invalid_argument);
+    EXPECT_THROW((void)ParameterSnapshot(ParameterPair{unknown, unknown},
+                                         ParameterMap{ParameterMap::Map{{known, {full(Shape{}, 1.0F)}}}}),
                  std::invalid_argument);
 }
 
-TEST(ParameterTest, WithMetadataPreservesIdentityAndValue)
+TEST(ParameterSnapshotTest, RejectsUnreferencedStates)
 {
-    const Parameter original{full(Shape{2}, 6.0F)};
-    const Parameter updated = original.with_metadata(ParameterMetadata{.trainable = false});
+    ParameterBuilder builder;
+    const auto id = builder.add({full(Shape{}, 1.0F)});
+    (void)builder.add({full(Shape{}, 2.0F)});
+    EXPECT_THROW((void)std::move(builder).finish(ParameterPair{id, id}), std::invalid_argument);
+}
 
-    EXPECT_EQ(updated.id(), original.id());
-    EXPECT_FALSE(updated.metadata().trainable);
-    EXPECT_TRUE(original.metadata().trainable);
-    EXPECT_EQ(to_vector(updated.value()), (std::vector<float>{6.0F, 6.0F}));
+TEST(ParameterSnapshotTest, AcceptsEmptyTreesAndRejectsMissingLookups)
+{
+    ParameterBuilder empty;
+    const auto snapshot = std::move(empty).finish(EmptyTree{});
+    EXPECT_EQ(snapshot.parameters().size(), 0U);
+    ParameterBuilder other;
+    const auto unknown = other.add({full(Shape{}, 1.0F)});
+    EXPECT_FALSE(snapshot.parameters().contains(unknown));
+    EXPECT_THROW((void)snapshot.get(unknown), std::out_of_range);
+    EXPECT_THROW((void)snapshot.value(unknown), std::out_of_range);
+}
+
+TEST(ParameterSnapshotTest, TransformsEachStateOncePreservingTiesAndSource)
+{
+    ParameterBuilder builder;
+    const auto id = builder.add({full(Shape{2}, 1.0F), {.trainable = false}});
+    const auto source = std::move(builder).finish(ParameterPair{id, id});
+    std::size_t invocations = 0;
+    const auto transformed = transform_parameters(source, [&](ParameterId visited, const ParameterState &state) {
+        ++invocations;
+        EXPECT_EQ(visited, id);
+        return ParameterState{full_like(state.value, 7.0F), state.metadata};
+    });
+
+    EXPECT_EQ(invocations, 1U);
+    EXPECT_EQ(transformed.tree().first, id);
+    EXPECT_EQ(transformed.tree().second, id);
+    EXPECT_FALSE(transformed.get(id).metadata.trainable);
+    EXPECT_EQ(to_vector(transformed.value(id)), (std::vector<float>{7.0F, 7.0F}));
+    EXPECT_EQ(to_vector(source.value(id)), (std::vector<float>{1.0F, 1.0F}));
+}
+
+TEST(ParameterSnapshotTest, TransformsMetadataIndependentlyOfValues)
+{
+    ParameterBuilder builder;
+    const auto id = builder.add({full(Shape{2}, 6.0F)});
+    const auto original = std::move(builder).finish(ParameterPair{id, id});
+    const auto updated = transform_parameters(original, [](ParameterId, const ParameterState &state) {
+        return ParameterState{state.value, {.trainable = false}};
+    });
+
+    EXPECT_EQ(updated.tree().first, id);
+    EXPECT_FALSE(updated.get(id).metadata.trainable);
+    EXPECT_TRUE(original.get(id).metadata.trainable);
+    EXPECT_EQ(to_vector(updated.value(id)), (std::vector<float>{6.0F, 6.0F}));
 }
 } // namespace minitensor::nn::test

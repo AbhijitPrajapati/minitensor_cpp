@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <concepts>
 #include <functional>
 #include <stdexcept>
@@ -17,30 +16,27 @@ namespace minitensor::nn::detail
 {
 template <typename Function>
 concept ParameterGradientTransform =
-    std::invocable<Function &, const Parameter &, const Tensor &> &&
-    std::convertible_to<std::invoke_result_t<Function &, const Parameter &, const Tensor &>, Tensor>;
+    std::invocable<Function &, ParameterId, const Tensor &, const Tensor &> &&
+    std::convertible_to<std::invoke_result_t<Function &, ParameterId, const Tensor &, const Tensor &>, Tensor>;
 
 // This function traverses and validates each unique parameter, (skipping frozen parameters)
 // finds the corresponding gradient, and invokes the callback with the validated pair.
 template <typename Tree, ParameterGradientTransform Update>
-[[nodiscard]] Tree transform_parameter_values_with_gradients(Tree parameters, const ParameterGradients &gradients,
-                                                             Update &&update)
+[[nodiscard]] ParameterSnapshot<Tree> transform_parameter_values_with_gradients(const ParameterSnapshot<Tree> &snapshot,
+                                                                                const ParameterGradients &gradients,
+                                                                                Update &&update)
 {
     std::size_t update_count = 0;
 
-    Tree updated = transform_parameter_values(std::move(parameters), [&](const Parameter &parameter) {
-        if (!parameter.metadata().trainable)
+    ParameterSnapshot<Tree> updated = transform_parameters(snapshot, [&](ParameterId id, const ParameterState &state) {
+        if (!state.metadata.trainable)
         {
-            return parameter.value();
+            return state;
         }
-
-        if (!is_floating_point(parameter.value().dtype()))
+        if (!is_floating_point(state.value.dtype()))
         {
             throw std::invalid_argument{"Optimizer requires floating-point trainable parameters"};
         }
-
-        const ParameterId id = parameter.id();
-        const Tensor &value = parameter.value();
 
         // Find and validate gradient.
         const auto gradient_position = gradients.find(id);
@@ -49,16 +45,16 @@ template <typename Tree, ParameterGradientTransform Update>
             throw std::invalid_argument{"parameter gradient not found"};
         }
         const Tensor &gradient = gradient_position->second;
-        if (gradient.shape() != value.shape() || gradient.dtype() != value.dtype() ||
-            gradient.device() != value.device())
+        if (gradient.shape() != state.value.shape() || gradient.dtype() != state.value.dtype() ||
+            gradient.device() != state.value.device())
         {
             throw std::invalid_argument{"parameter gradient does not match parameter spec"};
         }
 
         // Perform the update.
-        Tensor updated_value = std::invoke(update, parameter, gradient);
+        Tensor updated_value = std::invoke(update, id, state.value, gradient);
         ++update_count;
-        return updated_value;
+        return ParameterState{std::move(updated_value), state.metadata};
     });
 
     // Ensure that gradients are exhaustive.

@@ -16,7 +16,7 @@
 
 namespace minitensor::nn
 {
-Linear::Parameters::Parameters(Parameter weight, std::optional<Parameter> bias) noexcept
+Linear::Parameters::Parameters(ParameterId weight, std::optional<ParameterId> bias) noexcept
     : weight_{std::move(weight)}, bias_{std::move(bias)}
 {
 }
@@ -34,46 +34,52 @@ Linear::Linear(Extent input_features, Extent output_features, bool use_bias)
     }
 }
 
-Linear::Parameters Linear::initialize(RandomKey key, TensorOptions options) const
+Linear::Parameters Linear::initialize(ParameterBuilder &builder, RandomKey key, TensorOptions options) const
 {
     auto [weight_key, bias_key] = split(key);
 
     const float bound = 1.0F / std::sqrt(static_cast<float>(input_features_));
-    Parameter weight{uniform(Shape{output_features_, input_features_}, -bound, bound, weight_key, options)};
 
-    std::optional<Parameter> bias;
+    ParameterId weight = builder.add(
+        ParameterState{uniform(Shape{output_features_, input_features_}, -bound, bound, weight_key, options)});
+
+    std::optional<ParameterId> bias;
     if (use_bias_)
     {
-        bias.emplace(uniform(Shape{output_features_}, -bound, bound, bias_key, options));
+        bias.emplace(builder.add(ParameterState{uniform(Shape{output_features_}, -bound, bound, bias_key, options)}));
     }
 
     return Parameters{std::move(weight), std::move(bias)};
 }
 
-const Parameter &Linear::Parameters::weight() const noexcept
+const ParameterId &Linear::Parameters::weight() const noexcept
 {
     return weight_;
 }
 
-const Parameter *Linear::Parameters::bias() const noexcept
+const ParameterId *Linear::Parameters::bias() const noexcept
 {
     return bias_ ? &*bias_ : nullptr;
 }
 
-Tensor Linear::operator()(const Parameters &parameters, const Tensor &input) const
+Tensor Linear::operator()(const ParameterMap &parameters, const Parameters &tree, const Tensor &input) const
 {
-    validate_parameters(parameters);
-    Tensor output = matmul(input, transpose(parameters.weight().value(), 0, 1));
-    if (const Parameter *bias = parameters.bias())
+    validate_parameters(parameters, tree);
+
+    const Tensor &weight = parameters.get(tree.weight()).value;
+    Tensor output = matmul(input, transpose(weight, 0, 1));
+
+    if (const ParameterId *bias_id = tree.bias())
     {
-        output = output + bias->value();
+        const Tensor &bias = parameters.get(*bias_id).value;
+        output = output + bias;
     }
     return output;
 }
 
-void Linear::validate_parameters(const Parameters &parameters) const
+void Linear::validate_parameters(const ParameterMap &parameters, const Parameters &tree) const
 {
-    const Tensor &weight = parameters.weight().value();
+    const Tensor &weight = parameters.get(tree.weight()).value;
     if (weight.rank() != 2)
     {
         throw std::invalid_argument{"linear weight must be rank 2"};
@@ -84,14 +90,14 @@ void Linear::validate_parameters(const Parameters &parameters) const
         throw std::invalid_argument{"linear weight has incompatible shape"};
     }
 
-    const Parameter *bias = parameters.bias();
-    if ((bias != nullptr) != use_bias_)
+    const ParameterId *bias_id = tree.bias();
+    if ((bias_id != nullptr) != use_bias_)
     {
         throw std::invalid_argument{"linear bias presence is incompatible"};
     }
-    if (bias != nullptr)
+    if (bias_id != nullptr)
     {
-        const Tensor &bias_value = bias->value();
+        const Tensor &bias_value = parameters.get(*bias_id).value;
         if (bias_value.rank() != 1 || bias_value.shape()[0] != output_features_)
         {
             throw std::invalid_argument{"linear bias has incompatible shape"};
