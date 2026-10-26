@@ -16,7 +16,7 @@
 
 namespace minitensor::nn
 {
-Linear::Parameters::Parameters(ParameterId weight, std::optional<ParameterId> bias) noexcept
+Linear::ParameterTree::ParameterTree(ParameterId weight, std::optional<ParameterId> bias) noexcept
     : weight_{std::move(weight)}, bias_{std::move(bias)}
 {
 }
@@ -34,7 +34,7 @@ Linear::Linear(Extent input_features, Extent output_features, bool use_bias)
     }
 }
 
-Linear::Parameters Linear::initialize(ParameterBuilder &builder, RandomKey key, TensorOptions options) const
+Linear::ParameterTree Linear::initialize(ParameterBuilder &builder, RandomKey key, TensorOptions options) const
 {
     auto [weight_key, bias_key] = split(key);
 
@@ -49,20 +49,20 @@ Linear::Parameters Linear::initialize(ParameterBuilder &builder, RandomKey key, 
         bias.emplace(builder.add(ParameterState{uniform(Shape{output_features_}, -bound, bound, bias_key, options)}));
     }
 
-    return Parameters{std::move(weight), std::move(bias)};
+    return ParameterTree{std::move(weight), std::move(bias)};
 }
 
-const ParameterId &Linear::Parameters::weight() const noexcept
+const ParameterId &Linear::ParameterTree::weight() const noexcept
 {
     return weight_;
 }
 
-const ParameterId *Linear::Parameters::bias() const noexcept
+const ParameterId *Linear::ParameterTree::bias() const noexcept
 {
     return bias_ ? &*bias_ : nullptr;
 }
 
-Tensor Linear::operator()(const ParameterMap &parameters, const Parameters &tree, const Tensor &input) const
+Tensor Linear::operator()(const ParameterMap &parameters, const ParameterTree &tree, const Tensor &input) const
 {
     validate_parameters(parameters, tree);
 
@@ -77,7 +77,7 @@ Tensor Linear::operator()(const ParameterMap &parameters, const Parameters &tree
     return output;
 }
 
-void Linear::validate_parameters(const ParameterMap &parameters, const Parameters &tree) const
+void Linear::validate_parameters(const ParameterMap &parameters, const ParameterTree &tree) const
 {
     const Tensor &weight = parameters.get(tree.weight()).value;
     if (weight.rank() != 2)

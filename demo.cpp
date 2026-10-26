@@ -75,23 +75,23 @@ struct SpiralDataset final
 class ThreeSpiralModel final
 {
   public:
-    class Parameters final
+    class ParameterTree final
     {
       public:
-        using LinearParameters = mt::nn::Linear::Parameters;
+        using LinearParameterTree = mt::nn::Linear::ParameterTree;
 
-        [[nodiscard]] const LinearParameters &hidden() const noexcept
+        [[nodiscard]] const LinearParameterTree &hidden() const noexcept
         {
             return hidden_;
         }
 
-        [[nodiscard]] const LinearParameters &output() const noexcept
+        [[nodiscard]] const LinearParameterTree &output() const noexcept
         {
             return output_;
         }
 
       private:
-        Parameters(LinearParameters hidden, LinearParameters output)
+        ParameterTree(LinearParameterTree hidden, LinearParameterTree output)
             : hidden_{std::move(hidden)}, output_{std::move(output)}
         {
         }
@@ -108,8 +108,8 @@ class ThreeSpiralModel final
 
         // This class encapsulates the set of two linear parameters needed
         // for the model to run.
-        LinearParameters hidden_;
-        LinearParameters output_;
+        LinearParameterTree hidden_;
+        LinearParameterTree output_;
 
         friend class ThreeSpiralModel;
 
@@ -124,19 +124,19 @@ class ThreeSpiralModel final
     }
 
     // The user retains and manages the full set of model parameters.
-    [[nodiscard]] Parameters initialize(mt::nn::ParameterBuilder &builder, mt::RandomKey key,
-                                        mt::TensorOptions options = {}) const
+    [[nodiscard]] ParameterTree initialize(mt::nn::ParameterBuilder &builder, mt::RandomKey key,
+                                           mt::TensorOptions options = {}) const
     {
         // Seperate key for each Linear module
         auto [hidden_key, output_key] = mt::split(key);
 
-        return Parameters{
+        return ParameterTree{
             hidden_.initialize(builder, hidden_key, options),
             output_.initialize(builder, output_key, options),
         };
     }
 
-    [[nodiscard]] mt::Tensor operator()(const mt::nn::ParameterMap &parameters, const Parameters &tree,
+    [[nodiscard]] mt::Tensor operator()(const mt::nn::ParameterMap &parameters, const ParameterTree &tree,
                                         const mt::Tensor &input) const
     {
         // TanH introduces non-linearity, which is essential for learning non-linear

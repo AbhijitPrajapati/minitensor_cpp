@@ -22,10 +22,10 @@ namespace
 class TwoLayerModel
 {
   public:
-    struct Parameters
+    struct ParameterTree
     {
-        Linear::Parameters hidden;
-        Linear::Parameters output;
+        Linear::ParameterTree hidden;
+        Linear::ParameterTree output;
 
       private:
         template <typename Self, typename Visitor>
@@ -38,13 +38,13 @@ class TwoLayerModel
         friend class ::minitensor::nn::ParameterTreeAccess;
     };
 
-    Parameters initialize(ParameterBuilder &builder, RandomKey key, TensorOptions options = {}) const
+    ParameterTree initialize(ParameterBuilder &builder, RandomKey key, TensorOptions options = {}) const
     {
         const auto [hidden_key, output_key] = split(key);
         return {hidden_.initialize(builder, hidden_key, options), output_.initialize(builder, output_key, options)};
     }
 
-    Tensor operator()(const ParameterMap &parameters, const Parameters &tree, const Tensor &input) const
+    Tensor operator()(const ParameterMap &parameters, const ParameterTree &tree, const Tensor &input) const
     {
         return output_(parameters, tree.output, tanh(hidden_(parameters, tree.hidden, input)));
     }

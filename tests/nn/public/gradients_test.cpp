@@ -15,49 +15,11 @@
 #include <minitensor/ops/reduction.hpp>
 #include <minitensor/random.hpp>
 
+#include "nn/support/parameter_trees.hpp"
+
 namespace minitensor::nn::test
 {
-namespace
-{
-class TiedGradientTree final
-{
-  public:
-    TiedGradientTree(ParameterId shared, ParameterId frozen)
-        : first_{shared}, second_{std::move(shared)}, frozen_{std::move(frozen)}
-    {
-    }
-
-    [[nodiscard]] const ParameterId &first() const noexcept
-    {
-        return first_;
-    }
-
-    [[nodiscard]] const ParameterId &second() const noexcept
-    {
-        return second_;
-    }
-
-    [[nodiscard]] const ParameterId &frozen() const noexcept
-    {
-        return frozen_;
-    }
-
-  private:
-    template <typename Self, typename Visitor>
-    static void visit_members(Self &self, Visitor &visitor)
-    {
-        visitor.parameter("first", self.first_);
-        visitor.parameter("second", self.second_);
-        visitor.parameter("frozen", self.frozen_);
-    }
-
-    ParameterId first_;
-    ParameterId second_;
-    ParameterId frozen_;
-
-    friend class ::minitensor::nn::ParameterTreeAccess;
-};
-} // namespace
+using support::MixedParameterTree;
 
 TEST(ParameterGradientsTest, AssociatesGradientsWithParameterIds)
 {
@@ -97,7 +59,7 @@ TEST(ParameterGradientsTest, FiltersFrozenAndDeduplicatesTiedParameters)
     const ParameterId shared = builder.add(ParameterState{from_data({1.0F, 2.0F}, Shape{2})});
     const ParameterId frozen =
         builder.add(ParameterState{from_data({3.0F, 4.0F}, Shape{2}), ParameterMetadata{.trainable = false}});
-    const auto tree = std::move(builder).finish(TiedGradientTree{shared, frozen});
+    const auto tree = std::move(builder).finish(MixedParameterTree{shared, frozen});
     const Tensor loss =
         sum(tree.value(tree.tree().first()) + tree.value(tree.tree().second()) + tree.value(tree.tree().frozen()));
 

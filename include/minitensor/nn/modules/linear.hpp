@@ -12,14 +12,14 @@ namespace minitensor::nn
 class Linear final
 {
   public:
-    class Parameters final
+    class ParameterTree final
     {
       public:
         [[nodiscard]] const ParameterId &weight() const noexcept;
         [[nodiscard]] const ParameterId *bias() const noexcept;
 
       private:
-        Parameters(ParameterId weight, std::optional<ParameterId> bias) noexcept;
+        ParameterTree(ParameterId weight, std::optional<ParameterId> bias) noexcept;
 
         template <typename Self, typename Visitor>
         static void visit_members(Self &self, Visitor &visitor)
@@ -40,16 +40,17 @@ class Linear final
 
     Linear(Extent input_features, Extent output_features, bool use_bias = true);
 
-    [[nodiscard]] Parameters initialize(ParameterBuilder &builder, RandomKey key, TensorOptions options = {}) const;
+    [[nodiscard]] ParameterTree initialize(ParameterBuilder &builder, RandomKey key, TensorOptions options = {}) const;
 
-    [[nodiscard]] Tensor operator()(const ParameterMap &parameters, const Parameters &tree, const Tensor &input) const;
+    [[nodiscard]] Tensor operator()(const ParameterMap &parameters, const ParameterTree &tree,
+                                    const Tensor &input) const;
 
     [[nodiscard]] Extent input_features() const noexcept;
     [[nodiscard]] Extent output_features() const noexcept;
     [[nodiscard]] bool use_bias() const noexcept;
 
   private:
-    void validate_parameters(const ParameterMap &parameters, const Parameters &tree) const;
+    void validate_parameters(const ParameterMap &parameters, const ParameterTree &tree) const;
 
     Extent input_features_;
     Extent output_features_;

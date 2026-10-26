@@ -14,22 +14,26 @@
 #include <minitensor/ops/creation.hpp>
 #include <minitensor/random.hpp>
 
+#include "nn/support/parameter_trees.hpp"
+
 namespace minitensor::nn::test
 {
+using support::TiedParameterTree;
+
 class LinearParameterPair final
 {
   public:
-    LinearParameterPair(Linear::Parameters first, Linear::Parameters second)
+    LinearParameterPair(Linear::ParameterTree first, Linear::ParameterTree second)
         : first_{std::move(first)}, second_{std::move(second)}
     {
     }
 
-    [[nodiscard]] const Linear::Parameters &first() const noexcept
+    [[nodiscard]] const Linear::ParameterTree &first() const noexcept
     {
         return first_;
     }
 
-    [[nodiscard]] const Linear::Parameters &second() const noexcept
+    [[nodiscard]] const Linear::ParameterTree &second() const noexcept
     {
         return second_;
     }
@@ -44,39 +48,8 @@ class LinearParameterPair final
 
     friend class ::minitensor::nn::ParameterTreeAccess;
 
-    Linear::Parameters first_;
-    Linear::Parameters second_;
-};
-
-class TiedParameterTree final
-{
-  public:
-    explicit TiedParameterTree(ParameterId parameter) : first_{parameter}, second_{std::move(parameter)}
-    {
-    }
-
-    [[nodiscard]] const ParameterId &first() const noexcept
-    {
-        return first_;
-    }
-
-    [[nodiscard]] const ParameterId &second() const noexcept
-    {
-        return second_;
-    }
-
-  private:
-    template <typename Self, typename Visitor>
-    static void visit_members(Self &self, Visitor &visitor)
-    {
-        visitor.parameter("first", self.first_);
-        visitor.parameter("second", self.second_);
-    }
-
-    friend class ::minitensor::nn::ParameterTreeAccess;
-
-    ParameterId first_;
-    ParameterId second_;
+    Linear::ParameterTree first_;
+    Linear::ParameterTree second_;
 };
 
 class MalformedParameterTree final

@@ -12,26 +12,14 @@
 #include <minitensor/data.hpp>
 #include <minitensor/ops/creation.hpp>
 
+#include "nn/support/parameter_trees.hpp"
+
 namespace minitensor::nn::test
 {
+using support::ParameterPair;
+
 namespace
 {
-struct ParameterPair
-{
-    ParameterId first;
-    ParameterId second;
-
-  private:
-    template <typename Self, typename Visitor>
-    static void visit_members(Self &self, Visitor &visitor)
-    {
-        visitor.parameter("first", self.first);
-        visitor.parameter("second", self.second);
-    }
-
-    friend class ::minitensor::nn::ParameterTreeAccess;
-};
-
 struct EmptyTree
 {
     template <typename Self, typename Visitor>
@@ -87,8 +75,8 @@ TEST(ParameterSnapshotTest, CopyAndMovePreserveIdentityAndState)
     auto copied = original;
     auto moved = std::move(copied);
 
-    EXPECT_EQ(moved.tree().first, id);
-    EXPECT_EQ(moved.tree().second, id);
+    EXPECT_EQ(moved.tree().first(), id);
+    EXPECT_EQ(moved.tree().second(), id);
     EXPECT_EQ(moved.parameters().size(), 1U);
     EXPECT_FALSE(moved.get(id).metadata.trainable);
     EXPECT_EQ(to_vector(moved.value(id)), (std::vector<float>{2.0F, 2.0F}));
@@ -141,8 +129,8 @@ TEST(ParameterSnapshotTest, TransformsEachStateOncePreservingTiesAndSource)
     });
 
     EXPECT_EQ(invocations, 1U);
-    EXPECT_EQ(transformed.tree().first, id);
-    EXPECT_EQ(transformed.tree().second, id);
+    EXPECT_EQ(transformed.tree().first(), id);
+    EXPECT_EQ(transformed.tree().second(), id);
     EXPECT_FALSE(transformed.get(id).metadata.trainable);
     EXPECT_EQ(to_vector(transformed.value(id)), (std::vector<float>{7.0F, 7.0F}));
     EXPECT_EQ(to_vector(source.value(id)), (std::vector<float>{1.0F, 1.0F}));
@@ -157,7 +145,7 @@ TEST(ParameterSnapshotTest, TransformsMetadataIndependentlyOfValues)
         return ParameterState{state.value, {.trainable = false}};
     });
 
-    EXPECT_EQ(updated.tree().first, id);
+    EXPECT_EQ(updated.tree().first(), id);
     EXPECT_FALSE(updated.get(id).metadata.trainable);
     EXPECT_TRUE(original.get(id).metadata.trainable);
     EXPECT_EQ(to_vector(updated.value(id)), (std::vector<float>{6.0F, 6.0F}));
