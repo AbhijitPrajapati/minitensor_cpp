@@ -25,15 +25,34 @@ struct ParameterState
     ParameterMetadata metadata{};
 };
 
+template <typename Tree>
+class ParameterSnapshot;
+
+// This class represents a mapping from a parameter's ID to its state
+// for a particular snapshot.
 class ParameterMap
 {
   public:
     using Map = std::unordered_map<ParameterId, ParameterState>;
 
-    explicit ParameterMap(Map states);
-    [[nodiscard]] const ParameterState &get(ParameterId id) const;
-    [[nodiscard]] bool contains(ParameterId id) const;
-    [[nodiscard]] std::size_t size() const noexcept;
+    explicit ParameterMap(ParameterMap::Map states) : states_(std::move(states))
+    {
+    }
+
+    [[nodiscard]] bool contains(ParameterId id) const
+    {
+        return states_.contains(id);
+    }
+
+    [[nodiscard]] const ParameterState &get(ParameterId id) const
+    {
+        return states_.at(id);
+    }
+
+    [[nodiscard]] std::size_t size() const noexcept
+    {
+        return states_.size();
+    }
 
     [[nodiscard]] Map::const_iterator begin() const noexcept
     {
@@ -47,17 +66,22 @@ class ParameterMap
 
   private:
     Map states_;
+
+    template <typename Tree>
+    friend class ParameterSnapshot;
 };
 
+// This is the public interface representing a single state of a module's parameters,
+// made up of a tree and a parameter map.
 template <typename Tree>
 class ParameterSnapshot
 {
   public:
     ParameterSnapshot(Tree tree, ParameterMap parameters) : tree_{std::move(tree)}, parameters_{std::move(parameters)}
     {
-        std::unordered_set<ParameterId> referenced_ids;
+        // The tree and the flat map must reference the exact same IDs.
 
-        // Validate that the parameter tree and the flat map agree.
+        std::unordered_set<ParameterId> referenced_ids;
         for_each_parameter(tree_, [&](ParameterId id) {
             if (!parameters_.contains(id))
             {
@@ -92,11 +116,33 @@ class ParameterSnapshot
         return get(id).value;
     }
 
+    // Transforms each unique state once while retaining the ID tree. Moving
+    // the snapshot saves allocation.
+    template <typename Transform>
+    [[nodiscard]] ParameterSnapshot transform(Transform &&transform) &&
+    {
+        for (auto &[id, state] : parameters_.states_)
+        {
+            state = std::invoke(transform, id, std::as_const(state));
+        }
+        return std::move(*this);
+    }
+
+    // Delegates to the function above with a copy.
+    template <typename Transform>
+    [[nodiscard]] ParameterSnapshot transform(Transform &&transform) const &
+    {
+        ParameterSnapshot<Tree> copy = *this;
+        return std::move(copy).transform(transform);
+    }
+
   private:
     Tree tree_;
     ParameterMap parameters_;
 };
 
+// This class facilitates the construction of an initial snapshot. An instance is passed down
+// through the module tree as each parameter is registered.
 class ParameterBuilder
 {
   public:
@@ -108,7 +154,8 @@ class ParameterBuilder
 
     [[nodiscard]] ParameterId add(ParameterState state);
 
-    // Finalize once at the root, after all children have used this builder.
+    // This function is called once at the root to finalize the parameter map and create
+    // a validated snapshot.
     template <typename Tree>
     [[nodiscard]] ParameterSnapshot<Tree> finish(Tree tree) &&
     {
@@ -120,21 +167,4 @@ class ParameterBuilder
 
     ParameterMap::Map parameters_;
 };
-
-// Transforms each unique state once while retaining the ID tree.
-// Map iteration order is unspecified.
-template <typename Tree, typename Transform>
-[[nodiscard]] ParameterSnapshot<Tree> transform_parameters(ParameterSnapshot<Tree> snapshot, Transform &&transform)
-{
-    ParameterMap::Map transformed;
-
-    transformed.reserve(snapshot.parameters().size());
-
-    for (const auto &[id, state] : snapshot.parameters())
-    {
-        transformed.emplace(id, std::invoke(transform, id, state));
-    }
-    return ParameterSnapshot<Tree>{snapshot.tree(), ParameterMap{std::move(transformed)}};
-}
-
 } // namespace minitensor::nn

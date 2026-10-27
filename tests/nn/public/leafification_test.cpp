@@ -17,6 +17,7 @@
 
 namespace minitensor::nn::test
 {
+using support::ParameterPair;
 using support::TiedParameterTree;
 
 TEST(ParameterLeafificationTest, PreservesParameterStateAndTies)
@@ -49,5 +50,28 @@ TEST(ParameterLeafificationTest, DetachesThePreviousGraphWhilePreservingTiedTens
     EXPECT_EQ(to_vector(grad(before, input).front()), (std::vector<float>{4.0F, 4.0F}));
     EXPECT_EQ(to_vector(grad(after, input).front()), (std::vector<float>{0.0F, 0.0F}));
     EXPECT_EQ(to_vector(grad(after, leafified.value(id)).front()), (std::vector<float>{2.0F, 2.0F}));
+}
+
+TEST(ParameterLeafificationTest, KeepsDistinctValuesAndMetadataAssociatedWhenConsumingSnapshot)
+{
+    const Tensor input = full(Shape{2}, 2.0F);
+    ParameterBuilder builder;
+    const auto first = builder.add({input * input});
+    const auto second = builder.add({sum(input) + 3.0F, {.trainable = false}});
+    auto source = std::move(builder).finish(ParameterPair{first, second});
+
+    const auto leafified = leafify_parameter_values(std::move(source));
+
+    EXPECT_EQ(leafified.tree().first(), first);
+    EXPECT_EQ(leafified.tree().second(), second);
+    EXPECT_EQ(leafified.value(first).shape(), (Shape{2}));
+    EXPECT_EQ(leafified.value(second).shape(), Shape{});
+    EXPECT_EQ(to_vector(leafified.value(first)), (std::vector<float>{4.0F, 4.0F}));
+    EXPECT_FLOAT_EQ(item(leafified.value(second)), 7.0F);
+    EXPECT_TRUE(leafified.get(first).metadata.trainable);
+    EXPECT_FALSE(leafified.get(second).metadata.trainable);
+
+    const Tensor after = sum(leafified.value(first)) + leafified.value(second);
+    EXPECT_EQ(to_vector(grad(after, input).front()), (std::vector<float>{0.0F, 0.0F}));
 }
 } // namespace minitensor::nn::test

@@ -26,25 +26,6 @@ ParameterId ParameterBuilder::make_id()
     return ParameterId{current};
 }
 
-ParameterMap::ParameterMap(ParameterMap::Map states) : states_(std::move(states))
-{
-}
-
-bool ParameterMap::contains(ParameterId id) const
-{
-    return states_.contains(id);
-}
-
-const ParameterState &ParameterMap::get(ParameterId id) const
-{
-    return states_.at(id);
-}
-
-std::size_t ParameterMap::size() const noexcept
-{
-    return states_.size();
-}
-
 ParameterId ParameterBuilder::add(ParameterState state)
 {
     ParameterId id = make_id();

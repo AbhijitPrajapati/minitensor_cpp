@@ -147,7 +147,7 @@ TEST(SGDTest, RejectsIntegralTrainableParametersAndPreservesFrozenIntegralParame
     const SGD optimizer{0.1F};
     EXPECT_THROW((void)optimizer.step(parameters, optimizer.initialize(parameters), {}), std::invalid_argument);
 
-    const auto all_frozen = transform_parameters(parameters, [](ParameterId, const ParameterState &state) {
+    const auto all_frozen = std::move(parameters).transform([](ParameterId, const ParameterState &state) {
         return ParameterState{state.value, {.trainable = false}};
     });
     const auto [updated, state] = optimizer.step(all_frozen, optimizer.initialize(all_frozen), {});

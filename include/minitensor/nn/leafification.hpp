@@ -15,28 +15,21 @@ namespace minitensor::nn
 template <typename Tree>
 [[nodiscard]] ParameterSnapshot<Tree> leafify_parameter_values(ParameterSnapshot<Tree> snapshot)
 {
-    // Collect IDs and values
-    std::vector<ParameterId> ids;
+    // Collect values in the map's iteration order.
     std::vector<Tensor> values;
-    ids.reserve(snapshot.parameters().size());
     values.reserve(snapshot.parameters().size());
 
-    for (const auto &[id, state] : snapshot.parameters())
+    for (const auto &entry : snapshot.parameters())
     {
-        ids.push_back(id);
-        values.push_back(state.value);
+        values.push_back(entry.second.value);
     }
 
     std::vector<Tensor> leafified = leafify(values);
 
-    ParameterMap::Map states;
-    states.reserve(ids.size());
-
-    for (std::size_t i = 0; i < ids.size(); ++i)
-    {
-        states.emplace(ids[i], ParameterState{std::move(leafified[i]), snapshot.get(ids[i]).metadata});
-    }
-
-    return ParameterSnapshot<Tree>{snapshot.tree(), ParameterMap{std::move(states)}};
+    // Perform the snapshot transformation.
+    std::size_t index = 0;
+    return std::move(snapshot).transform([&](ParameterId, const ParameterState &state) {
+        return ParameterState{std::move(leafified[index++]), state.metadata};
+    });
 }
 } // namespace minitensor::nn

@@ -71,7 +71,7 @@ struct SpiralDataset final
     };
 }
 
-// The model's parameter tree is defined seperately from its computation.
+// Every module defines its parameter tree independently from parameter state and computation.
 class ThreeSpiralModel final
 {
   public:
@@ -123,7 +123,9 @@ class ThreeSpiralModel final
     {
     }
 
-    // The user retains and manages the full set of model parameters.
+    // The initialization function receives a builder, which returns
+    // parameter ids when given an initial tensor. For child modules, the
+    // builder is simply passed down.
     [[nodiscard]] ParameterTree initialize(mt::nn::ParameterBuilder &builder, mt::RandomKey key,
                                            mt::TensorOptions options = {}) const
     {
@@ -136,6 +138,9 @@ class ThreeSpiralModel final
         };
     }
 
+    // The forward function receives the tree separately from a map of parameter states.
+    // The former is used to obtain ids to query the latter for tensor values and parameter
+    // metadata. For child modules, the subtree is passed down along with the parameter map.
     [[nodiscard]] mt::Tensor operator()(const mt::nn::ParameterMap &parameters, const ParameterTree &tree,
                                         const mt::Tensor &input) const
     {

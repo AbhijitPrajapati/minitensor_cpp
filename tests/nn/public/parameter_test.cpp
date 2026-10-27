@@ -122,7 +122,8 @@ TEST(ParameterSnapshotTest, TransformsEachStateOncePreservingTiesAndSource)
     const auto id = builder.add({full(Shape{2}, 1.0F), {.trainable = false}});
     const auto source = std::move(builder).finish(ParameterPair{id, id});
     std::size_t invocations = 0;
-    const auto transformed = transform_parameters(source, [&](ParameterId visited, const ParameterState &state) {
+
+    const auto transformed = source.transform([&](ParameterId visited, const ParameterState &state) {
         ++invocations;
         EXPECT_EQ(visited, id);
         return ParameterState{full_like(state.value, 7.0F), state.metadata};
@@ -141,9 +142,9 @@ TEST(ParameterSnapshotTest, TransformsMetadataIndependentlyOfValues)
     ParameterBuilder builder;
     const auto id = builder.add({full(Shape{2}, 6.0F)});
     const auto original = std::move(builder).finish(ParameterPair{id, id});
-    const auto updated = transform_parameters(original, [](ParameterId, const ParameterState &state) {
-        return ParameterState{state.value, {.trainable = false}};
-    });
+
+    const auto updated = original.transform(
+        [](ParameterId, const ParameterState &state) { return ParameterState{state.value, {.trainable = false}}; });
 
     EXPECT_EQ(updated.tree().first(), id);
     EXPECT_FALSE(updated.get(id).metadata.trainable);

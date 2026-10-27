@@ -122,13 +122,13 @@ TEST(AdamWTest, HandlesTiesAndRejectsMismatchedInputs)
     other_gradients.emplace(other, from_data({0.5F, 1.0F}, Shape{2}));
     EXPECT_THROW((void)optimizer.step(other_parameters, state, other_gradients), std::invalid_argument);
 
-    const auto reshaped = transform_parameters(parameters, [&](ParameterId id, const ParameterState &parameter) {
+    const auto reshaped = parameters.transform([&](ParameterId id, const ParameterState &parameter) {
         return ParameterState{id == shared ? full(Shape{1, 2}, 1.0F) : parameter.value, parameter.metadata};
     });
     const ParameterGradients reshaped_gradients{{shared, full(Shape{1, 2}, 1.0F)}};
     EXPECT_THROW((void)optimizer.step(reshaped, state, reshaped_gradients), std::invalid_argument);
 
-    const auto all_frozen = transform_parameters(parameters, [](ParameterId, const ParameterState &parameter) {
+    const auto all_frozen = std::move(parameters).transform([](ParameterId, const ParameterState &parameter) {
         return ParameterState{parameter.value, {.trainable = false}};
     });
     EXPECT_THROW((void)optimizer.step(all_frozen, state, {}), std::invalid_argument);

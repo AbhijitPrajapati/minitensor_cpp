@@ -28,35 +28,34 @@ template <typename Tree, ParameterGradientTransform Update>
 {
     std::size_t update_count = 0;
 
-    ParameterSnapshot<Tree> updated =
-        transform_parameters(std::move(snapshot), [&](ParameterId id, const ParameterState &state) {
-            if (!state.metadata.trainable)
-            {
-                return state;
-            }
-            if (!is_floating_point(state.value.dtype()))
-            {
-                throw std::invalid_argument{"Optimizer requires floating-point trainable parameters"};
-            }
+    ParameterSnapshot<Tree> updated = std::move(snapshot).transform([&](ParameterId id, const ParameterState &state) {
+        if (!state.metadata.trainable)
+        {
+            return state;
+        }
+        if (!is_floating_point(state.value.dtype()))
+        {
+            throw std::invalid_argument{"Optimizer requires floating-point trainable parameters"};
+        }
 
-            // Find and validate gradient.
-            const auto gradient_position = gradients.find(id);
-            if (gradient_position == gradients.end())
-            {
-                throw std::invalid_argument{"parameter gradient not found"};
-            }
-            const Tensor &gradient = gradient_position->second;
-            if (gradient.shape() != state.value.shape() || gradient.dtype() != state.value.dtype() ||
-                gradient.device() != state.value.device())
-            {
-                throw std::invalid_argument{"parameter gradient does not match parameter spec"};
-            }
+        // Find and validate gradient.
+        const auto gradient_position = gradients.find(id);
+        if (gradient_position == gradients.end())
+        {
+            throw std::invalid_argument{"parameter gradient not found"};
+        }
+        const Tensor &gradient = gradient_position->second;
+        if (gradient.shape() != state.value.shape() || gradient.dtype() != state.value.dtype() ||
+            gradient.device() != state.value.device())
+        {
+            throw std::invalid_argument{"parameter gradient does not match parameter spec"};
+        }
 
-            // Perform the update.
-            Tensor updated_value = std::invoke(update, id, state.value, gradient);
-            ++update_count;
-            return ParameterState{std::move(updated_value), state.metadata};
-        });
+        // Perform the update.
+        Tensor updated_value = std::invoke(update, id, state.value, gradient);
+        ++update_count;
+        return ParameterState{std::move(updated_value), state.metadata};
+    });
 
     // Ensure that gradients are exhaustive.
     if (update_count != gradients.size())
