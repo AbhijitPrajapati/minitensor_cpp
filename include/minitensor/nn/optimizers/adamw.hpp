@@ -74,7 +74,7 @@ class AdamW final
     }
 
     template <typename Tree>
-    [[nodiscard]] std::pair<ParameterSnapshot<Tree>, State> step(const ParameterSnapshot<Tree> &snapshot, State state,
+    [[nodiscard]] std::pair<ParameterSnapshot<Tree>, State> step(ParameterSnapshot<Tree> snapshot, State state,
                                                                  const ParameterGradients &gradients) const
     {
         const StepCoefficients coefficients = step_coefficients(state.step_);
@@ -86,7 +86,7 @@ class AdamW final
         }
 
         auto updated = detail::transform_parameter_values_with_gradients(
-            snapshot, gradients, [&](ParameterId id, const Tensor &value, const Tensor &gradient) {
+            std::move(snapshot), gradients, [&](ParameterId id, const Tensor &value, const Tensor &gradient) {
                 return update_parameter(id, value, gradient, state, coefficients);
             });
 

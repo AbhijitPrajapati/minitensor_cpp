@@ -28,11 +28,11 @@ class SGD final
     }
 
     template <typename Tree>
-    [[nodiscard]] std::pair<ParameterSnapshot<Tree>, State> step(const ParameterSnapshot<Tree> &snapshot, State state,
+    [[nodiscard]] std::pair<ParameterSnapshot<Tree>, State> step(ParameterSnapshot<Tree> snapshot, State state,
                                                                  const ParameterGradients &gradients) const
     {
         auto updated = detail::transform_parameter_values_with_gradients(
-            snapshot, gradients, [&](ParameterId, const Tensor &parameter, const Tensor &gradient) {
+            std::move(snapshot), gradients, [&](ParameterId, const Tensor &parameter, const Tensor &gradient) {
                 return parameter - learning_rate_ * gradient;
             });
         return {std::move(updated), std::move(state)};

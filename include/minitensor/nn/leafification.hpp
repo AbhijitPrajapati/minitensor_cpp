@@ -13,7 +13,7 @@ namespace minitensor::nn
 // release graphs from the previous step.
 
 template <typename Tree>
-[[nodiscard]] ParameterSnapshot<Tree> leafify_parameter_values(const ParameterSnapshot<Tree> &snapshot)
+[[nodiscard]] ParameterSnapshot<Tree> leafify_parameter_values(ParameterSnapshot<Tree> snapshot)
 {
     // Collect IDs and values
     std::vector<ParameterId> ids;

@@ -124,8 +124,7 @@ class ParameterBuilder
 // Transforms each unique state once while retaining the ID tree.
 // Map iteration order is unspecified.
 template <typename Tree, typename Transform>
-[[nodiscard]] ParameterSnapshot<Tree> transform_parameters(const ParameterSnapshot<Tree> &snapshot,
-                                                           Transform &&transform)
+[[nodiscard]] ParameterSnapshot<Tree> transform_parameters(ParameterSnapshot<Tree> snapshot, Transform &&transform)
 {
     ParameterMap::Map transformed;
 
