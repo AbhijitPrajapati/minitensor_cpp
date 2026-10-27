@@ -64,22 +64,26 @@ const ParameterId *Linear::ParameterTree::bias() const noexcept
 
 Tensor Linear::operator()(const ParameterMap &parameters, const ParameterTree &tree, const Tensor &input) const
 {
-    validate_parameters(parameters, tree);
 
     const Tensor &weight = parameters.get(tree.weight()).value;
-    Tensor output = matmul(input, transpose(weight, 0, 1));
-
+    const Tensor *bias = nullptr;
     if (const ParameterId *bias_id = tree.bias())
     {
-        const Tensor &bias = parameters.get(*bias_id).value;
-        output = output + bias;
+        bias = &parameters.get(*bias_id).value;
+    }
+
+    validate_parameters(weight, bias);
+
+    Tensor output = matmul(input, transpose(weight, 0, 1));
+    if (bias != nullptr)
+    {
+        output = output + *bias;
     }
     return output;
 }
 
-void Linear::validate_parameters(const ParameterMap &parameters, const ParameterTree &tree) const
+void Linear::validate_parameters(const Tensor &weight, const Tensor *bias) const
 {
-    const Tensor &weight = parameters.get(tree.weight()).value;
     if (weight.rank() != 2)
     {
         throw std::invalid_argument{"linear weight must be rank 2"};
@@ -89,19 +93,13 @@ void Linear::validate_parameters(const ParameterMap &parameters, const Parameter
     {
         throw std::invalid_argument{"linear weight has incompatible shape"};
     }
-
-    const ParameterId *bias_id = tree.bias();
-    if ((bias_id != nullptr) != use_bias_)
+    if ((bias != nullptr) != use_bias_)
     {
         throw std::invalid_argument{"linear bias presence is incompatible"};
     }
-    if (bias_id != nullptr)
+    if (bias != nullptr && (bias->rank() != 1 || bias->shape()[0] != output_features_))
     {
-        const Tensor &bias_value = parameters.get(*bias_id).value;
-        if (bias_value.rank() != 1 || bias_value.shape()[0] != output_features_)
-        {
-            throw std::invalid_argument{"linear bias has incompatible shape"};
-        }
+        throw std::invalid_argument{"linear bias has incompatible shape"};
     }
 }
 

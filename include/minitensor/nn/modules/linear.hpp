@@ -50,7 +50,7 @@ class Linear final
     [[nodiscard]] bool use_bias() const noexcept;
 
   private:
-    void validate_parameters(const ParameterMap &parameters, const ParameterTree &tree) const;
+    void validate_parameters(const Tensor &weight, const Tensor *bias) const;
 
     Extent input_features_;
     Extent output_features_;
