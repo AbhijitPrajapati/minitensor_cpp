@@ -13,13 +13,12 @@
 #include <minitensor/types.hpp>
 
 #include "detail/parameter_updates.hpp"
+#include "minitensor/nn/parameter_id.hpp"
 
 namespace minitensor::nn
 {
 class AdamW final
 {
-    using MomentMap = std::unordered_map<ParameterId, Tensor>;
-
     struct StepCoefficients final
     {
         std::uint64_t step;
@@ -32,6 +31,12 @@ class AdamW final
     class State final
     {
       public:
+        struct Moment
+        {
+            Tensor first;
+            Tensor second;
+        };
+
         State(const State &) = default;
         State(State &&) noexcept = default;
         State &operator=(const State &) = default;
@@ -43,8 +48,7 @@ class AdamW final
         State() = default;
 
         std::uint64_t step_{0};
-        MomentMap first_moments_;
-        MomentMap second_moments_;
+        std::unordered_map<ParameterId, Moment> moments_;
 
         friend class AdamW;
         friend State leafify_optimizer_state(State state);
@@ -64,8 +68,7 @@ class AdamW final
             }
 
             const Tensor &value = parameter.value;
-            state.first_moments_.emplace(id, zeros_like(value));
-            state.second_moments_.emplace(id, zeros_like(value));
+            state.moments_.emplace(id, State::Moment{zeros_like(value), zeros_like(value)});
         }
         return state;
     }
@@ -77,7 +80,7 @@ class AdamW final
         const StepCoefficients coefficients = step_coefficients(state.step_);
 
         // Ensure consistency with AdamW state.
-        if (gradients.size() != state.first_moments_.size() || gradients.size() != state.second_moments_.size())
+        if (gradients.size() != state.moments_.size())
         {
             throw std::invalid_argument{"AdamW state does not match trainable parameters"};
         }

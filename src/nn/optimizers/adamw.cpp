@@ -4,8 +4,6 @@
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
-#include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -69,25 +67,21 @@ AdamW::StepCoefficients AdamW::step_coefficients(std::uint64_t current_step) con
 Tensor AdamW::update_parameter(ParameterId id, const Tensor &value, const Tensor &gradient, State &state,
                                const StepCoefficients &coefficients) const
 {
-    // This lambda retrieves a moment tensor by id and ensures that it matches
-    // the specifications of the value.
-    auto checked_moment = [id, &value](MomentMap &moments, std::string_view name) -> Tensor & {
-        const auto position = moments.find(id);
-        if (position == moments.end())
-        {
-            throw std::invalid_argument{std::string{name} + " moment not found"};
-        }
+    const auto moment_pos = state.moments_.find(id);
+    if (moment_pos == state.moments_.end())
+    {
+        throw std::invalid_argument{"moment not found"};
+    }
 
-        Tensor &moment = position->second;
-        if (moment.shape() != value.shape() || moment.dtype() != value.dtype() || moment.device() != value.device())
-        {
-            throw std::invalid_argument{std::string{name} + " moment does not match parameter spec"};
-        }
-        return moment;
-    };
-
-    Tensor &first_moment = checked_moment(state.first_moments_, "first");
-    Tensor &second_moment = checked_moment(state.second_moments_, "second");
+    State::Moment &moment = moment_pos->second;
+    Tensor &first_moment = moment.first;
+    Tensor &second_moment = moment.second;
+    if (value.shape() != first_moment.shape() || value.dtype() != first_moment.dtype() ||
+        value.device() != first_moment.device() || value.shape() != second_moment.shape() ||
+        value.dtype() != second_moment.dtype() || value.device() != second_moment.device())
+    {
+        throw std::invalid_argument{"moment does not match parameter spec"};
+    }
 
     Tensor next_first_moment = beta1_ * first_moment + (1.0F - beta1_) * gradient;
     Tensor next_second_moment = beta2_ * second_moment + (1.0F - beta2_) * gradient * gradient;
@@ -129,28 +123,17 @@ float AdamW::epsilon() const noexcept
 
 AdamW::State leafify_optimizer_state(AdamW::State state)
 {
-    if (state.first_moments_.size() != state.second_moments_.size())
-    {
-        throw std::logic_error{"AdamW state moment maps are inconsistent"};
-    }
-
     // First and second moments are collected in a single pair of vectors.
     std::vector<ParameterId> ids;
     std::vector<Tensor> moments;
-    ids.reserve(state.first_moments_.size());
-    moments.reserve(state.first_moments_.size() * 2);
+    ids.reserve(state.moments_.size());
+    moments.reserve(state.moments_.size() * 2);
 
-    for (const auto &[id, first_moment] : state.first_moments_)
+    for (const auto &[id, moment] : state.moments_)
     {
-        const auto second_position = state.second_moments_.find(id);
-        if (second_position == state.second_moments_.end())
-        {
-            throw std::logic_error{"AdamW state moment maps are inconsistent"};
-        }
-
         ids.push_back(id);
-        moments.push_back(first_moment);
-        moments.push_back(second_position->second);
+        moments.push_back(moment.first);
+        moments.push_back(moment.second);
     }
 
     std::vector<Tensor> leafified = leafify(moments);
@@ -158,8 +141,8 @@ AdamW::State leafify_optimizer_state(AdamW::State state)
     // First and second moments are split up again after leafification.
     for (std::size_t index = 0; index < ids.size(); ++index)
     {
-        state.first_moments_.at(ids[index]) = std::move(leafified[2 * index]);
-        state.second_moments_.at(ids[index]) = std::move(leafified[2 * index + 1]);
+        state.moments_.at(ids[index]) =
+            AdamW::State::Moment{std::move(leafified[2 * index]), std::move(leafified[2 * index + 1])};
     }
     return state;
 }
