@@ -31,12 +31,6 @@ class AdamW final
     class State final
     {
       public:
-        struct Moment
-        {
-            Tensor first;
-            Tensor second;
-        };
-
         State(const State &) = default;
         State(State &&) noexcept = default;
         State &operator=(const State &) = default;
@@ -45,6 +39,12 @@ class AdamW final
         [[nodiscard]] std::uint64_t step() const noexcept;
 
       private:
+        struct Moment
+        {
+            Tensor first;
+            Tensor second;
+        };
+
         State() = default;
 
         std::uint64_t step_{0};
