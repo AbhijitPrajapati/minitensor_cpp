@@ -109,3 +109,10 @@ target_include_directories(
     minitensor_tensor_cpu_tests
     PRIVATE ${PROJECT_SOURCE_DIR}/src
 )
+
+minitensor_add_test_executable(
+    minitensor_persistence_public_tests
+    persistence.public
+    "persistence;public"
+    persistence/public/record_test.cpp
+)
