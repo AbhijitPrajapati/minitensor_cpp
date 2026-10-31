@@ -202,19 +202,4 @@ void for_each_named_parameter(const Tree &tree, Function &&function)
     detail::NamedConstParameterTraversal<FunctionType> traversal{function};
     traversal.visit(tree);
 }
-
-// Performs the named traversal above, but only for unique parameters.
-template <typename Tree, NamedParameterCallback Function>
-void for_each_unique_named_parameter(const Tree &tree, Function &&function)
-{
-    std::unordered_set<ParameterId> seen;
-
-    for_each_named_parameter(tree, [&](std::string_view path, const ParameterId parameter_id) {
-        if (seen.insert(parameter_id).second)
-        {
-            std::invoke(function, path, parameter_id);
-        }
-    });
-}
-
 } // namespace minitensor::nn

@@ -1,5 +1,6 @@
 #pragma once
 
+// IWYU pragma: begin_exports
 #include "nn/gradients.hpp"
 #include "nn/leafification.hpp"
 #include "nn/loss.hpp"
@@ -7,6 +8,8 @@
 #include "nn/optimizers.hpp"
 #include "nn/parameter.hpp"
 #include "nn/parameter_tree.hpp"
+#include "nn/persistence.hpp"
+// IWYU pragma: end_exports
 
 // Parameter trees are seperate from composed module heirachies for flexibility. Optimizer state is
 // also seperate from the constant optimizer.

@@ -14,11 +14,8 @@
 #include <minitensor/ops/creation.hpp>
 #include <minitensor/random.hpp>
 
-#include "nn/support/parameter_trees.hpp"
-
 namespace minitensor::nn::test
 {
-using support::TiedParameterTree;
 
 class LinearParameterPair final
 {
@@ -127,18 +124,6 @@ TEST(ParameterTreeTest, EnumeratesParametersWithStructuralPaths)
     ASSERT_NE(pair.first().bias(), nullptr);
     EXPECT_EQ(ids[1], *pair.first().bias());
     EXPECT_EQ(ids[2], pair.second().weight());
-}
-
-TEST(ParameterTreeTest, UniqueNamedTraversalUsesFirstPathForTiedParameters)
-{
-    ParameterBuilder builder;
-    const TiedParameterTree tree{builder.add({full(Shape{1}, 1.0F)})};
-    std::vector<std::string> paths;
-
-    for_each_unique_named_parameter(tree,
-                                    [&](std::string_view path, const ParameterId &) { paths.emplace_back(path); });
-
-    EXPECT_EQ(paths, (std::vector<std::string>{"first"}));
 }
 
 TEST(ParameterTreeTest, RejectsInvalidOrDuplicatePaths)

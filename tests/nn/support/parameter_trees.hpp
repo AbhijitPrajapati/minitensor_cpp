@@ -6,6 +6,15 @@
 
 namespace minitensor::nn::test::support
 {
+
+struct EmptyTree
+{
+    template <typename Self, typename Visitor>
+    static void visit_members(Self &, Visitor &)
+    {
+    }
+};
+
 class ParameterPair final
 {
   public:
@@ -72,37 +81,6 @@ class MixedParameterTree final
     ParameterId first_;
     ParameterId second_;
     ParameterId frozen_;
-
-    friend class ::minitensor::nn::ParameterTreeAccess;
-};
-
-class TiedParameterTree final
-{
-  public:
-    explicit TiedParameterTree(ParameterId parameter) : first_{parameter}, second_{std::move(parameter)}
-    {
-    }
-
-    [[nodiscard]] const ParameterId &first() const noexcept
-    {
-        return first_;
-    }
-
-    [[nodiscard]] const ParameterId &second() const noexcept
-    {
-        return second_;
-    }
-
-  private:
-    template <typename Self, typename Visitor>
-    static void visit_members(Self &self, Visitor &visitor)
-    {
-        visitor.parameter("first", self.first_);
-        visitor.parameter("second", self.second_);
-    }
-
-    ParameterId first_;
-    ParameterId second_;
 
     friend class ::minitensor::nn::ParameterTreeAccess;
 };

@@ -55,6 +55,7 @@ minitensor_add_test_executable(
     "nn;public"
     nn/public/parameter_test.cpp
     nn/public/parameter_tree_test.cpp
+    nn/public/persistence_test.cpp
     nn/public/gradients_test.cpp
     nn/public/leafification_test.cpp
     nn/public/linear_test.cpp

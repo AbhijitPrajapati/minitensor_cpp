@@ -16,18 +16,8 @@
 
 namespace minitensor::nn::test
 {
+using support::EmptyTree;
 using support::ParameterPair;
-
-namespace
-{
-struct EmptyTree
-{
-    template <typename Self, typename Visitor>
-    static void visit_members(Self &, Visitor &)
-    {
-    }
-};
-} // namespace
 
 static_assert(!std::is_default_constructible_v<ParameterId>);
 static_assert(!std::is_constructible_v<ParameterId, ParameterId::value_type>);
