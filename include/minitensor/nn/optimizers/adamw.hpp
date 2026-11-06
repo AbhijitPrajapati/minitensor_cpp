@@ -17,8 +17,15 @@
 
 namespace minitensor::nn
 {
+
+namespace detail
+{
+struct AdamWStateAccess;
+} // namespace detail
+
 class AdamW final
 {
+  public:
     struct StepCoefficients final
     {
         std::uint64_t step;
@@ -26,8 +33,6 @@ class AdamW final
         float beta1_correction;
         float beta2_correction;
     };
-
-  public:
     class State final
     {
       public:
@@ -52,6 +57,7 @@ class AdamW final
 
         friend class AdamW;
         friend State leafify_optimizer_state(State state);
+        friend struct detail::AdamWStateAccess;
     };
 
     AdamW(float learning_rate, float weight_decay, float beta1 = 0.9F, float beta2 = 0.999F, float epsilon = 1e-8F);

@@ -1,10 +1,13 @@
-#include <minitensor/persistence/record.hpp>
-
+#include <algorithm>
+#include <initializer_list>
 #include <memory>
 #include <stdexcept>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <variant>
+
+#include <minitensor/persistence/record.hpp>
 
 namespace minitensor::persistence
 {
@@ -80,6 +83,22 @@ bool Record::contains(std::string_view name) const
     return fields_.contains(name);
 }
 
+bool Record::contains(std::initializer_list<std::string_view> names, bool exact) const
+{
+    if (exact)
+    {
+        if (fields_.size() != names.size())
+        {
+            return false;
+        }
+
+        return std::all_of(fields_.begin(), fields_.end(), [&](const auto &field) {
+            return std::find(names.begin(), names.end(), std::string_view{field.first}) != names.end();
+        });
+    }
+
+    return std::all_of(names.begin(), names.end(), [&](std::string_view name) { return contains(name); });
+}
 std::size_t Record::size() const noexcept
 {
     return fields_.size();

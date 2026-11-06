@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <initializer_list>
 #include <map>
 #include <memory>
 #include <stdexcept>
@@ -153,6 +154,7 @@ class Record final
     void add(std::string_view name, Value value);
 
     [[nodiscard]] bool contains(std::string_view name) const;
+    [[nodiscard]] bool contains(std::initializer_list<std::string_view> names, bool exact = false) const;
     [[nodiscard]] std::size_t size() const noexcept;
     [[nodiscard]] bool empty() const noexcept;
 

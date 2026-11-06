@@ -57,6 +57,23 @@ TEST(RecordTest, StartsEmptyAndReportsMissingFields)
     EXPECT_THROW((void)record.get("missing").get<Value::List>(), std::out_of_range);
 }
 
+TEST(RecordTest, ChecksRequiredFieldsAndExactFieldSets)
+{
+    Record record;
+    EXPECT_TRUE(record.contains({}, true));
+
+    record.add("first", true);
+    record.add("second", false);
+
+    EXPECT_TRUE(record.contains({"first"}));
+    EXPECT_TRUE(record.contains({"first", "first"}));
+    EXPECT_FALSE(record.contains({"first", "missing"}));
+    EXPECT_TRUE(record.contains({"second", "first"}, true));
+    EXPECT_FALSE(record.contains({"first"}, true));
+    EXPECT_FALSE(record.contains({"first", "missing"}, true));
+    EXPECT_FALSE(record.contains({"first", "first"}, true));
+}
+
 TEST(RecordTest, PreservesScalarTypesAndPrecision)
 {
     Record record;

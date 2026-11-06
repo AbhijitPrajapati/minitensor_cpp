@@ -176,20 +176,6 @@ void for_each_parameter(const Tree &tree, Function &&function)
     traversal.visit(tree);
 }
 
-// Visits every unique parameter, delegating to for_each_parameter
-template <typename Tree, ParameterCallback Function>
-void for_each_unique_parameter(const Tree &tree, Function &&function)
-{
-    std::unordered_set<ParameterId> seen;
-
-    for_each_parameter(tree, [&](const ParameterId parameter_id) {
-        if (seen.insert(parameter_id).second)
-        {
-            std::invoke(function, parameter_id);
-        }
-    });
-}
-
 // Visits every parameter with a named callback constructed using its
 // location in the parameter tree. This is used for persistence and
 // diagnostics. A module provides a component for each of its parameters.
