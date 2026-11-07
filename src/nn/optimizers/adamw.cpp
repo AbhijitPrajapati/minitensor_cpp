@@ -150,7 +150,7 @@ AdamW::State leafify_optimizer_state(AdamW::State state)
 
 constexpr persistence::detail::RecordHeaderSchema adamw_config_schema{"adamw_config", 1};
 
-[[nodiscard]] persistence::Record capture_optimizer_configuration(const AdamW &optimizer)
+persistence::Record capture_optimizer_configuration(const AdamW &optimizer)
 {
     persistence::Record record = persistence::detail::make_object_record(adamw_config_schema);
     record.add("learning_rate", optimizer.learning_rate());
@@ -161,12 +161,12 @@ constexpr persistence::detail::RecordHeaderSchema adamw_config_schema{"adamw_con
     return record;
 }
 
-[[nodiscard]] AdamW restore_adamw_configuration(const persistence::Record &record)
+AdamW restore_adamw_configuration(const persistence::Record &record)
 {
     persistence::detail::validate_object_record(record, adamw_config_schema,
                                                 {"learning_rate", "weight_decay", "beta1", "beta2", "epsilon"});
-    return nn::AdamW{record.get("learning_rate").get<float>(), record.get("weight_decay").get<float>(),
-                     record.get("beta1").get<float>(), record.get("beta2").get<float>(),
-                     record.get("epsilon").get<float>()};
+    return AdamW{record.get("learning_rate").get<float>(), record.get("weight_decay").get<float>(),
+                 record.get("beta1").get<float>(), record.get("beta2").get<float>(),
+                 record.get("epsilon").get<float>()};
 }
 } // namespace minitensor::nn
