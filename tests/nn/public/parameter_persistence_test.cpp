@@ -1,4 +1,4 @@
-#include <minitensor/nn/parameters/parameter_persistence.hpp>
+#include <minitensor/nn/persistence/snapshot.hpp>
 
 #include <cstdint>
 #include <limits>

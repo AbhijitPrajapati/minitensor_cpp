@@ -1,4 +1,4 @@
-#include <minitensor/nn/optimizers/state_persistence/adamw.hpp>
+#include <minitensor/nn/persistence/adamw.hpp>
 
 #include <cstdint>
 #include <stdexcept>
@@ -10,7 +10,7 @@
 #include <minitensor/nn/gradients.hpp>
 #include <minitensor/nn/optimizers/adamw.hpp>
 #include <minitensor/nn/parameters/parameter.hpp>
-#include <minitensor/nn/parameters/parameter_persistence.hpp>
+#include <minitensor/nn/persistence/snapshot.hpp>
 #include <minitensor/persistence/record.hpp>
 
 #include "nn/support/parameter_trees.hpp"
@@ -69,6 +69,23 @@ TEST(AdamWStatePersistenceTest, ResumesAdamWWithTiedParametersAndFreshIds)
     EXPECT_EQ(actual_state.step(), expected_state.step());
     EXPECT_FLOAT_EQ(item(actual.value(target_id)), item(expected.value(source.tree().first())));
     EXPECT_FLOAT_EQ(item(actual.value(target.tree().frozen())), 8.0F);
+}
+
+TEST(AdamWStatePersistenceTest, RoundTripsStateWhenFrozenParametersComeFirst)
+{
+    const auto snapshot = make_snapshot(false);
+    const nn::AdamW optimizer{0.1F, 0.0F};
+    const auto record = capture_optimizer_state(snapshot, optimizer.initialize(snapshot));
+    const auto &paths = record.get("paths").get<Record>();
+    const auto &moments = record.get("moments").get<Value::List>();
+
+    const auto frozen_index = paths.get("first").get<std::uint64_t>();
+    const auto trainable_index = paths.get("frozen").get<std::uint64_t>();
+    EXPECT_EQ(paths.get("second").get<std::uint64_t>(), frozen_index);
+    EXPECT_NE(frozen_index, trainable_index);
+    ASSERT_EQ(moments.size(), 1U);
+    EXPECT_EQ(moments.front().get<Record>().get("parameter").get<std::uint64_t>(), trainable_index);
+    EXPECT_NO_THROW((void)restore_adamw_state(record, make_snapshot(false)));
 }
 
 TEST(AdamWStatePersistenceTest, RejectsOptimizerStateForDifferentParameters)
