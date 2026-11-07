@@ -7,6 +7,7 @@
 #include "nn/modules.hpp"
 #include "nn/optimizers.hpp"
 #include "nn/parameter.hpp"
+#include "nn/parameter_persistence.hpp"
 #include "nn/parameter_tree.hpp"
 // IWYU pragma: end_exports
 

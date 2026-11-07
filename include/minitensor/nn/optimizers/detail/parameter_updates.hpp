@@ -7,8 +7,8 @@
 #include <utility>
 
 #include <minitensor/nn/gradients.hpp>
-#include <minitensor/nn/parameter.hpp>
-#include <minitensor/nn/parameter_tree.hpp>
+#include <minitensor/nn/parameters/parameter.hpp>
+#include <minitensor/nn/parameters/parameter_tree.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 

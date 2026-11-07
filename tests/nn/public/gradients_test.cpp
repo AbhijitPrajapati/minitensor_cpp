@@ -9,8 +9,8 @@
 #include <minitensor/data.hpp>
 #include <minitensor/nn/gradients.hpp>
 #include <minitensor/nn/modules/linear.hpp>
-#include <minitensor/nn/parameter.hpp>
-#include <minitensor/nn/parameter_tree.hpp>
+#include <minitensor/nn/parameters/parameter.hpp>
+#include <minitensor/nn/parameters/parameter_tree.hpp>
 #include <minitensor/ops/elementwise.hpp>
 #include <minitensor/ops/reduction.hpp>
 #include <minitensor/random.hpp>

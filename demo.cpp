@@ -12,7 +12,7 @@
 #include "minitensor/nn/module.hpp"
 #include "minitensor/nn/modules/linear.hpp"
 #include "minitensor/nn/optimizers/adamw.hpp"
-#include "minitensor/nn/parameter.hpp"
+#include "minitensor/nn/parameters.hpp"
 #include "minitensor/ops/creation.hpp"
 #include "minitensor/ops/elementwise.hpp"
 #include "minitensor/random.hpp"

@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include <minitensor/nn/parameter.hpp>
+#include <minitensor/nn/parameters/parameter.hpp>
 #include <minitensor/random.hpp>
 
 namespace minitensor::nn

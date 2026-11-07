@@ -2,27 +2,25 @@
 
 #include <cstdint>
 #include <stdexcept>
-#include <unordered_map>
 #include <utility>
 
 #include <minitensor/nn/gradients.hpp>
-#include <minitensor/nn/parameter.hpp>
-#include <minitensor/nn/parameter_tree.hpp>
+#include <minitensor/nn/parameters/parameter.hpp>
+#include <minitensor/nn/parameters/parameter_tree.hpp>
 #include <minitensor/ops/creation.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
 #include "detail/parameter_updates.hpp"
-#include "minitensor/nn/parameter_id.hpp"
+#include "minitensor/nn/parameters/parameter_id.hpp"
+
+namespace minitensor::persistence
+{
+class Record;
+}
 
 namespace minitensor::nn
 {
-
-namespace detail
-{
-struct AdamWStateAccess;
-} // namespace detail
-
 class AdamW final
 {
   public:
@@ -57,7 +55,12 @@ class AdamW final
 
         friend class AdamW;
         friend State leafify_optimizer_state(State state);
-        friend struct detail::AdamWStateAccess;
+
+        template <typename Tree>
+        friend persistence::Record capture_optimizer_state(const ParameterSnapshot<Tree> &snapshot, const State &state);
+
+        template <typename Tree>
+        friend State restore_adamw_state(const persistence::Record &record, const ParameterSnapshot<Tree> &target);
     };
 
     AdamW(float learning_rate, float weight_decay, float beta1 = 0.9F, float beta2 = 0.999F, float epsilon = 1e-8F);
@@ -121,4 +124,7 @@ class AdamW final
 // Optimizer state must be leafified after each step to release the graph
 // retained by its moment tensors.
 [[nodiscard]] AdamW::State leafify_optimizer_state(AdamW::State state);
+
+[[nodiscard]] persistence::Record capture_optimizer_configuration(const AdamW &optimizer);
+[[nodiscard]] AdamW restore_adamw_configuration(const persistence::Record &record);
 } // namespace minitensor::nn

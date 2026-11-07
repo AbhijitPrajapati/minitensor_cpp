@@ -8,7 +8,7 @@
 #include <minitensor/autograd.hpp>
 #include <minitensor/tensor.hpp>
 
-#include "parameter.hpp"
+#include "parameters/parameter.hpp"
 
 namespace minitensor::nn
 {

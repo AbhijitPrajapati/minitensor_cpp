@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include <utility>
 
-#include <minitensor/nn/parameter_id.hpp>
+#include <minitensor/nn/parameters/parameter_id.hpp>
 
 namespace minitensor::nn
 {

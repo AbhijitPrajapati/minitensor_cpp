@@ -3,7 +3,7 @@
 #include <utility>
 
 #include <minitensor/nn/gradients.hpp>
-#include <minitensor/nn/parameter.hpp>
+#include <minitensor/nn/parameters/parameter.hpp>
 #include <minitensor/ops/elementwise.hpp>
 #include <minitensor/tensor.hpp>
 

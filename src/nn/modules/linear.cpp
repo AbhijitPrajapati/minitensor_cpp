@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <utility>
 
-#include <minitensor/nn/parameter.hpp>
+#include <minitensor/nn/parameters/parameter.hpp>
 #include <minitensor/ops/creation.hpp>
 #include <minitensor/ops/elementwise.hpp>
 #include <minitensor/ops/linalg.hpp>

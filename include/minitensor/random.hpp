@@ -10,6 +10,11 @@ namespace detail
 struct RandomKeyAccess;
 }
 
+namespace persistence
+{
+class Record;
+}
+
 // Random keys are explicitely managed by the user for portability and transparency.
 class RandomKey final
 {
@@ -32,11 +37,17 @@ class RandomKey final
     // The friend structure allows internals to access words without exposing
     // them to the user.
     friend struct detail::RandomKeyAccess;
+
     friend RandomKey fold_in(RandomKey key, std::uint64_t data) noexcept;
+    friend persistence::Record capture_random_key(const RandomKey &key);
+    friend RandomKey restore_random_key(persistence::Record &record);
 
     std::array<std::uint64_t, 2> words_;
 };
 
 [[nodiscard]] std::array<RandomKey, 2> split(RandomKey key) noexcept;
 [[nodiscard]] RandomKey fold_in(RandomKey key, std::uint64_t data) noexcept;
+
+[[nodiscard]] persistence::Record capture_random_key(const RandomKey &key);
+[[nodiscard]] RandomKey restore_random_key(persistence::Record &record);
 } // namespace minitensor

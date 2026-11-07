@@ -1,4 +1,4 @@
-#include <minitensor/nn/parameter_tree.hpp>
+#include <minitensor/nn/parameters/parameter_tree.hpp>
 
 #include <cstddef>
 #include <string>
@@ -10,7 +10,7 @@
 #include <minitensor/data.hpp>
 #include <minitensor/nn/module.hpp>
 #include <minitensor/nn/modules/linear.hpp>
-#include <minitensor/nn/parameter.hpp>
+#include <minitensor/nn/parameters/parameter.hpp>
 #include <minitensor/ops/creation.hpp>
 #include <minitensor/random.hpp>
 

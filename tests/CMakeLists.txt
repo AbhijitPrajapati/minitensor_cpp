@@ -32,6 +32,7 @@ minitensor_add_test_executable(
     tensor/public/data_test.cpp
     tensor/public/evaluation_test.cpp
     tensor/public/random_test.cpp
+    tensor/public/random_key_persistence_test.cpp
     tensor/public/autograd_test.cpp
 )
 
@@ -55,12 +56,15 @@ minitensor_add_test_executable(
     "nn;public"
     nn/public/parameter_test.cpp
     nn/public/parameter_tree_test.cpp
+    nn/public/parameter_persistence_test.cpp
     nn/public/gradients_test.cpp
     nn/public/leafification_test.cpp
     nn/public/linear_test.cpp
     nn/public/module_test.cpp
     nn/public/loss_test.cpp
     nn/public/adamw_test.cpp
+    nn/public/adamw_configuration_test.cpp
+    nn/public/adamw_state_persistence_test.cpp
     nn/public/sgd_test.cpp
 )
 
@@ -115,7 +119,4 @@ minitensor_add_test_executable(
     persistence.public
     "persistence;public"
     persistence/public/record_test.cpp
-    persistence/public/parameters_test.cpp
-    persistence/public/optimizer_configuration_test.cpp
-    persistence/public/training_state_test.cpp
 )

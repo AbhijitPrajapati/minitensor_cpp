@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include <minitensor/nn/parameter_tree.hpp>
+#include <minitensor/nn/parameters/parameter_tree.hpp>
 
 namespace minitensor::nn::test::support
 {

@@ -7,8 +7,8 @@
 
 #include <minitensor/autograd.hpp>
 #include <minitensor/data.hpp>
-#include <minitensor/nn/parameter.hpp>
-#include <minitensor/nn/parameter_tree.hpp>
+#include <minitensor/nn/parameters/parameter.hpp>
+#include <minitensor/nn/parameters/parameter_tree.hpp>
 #include <minitensor/ops/creation.hpp>
 #include <minitensor/ops/elementwise.hpp>
 #include <minitensor/ops/reduction.hpp>

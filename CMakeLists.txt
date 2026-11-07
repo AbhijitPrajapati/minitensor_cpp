@@ -112,8 +112,6 @@ target_sources(
         src/nn/optimizers/sgd.cpp
         src/nn/loss.cpp
         src/persistence/record.cpp
-        src/persistence/parameters.cpp
-        src/persistence/optimizers/adamw.cpp
 )
 
 # Specify all header files the library needs

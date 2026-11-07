@@ -7,7 +7,8 @@
 #include <unordered_set>
 #include <utility>
 
-#include <minitensor/nn/parameter_tree.hpp>
+#include <minitensor/nn/parameters/parameter_id.hpp>
+#include <minitensor/nn/parameters/parameter_tree.hpp>
 #include <minitensor/tensor.hpp>
 
 namespace minitensor::nn

@@ -16,4 +16,5 @@ inline Record replace_field(const Record &record, std::string_view name, const V
     }
     return result;
 }
+
 } // namespace minitensor::persistence::test::support

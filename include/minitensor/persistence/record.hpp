@@ -169,4 +169,18 @@ class Record final
     Fields fields_;
 };
 
+namespace detail
+{
+struct RecordHeaderSchema
+{
+    std::string_view kind;
+    std::uint64_t version;
+};
+
+// Library objects use these functions to support standardized headers.
+[[nodiscard]] Record make_object_record(RecordHeaderSchema schema);
+void validate_object_record(const Record &record, RecordHeaderSchema schema,
+                            std::initializer_list<std::string_view> payload_fields);
+} // namespace detail
+
 } // namespace minitensor::persistence

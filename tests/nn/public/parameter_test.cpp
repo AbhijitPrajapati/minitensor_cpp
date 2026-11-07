@@ -1,4 +1,4 @@
-#include <minitensor/nn/parameter.hpp>
+#include <minitensor/nn/parameters/parameter.hpp>
 
 #include <functional>
 #include <stdexcept>

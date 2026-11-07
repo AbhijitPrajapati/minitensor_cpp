@@ -128,4 +128,47 @@ Record::const_iterator Record::end() const noexcept
 {
     return fields_.end();
 }
+
+namespace detail
+{
+Record make_object_record(RecordHeaderSchema schema)
+{
+    Record record;
+    record.add("kind", schema.kind);
+    record.add("version", schema.version);
+    return record;
+}
+
+void validate_object_record(const Record &record, RecordHeaderSchema schema,
+                            std::initializer_list<std::string_view> payload_fields)
+{
+    if (!record.contains({"kind", "version"}) || !record.contains(payload_fields))
+    {
+        throw std::invalid_argument{"record is missing required fields"};
+    }
+
+    // Validate exact payload fields.
+    for (const auto &[name, value] : record)
+    {
+        if (name == "kind" || name == "version")
+        {
+            continue;
+        }
+
+        if (std::find(payload_fields.begin(), payload_fields.end(), std::string_view{name}) == payload_fields.end())
+        {
+            throw std::invalid_argument{"record contains an unexpected field"};
+        }
+    }
+
+    if (record.get("kind").get<std::string>() != schema.kind)
+    {
+        throw std::invalid_argument{"unsupported record kind"};
+    }
+    if (record.get("version").get<std::uint64_t>() != schema.version)
+    {
+        throw std::invalid_argument{"unsupported record version"};
+    }
+}
+} // namespace detail
 } // namespace minitensor::persistence
