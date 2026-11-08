@@ -42,6 +42,7 @@ struct ParameterBinding
     std::vector<std::optional<ParameterId>> id_by_index;
 };
 
+// Recovers the bi-directional binding between parameter IDs and record indices.
 template <typename Tree>
 [[nodiscard]] ParameterBinding bind_parameter_paths(const persistence::Record &paths,
                                                     const ParameterSnapshot<Tree> &target, std::size_t index_count)

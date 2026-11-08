@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include <memory>
+#include <ostream>
 #include <stdexcept>
 #include <string_view>
 #include <type_traits>
@@ -8,6 +9,8 @@
 #include <variant>
 
 #include <minitensor/persistence/record.hpp>
+
+#include "binary.hpp"
 
 namespace minitensor::persistence
 {
@@ -67,7 +70,31 @@ Value &Value::operator=(const Value &other)
 
 Value::Kind Value::kind() const noexcept
 {
-    return static_cast<Kind>(storage_.index());
+    return std::visit(
+        []<typename T>(const T &) noexcept -> Kind {
+            if constexpr (std::same_as<T, bool>)
+                return Kind::Bool;
+            else if constexpr (std::same_as<T, std::int64_t>)
+                return Kind::Int64;
+            else if constexpr (std::same_as<T, std::uint64_t>)
+                return Kind::UInt64;
+            else if constexpr (std::same_as<T, float>)
+                return Kind::Float32;
+            else if constexpr (std::same_as<T, double>)
+                return Kind::Float64;
+            else if constexpr (std::same_as<T, std::string>)
+                return Kind::String;
+            else if constexpr (std::same_as<T, Tensor>)
+                return Kind::Tensor;
+            else if constexpr (std::same_as<T, std::unique_ptr<Record>>)
+                return Kind::Record;
+            else
+            {
+                static_assert(std::same_as<T, List>, "Unhandled Value storage type");
+                return Kind::List;
+            }
+        },
+        storage_);
 }
 
 void Record::add(std::string_view name, Value value)
@@ -129,6 +156,16 @@ Record::const_iterator Record::end() const noexcept
     return fields_.end();
 }
 
+void Record::write(std::ostream &output) const
+{
+    detail::write_record(output, *this);
+}
+
+Record Record::read(std::istream &input, const ReadOptions &options)
+{
+    return detail::read_record(input, options);
+}
+
 namespace detail
 {
 Record make_object_record(RecordHeaderSchema schema)
@@ -171,4 +208,5 @@ void validate_object_record(const Record &record, RecordHeaderSchema schema,
     }
 }
 } // namespace detail
+
 } // namespace minitensor::persistence

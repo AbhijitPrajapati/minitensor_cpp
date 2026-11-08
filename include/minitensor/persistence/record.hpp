@@ -5,8 +5,10 @@
 #include <cstdint>
 #include <functional>
 #include <initializer_list>
+#include <istream>
 #include <map>
 #include <memory>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -15,6 +17,7 @@
 #include <vector>
 
 #include <minitensor/tensor.hpp>
+#include <minitensor/types.hpp>
 
 namespace minitensor::persistence
 {
@@ -35,8 +38,6 @@ class Value final
   public:
     using List = std::vector<Value>;
 
-    // Kind mapping is coupled to enum index, so ordering must be preserved
-    // relative to the Storage variant defined below.
     enum class Kind
     {
         Bool,
@@ -148,6 +149,18 @@ class Record final
     using Fields = std::map<std::string, Value, std::less<>>;
     using const_iterator = Fields::const_iterator;
 
+    struct ReadOptions
+    {
+        ReadOptions() {};
+        Device device{Device::cpu()};
+        std::size_t max_fields_per_record = 1'000'000;
+        std::size_t max_values_per_list = 1'000'000;
+        std::size_t max_field_bytes = 1024 * 1024;
+        std::size_t max_string_bytes = 1024 * 1024;
+        std::size_t max_tensor_rank = 64;
+        std::size_t max_tensor_payload_bytes = 256 * 1024 * 1024;
+    };
+
     Record() = default;
 
     // Throws invalid_argument on duplicate names.
@@ -164,6 +177,9 @@ class Record final
     // Const iteration follows lexicographic field-name order.
     [[nodiscard]] const_iterator begin() const noexcept;
     [[nodiscard]] const_iterator end() const noexcept;
+
+    void write(std::ostream &output) const;
+    [[nodiscard]] static Record read(std::istream &input, const ReadOptions &options = {});
 
   private:
     Fields fields_;
@@ -182,5 +198,4 @@ struct RecordHeaderSchema
 void validate_object_record(const Record &record, RecordHeaderSchema schema,
                             std::initializer_list<std::string_view> payload_fields);
 } // namespace detail
-
 } // namespace minitensor::persistence

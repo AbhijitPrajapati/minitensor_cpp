@@ -119,4 +119,5 @@ minitensor_add_test_executable(
     persistence.public
     "persistence;public"
     persistence/public/record_test.cpp
+    persistence/public/binary_test.cpp
 )
