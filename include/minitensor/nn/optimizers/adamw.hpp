@@ -77,6 +77,12 @@ class AdamW final
             }
 
             const Tensor &value = parameter.value;
+
+            if (!is_floating_point(value.dtype()))
+            {
+                throw std::invalid_argument{"AdamW parameters must be floating point"};
+            }
+
             state.moments_.emplace(id, State::Moment{zeros_like(value), zeros_like(value)});
         }
         return state;

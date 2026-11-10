@@ -79,7 +79,14 @@ template <typename Tree>
     const auto binding = detail::bind_parameter_paths(paths, target, target.parameters().size());
 
     AdamW::State state;
-    state.step_ = record.get("step").get<std::uint64_t>();
+
+    const auto step = record.get("step").get<std::uint64_t>();
+    if (step == std::numeric_limits<std::uint64_t>::max())
+    {
+        throw std::invalid_argument{"AdamW state cannot resume"};
+    }
+    state.step_ = step;
+
     const auto &moments = record.get("moments").get<persistence::Value::List>();
     state.moments_.reserve(target.parameters().size());
     for (const auto &saved : moments)
@@ -102,12 +109,13 @@ template <typename Tree>
         }
 
         const Tensor &value = parameter.value;
-        const auto &first = entry.get("first").get<Tensor>();
-        const auto &second = entry.get("second").get<Tensor>();
         if (!is_floating_point(value.dtype()))
         {
             throw std::invalid_argument{"AdamW requires floating-point trainable parameters"};
         }
+
+        const auto &first = entry.get("first").get<Tensor>();
+        const auto &second = entry.get("second").get<Tensor>();
         if (first.shape() != value.shape() || first.dtype() != value.dtype() || first.device() != value.device() ||
             second.shape() != value.shape() || second.dtype() != value.dtype() || second.device() != value.device())
         {

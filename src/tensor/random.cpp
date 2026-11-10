@@ -43,7 +43,7 @@ persistence::Record capture_random_key(const RandomKey &key)
     return record;
 }
 
-RandomKey restore_random_key(persistence::Record &record)
+RandomKey restore_random_key(const persistence::Record &record)
 {
     persistence::detail::validate_object_record(record, random_key_schema, {"first", "second"});
     const auto first = record.get("first").get<std::uint64_t>();
