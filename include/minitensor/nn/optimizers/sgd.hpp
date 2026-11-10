@@ -5,7 +5,6 @@
 #include <minitensor/nn/gradients.hpp>
 #include <minitensor/nn/parameters/parameter.hpp>
 #include <minitensor/ops/elementwise.hpp>
-#include <minitensor/persistence/record.hpp>
 #include <minitensor/tensor.hpp>
 
 #include "detail/parameter_updates.hpp"
@@ -47,7 +46,4 @@ class SGD final
 
 // SGD has no tensor-valued state, so leafification is a no-op.
 [[nodiscard]] SGD::State leafify_optimizer_state(SGD::State state) noexcept;
-
-[[nodiscard]] persistence::Record capture_optimizer_configuration(const SGD &optimizer);
-[[nodiscard]] SGD restore_sgd_configuration(const persistence::Record &record);
 } // namespace minitensor::nn

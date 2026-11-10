@@ -11,7 +11,6 @@
 #include <minitensor/nn/gradients.hpp>
 #include <minitensor/nn/parameters/parameter.hpp>
 #include <minitensor/ops/elementwise.hpp>
-#include <minitensor/persistence/record.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
@@ -148,25 +147,4 @@ AdamW::State leafify_optimizer_state(AdamW::State state)
     return state;
 }
 
-constexpr persistence::detail::RecordHeaderSchema adamw_config_schema{"adamw_config", 1};
-
-persistence::Record capture_optimizer_configuration(const AdamW &optimizer)
-{
-    persistence::Record record = persistence::detail::make_object_record(adamw_config_schema);
-    record.add("learning_rate", optimizer.learning_rate());
-    record.add("weight_decay", optimizer.weight_decay());
-    record.add("beta1", optimizer.beta1());
-    record.add("beta2", optimizer.beta2());
-    record.add("epsilon", optimizer.epsilon());
-    return record;
-}
-
-AdamW restore_adamw_configuration(const persistence::Record &record)
-{
-    persistence::detail::validate_object_record(record, adamw_config_schema,
-                                                {"learning_rate", "weight_decay", "beta1", "beta2", "epsilon"});
-    return AdamW{record.get("learning_rate").get<float>(), record.get("weight_decay").get<float>(),
-                 record.get("beta1").get<float>(), record.get("beta2").get<float>(),
-                 record.get("epsilon").get<float>()};
-}
 } // namespace minitensor::nn

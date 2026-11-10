@@ -63,8 +63,7 @@ minitensor_add_test_executable(
     nn/public/module_test.cpp
     nn/public/loss_test.cpp
     nn/public/adamw_test.cpp
-    nn/public/adamw_configuration_test.cpp
-    nn/public/adamw_state_persistence_test.cpp
+    nn/public/adamw_checkpoint_test.cpp
     nn/public/sgd_test.cpp
 )
 

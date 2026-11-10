@@ -15,12 +15,15 @@
 #include <minitensor/nn/modules/linear.hpp>
 #include <minitensor/nn/parameters/parameter.hpp>
 #include <minitensor/nn/parameters/parameter_tree.hpp>
+#include <minitensor/nn/persistence/checkpoint.hpp>
 #include <minitensor/ops/creation.hpp>
 #include <minitensor/ops/elementwise.hpp>
 #include <minitensor/ops/reduction.hpp>
+#include <minitensor/persistence/record.hpp>
 #include <minitensor/random.hpp>
 
 #include "nn/support/parameter_trees.hpp"
+#include "persistence/support/record.hpp"
 
 namespace minitensor::nn::test
 {
@@ -154,5 +157,40 @@ TEST(SGDTest, RejectsIntegralTrainableParametersAndPreservesFrozenIntegralParame
     (void)state;
     EXPECT_EQ(to_vector<std::int64_t>(updated.value(shared)), (std::vector<std::int64_t>{1, 1}));
     EXPECT_EQ(to_vector<std::int64_t>(updated.value(frozen)), (std::vector<std::int64_t>{3, 3}));
+}
+
+TEST(SGDCheckpointPersistenceTest, ResumesWithRestoredParametersAndLearningRate)
+{
+    const Linear linear{1, 1, false};
+    const auto source = initialize(linear, RandomKey{71});
+    const auto target = initialize(linear, RandomKey{72});
+    const auto source_id = source.tree().weight();
+    const auto target_id = target.tree().weight();
+    ASSERT_NE(source_id, target_id);
+    const SGD optimizer{0.125F};
+    const auto record = capture_checkpoint(source, optimizer, optimizer.initialize(source));
+    const auto [restored, restored_optimizer, restored_state] = restore_sgd_checkpoint(record, target);
+
+    EXPECT_EQ(restored.tree().weight(), target_id);
+    EXPECT_FLOAT_EQ(item(restored.value(target_id)), item(source.value(source_id)));
+    EXPECT_FLOAT_EQ(restored_optimizer.learning_rate(), optimizer.learning_rate());
+
+    const auto gradient = from_data({2.0F}, Shape{1, 1});
+    const auto [updated, state] = restored_optimizer.step(restored, restored_state, {{target_id, gradient}});
+    EXPECT_FLOAT_EQ(item(updated.value(target_id)), item(source.value(source_id)) - 0.25F);
+}
+
+TEST(SGDCheckpointPersistenceTest, RejectsInvalidLearningRate)
+{
+    using persistence::Record;
+    using persistence::test::support::replace_field;
+
+    const auto snapshot = ParameterBuilder{}.finish(support::EmptyTree{});
+    const SGD optimizer{0.125F};
+    const auto record = capture_checkpoint(snapshot, optimizer, optimizer.initialize(snapshot));
+    const auto &sgd = record.get("sgd").get<Record>();
+    const auto invalid = replace_field(sgd, "learning_rate", -1.0F);
+
+    EXPECT_THROW((void)restore_sgd_checkpoint(replace_field(record, "sgd", invalid), snapshot), std::invalid_argument);
 }
 } // namespace minitensor::nn::test
