@@ -5,6 +5,7 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 
 #include <gtest/gtest.h>
@@ -13,6 +14,7 @@
 #include <minitensor/nn/gradients.hpp>
 #include <minitensor/nn/optimizers/adamw.hpp>
 #include <minitensor/nn/parameters/parameter.hpp>
+#include <minitensor/ops/creation.hpp>
 #include <minitensor/persistence/record.hpp>
 
 #include "nn/support/parameter_trees.hpp"
@@ -51,7 +53,7 @@ TEST(AdamWCheckpointTest, ResumesAdamWWithTiedParametersAndFreshIds)
     const auto target = make_snapshot(false);
     const auto target_id = target.tree().first();
     ASSERT_NE(target_id, source.tree().first());
-    const auto [restored, restored_optimizer, restored_state] = restore_adamw_checkpoint(checkpoint, target);
+    const auto [restored, restored_optimizer, restored_state] = restore_checkpoint<AdamW>(checkpoint, target);
 
     EXPECT_EQ(restored.tree().first(), target_id);
     EXPECT_EQ(restored.tree().second(), target_id);
@@ -86,7 +88,7 @@ TEST(AdamWCheckpointTest, RoundTripsStateWhenFrozenParametersComeFirst)
     EXPECT_NE(frozen_index, trainable_index);
     ASSERT_EQ(moments.size(), 1U);
     EXPECT_EQ(moments.front().get<Record>().get("parameter").get<std::uint64_t>(), trainable_index);
-    EXPECT_NO_THROW((void)restore_adamw_checkpoint(record, make_snapshot(false)));
+    EXPECT_NO_THROW((void)restore_checkpoint<AdamW>(record, make_snapshot(false)));
 }
 
 TEST(AdamWCheckpointTest, RejectsOptimizerStateForDifferentParameters)
@@ -105,11 +107,11 @@ TEST(AdamWCheckpointTest, RejectsInvalidCheckpointRecords)
     const nn::AdamW optimizer{0.1F, 0.0F};
     const auto record = capture_checkpoint(snapshot, optimizer, optimizer.initialize(snapshot));
 
-    EXPECT_THROW((void)restore_adamw_checkpoint(replace_field(record, "kind", "snapshot"), snapshot),
+    EXPECT_THROW((void)restore_checkpoint<AdamW>(replace_field(record, "kind", "snapshot"), snapshot),
                  std::invalid_argument);
-    EXPECT_THROW((void)restore_adamw_checkpoint(replace_field(record, "version", std::uint64_t{2}), snapshot),
+    EXPECT_THROW((void)restore_checkpoint<AdamW>(replace_field(record, "version", std::uint64_t{2}), snapshot),
                  std::invalid_argument);
-    EXPECT_THROW((void)restore_adamw_checkpoint(replace_field(record, "paths", true), snapshot), std::logic_error);
+    EXPECT_THROW((void)restore_checkpoint<AdamW>(replace_field(record, "paths", true), snapshot), std::logic_error);
 }
 
 TEST(AdamWCheckpointTest, RejectsMismatchedParameterTies)
@@ -120,7 +122,7 @@ TEST(AdamWCheckpointTest, RejectsMismatchedParameterTies)
     const auto &paths = record.get("paths").get<Record>();
     const auto changed_paths = replace_field(paths, "second", paths.get("frozen"));
 
-    EXPECT_THROW((void)restore_adamw_checkpoint(replace_field(record, "paths", changed_paths), snapshot),
+    EXPECT_THROW((void)restore_checkpoint<AdamW>(replace_field(record, "paths", changed_paths), snapshot),
                  std::invalid_argument);
 }
 
@@ -141,17 +143,24 @@ TEST(AdamWCheckpointTest, RejectsInvalidMomentEntries)
     const auto frozen_index = paths.get("frozen");
     const auto out_of_range = static_cast<std::uint64_t>(record.get("states").get<Value::List>().size());
 
-    EXPECT_THROW((void)restore_adamw_checkpoint(with_moments({}), snapshot), std::invalid_argument);
-    EXPECT_THROW((void)restore_adamw_checkpoint(with_moments({moment, moment}), snapshot), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint<AdamW>(with_moments({}), snapshot), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint<AdamW>(with_moments({moment, moment}), snapshot), std::invalid_argument);
     EXPECT_THROW(
-        (void)restore_adamw_checkpoint(with_moments({replace_field(moment, "parameter", frozen_index)}), snapshot),
+        (void)restore_checkpoint<AdamW>(with_moments({replace_field(moment, "parameter", frozen_index)}), snapshot),
         std::invalid_argument);
     EXPECT_THROW(
-        (void)restore_adamw_checkpoint(with_moments({replace_field(moment, "parameter", out_of_range)}), snapshot),
+        (void)restore_checkpoint<AdamW>(with_moments({replace_field(moment, "parameter", out_of_range)}), snapshot),
         std::out_of_range);
-    EXPECT_THROW((void)restore_adamw_checkpoint(
-                     with_moments({replace_field(moment, "first", from_data({0.0F}, Shape{1}))}), snapshot),
-                 std::invalid_argument);
+    for (std::string_view field : {"first", "second"})
+    {
+        for (const Tensor &invalid : {full(Shape{1}, 0.0F), full(Shape{}, 0, TensorOptions{DType::Int64}),
+                                      full(Shape{}, 0.0F, TensorOptions{DType::Float32, Device::cpu(1)})})
+        {
+            EXPECT_THROW(
+                (void)restore_checkpoint<AdamW>(with_moments({replace_field(moment, field, invalid)}), snapshot),
+                std::invalid_argument);
+        }
+    }
 }
 
 TEST(AdamWCheckpointTest, RejectsExhaustedStepCounter)
@@ -162,7 +171,7 @@ TEST(AdamWCheckpointTest, RejectsExhaustedStepCounter)
     const auto &adamw = record.get("adamw").get<Record>();
     const auto exhausted = replace_field(adamw, "step", std::numeric_limits<std::uint64_t>::max());
 
-    EXPECT_THROW((void)restore_adamw_checkpoint(replace_field(record, "adamw", exhausted), snapshot),
+    EXPECT_THROW((void)restore_checkpoint<AdamW>(replace_field(record, "adamw", exhausted), snapshot),
                  std::invalid_argument);
 }
 
@@ -171,7 +180,7 @@ TEST(AdamWCheckpointTest, RoundTripsAllConfigurationFields)
     const auto snapshot = ParameterBuilder{}.finish(support::EmptyTree{});
     const AdamW optimizer{0.1F, 0.2F, 0.5F, 0.25F, 0.01F};
     const auto record = capture_checkpoint(snapshot, optimizer, optimizer.initialize(snapshot));
-    const auto restored = restore_adamw_checkpoint(record, snapshot);
+    const auto restored = restore_checkpoint<AdamW>(record, snapshot);
 
     EXPECT_FLOAT_EQ(restored.optimizer.learning_rate(), optimizer.learning_rate());
     EXPECT_FLOAT_EQ(restored.optimizer.weight_decay(), optimizer.weight_decay());
@@ -189,9 +198,9 @@ TEST(AdamWCheckpointTest, RejectsInvalidConfigurationFields)
     const auto wrong_type = replace_field(adamw, "learning_rate", "0.1");
     const auto invalid_value = replace_field(adamw, "beta1", 1.0F);
 
-    EXPECT_THROW((void)restore_adamw_checkpoint(replace_field(record, "adamw", wrong_type), snapshot),
+    EXPECT_THROW((void)restore_checkpoint<AdamW>(replace_field(record, "adamw", wrong_type), snapshot),
                  std::logic_error);
-    EXPECT_THROW((void)restore_adamw_checkpoint(replace_field(record, "adamw", invalid_value), snapshot),
+    EXPECT_THROW((void)restore_checkpoint<AdamW>(replace_field(record, "adamw", invalid_value), snapshot),
                  std::invalid_argument);
 }
 } // namespace minitensor::nn::test

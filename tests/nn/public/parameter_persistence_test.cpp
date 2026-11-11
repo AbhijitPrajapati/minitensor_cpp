@@ -1,4 +1,4 @@
-#include <minitensor/nn/persistence/snapshot.hpp>
+#include <minitensor/nn/persistence.hpp>
 
 #include <cstdint>
 #include <limits>
@@ -58,8 +58,9 @@ TEST(ParameterPersistenceTest, CapturesAllPathsAndEachUniqueStateWithMetadata)
     const auto frozen = builder.add({full(Shape{}, 7.0F), {.trainable = false}});
     const auto snapshot = std::move(builder).finish(MixedParameterTree{shared, frozen});
 
-    const auto record = capture_snapshot(snapshot);
-    EXPECT_EQ(record.get("kind").get<std::string>(), "snapshot");
+    const auto record = capture_checkpoint(snapshot);
+    EXPECT_TRUE(record.contains({"kind", "version", "paths", "states"}, true));
+    EXPECT_EQ(record.get("kind").get<std::string>(), "checkpoint");
     EXPECT_EQ(record.get("version").get<std::uint64_t>(), 1U);
     const auto &paths = record.get("paths").get<Record>();
     const auto &states = record.get("states").get<Value::List>();
@@ -86,7 +87,7 @@ TEST(ParameterPersistenceTest, RestoresValuesAndMetadataPreservingTargetIdsAndOr
     ASSERT_NE(second, source.tree().second());
 
     // The temporary captured record is destroyed before the result is inspected.
-    const auto restored = restore_snapshot(capture_snapshot(source), target);
+    const auto restored = restore_checkpoint(capture_checkpoint(source), target);
     EXPECT_EQ(restored.tree().first(), first);
     EXPECT_EQ(restored.tree().second(), second);
     EXPECT_EQ(restored.parameters().size(), 2U);
@@ -100,7 +101,7 @@ TEST(ParameterPersistenceTest, RestoresValuesAndMetadataPreservingTargetIdsAndOr
     EXPECT_FALSE(target.get(second).metadata.trainable);
     EXPECT_EQ(to_vector(source.value(source.tree().first())), (std::vector<float>{9.0F, 9.0F}));
 
-    const auto consumed = restore_snapshot(capture_snapshot(source), std::move(target));
+    const auto consumed = restore_checkpoint(capture_checkpoint(source), std::move(target));
     EXPECT_EQ(consumed.tree().first(), first);
     EXPECT_EQ(consumed.tree().second(), second);
     EXPECT_EQ(to_vector(consumed.value(first)), to_vector(restored.value(first)));
@@ -115,11 +116,11 @@ TEST(ParameterPersistenceTest, RoundTripsNestedPathsAndTiedParameters)
     const auto target_id = target_builder.add({full(Shape{2}, 0.0F)});
     const auto target = std::move(target_builder).finish(NestedTree{ParameterPair{target_id, target_id}});
 
-    const auto record = capture_snapshot(source);
+    const auto record = capture_checkpoint(source);
     const auto &paths = record.get("paths").get<Record>();
     EXPECT_EQ(paths.get("layer.first").get<std::uint64_t>(), 0U);
     EXPECT_EQ(paths.get("layer.second").get<std::uint64_t>(), 0U);
-    const auto restored = restore_snapshot(record, target);
+    const auto restored = restore_checkpoint(record, target);
     EXPECT_EQ(restored.tree().layer.first(), target_id);
     EXPECT_EQ(restored.tree().layer.second(), target_id);
     EXPECT_EQ(restored.parameters().size(), 1U);
@@ -131,10 +132,10 @@ TEST(ParameterPersistenceTest, RoundTripsEmptySnapshots)
 {
     nn::ParameterBuilder builder;
     const auto target = std::move(builder).finish(EmptyTree{});
-    const auto record = capture_snapshot(target);
+    const auto record = capture_checkpoint(target);
     EXPECT_TRUE(record.get("paths").get<Record>().empty());
     EXPECT_TRUE(record.get("states").get<Value::List>().empty());
-    const auto restored = restore_snapshot(record, target);
+    const auto restored = restore_checkpoint(record, target);
     EXPECT_EQ(restored.parameters().size(), 0U);
 }
 
@@ -143,7 +144,7 @@ TEST(ParameterPersistenceTest, CapturesAndRestoresWithoutEvaluatingTensors)
     const TensorOptions options{DType::Float32, Device::cpu(1)};
     const auto source = make_pair({full(Shape{2}, 3.0F, options)}, {full(Shape{2}, 4.0F, options)});
     const auto target = make_pair({full(Shape{2}, 0.0F, options)}, {full(Shape{2}, 0.0F, options)});
-    const auto restored = restore_snapshot(capture_snapshot(source), target);
+    const auto restored = restore_checkpoint(capture_checkpoint(source), target);
 
     EXPECT_EQ(restored.value(target.tree().first()).shape(), (Shape{2}));
     EXPECT_EQ(restored.value(target.tree().first()).device(), Device::cpu(1));
@@ -155,11 +156,11 @@ TEST(ParameterPersistenceTest, CapturesAndRestoresWithoutEvaluatingTensors)
 TEST(ParameterPersistenceTest, RejectsInvalidSchemaAndFieldTypes)
 {
     const auto target = make_pair();
-    const auto record = capture_snapshot(target);
-    EXPECT_THROW((void)restore_snapshot(replace_field(record, "kind", "optimizer"), target), std::invalid_argument);
-    EXPECT_THROW((void)restore_snapshot(replace_field(record, "version", std::uint64_t{2}), target),
+    const auto record = capture_checkpoint(target);
+    EXPECT_THROW((void)restore_checkpoint(replace_field(record, "kind", "optimizer"), target), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint(replace_field(record, "version", std::uint64_t{2}), target),
                  std::invalid_argument);
-    EXPECT_THROW((void)restore_snapshot(replace_field(record, "version", "1"), target), std::logic_error);
+    EXPECT_THROW((void)restore_checkpoint(replace_field(record, "version", "1"), target), std::logic_error);
 
     Record missing;
     for (const auto &[name, value] : record)
@@ -169,48 +170,48 @@ TEST(ParameterPersistenceTest, RejectsInvalidSchemaAndFieldTypes)
             missing.add(name, value);
         }
     }
-    EXPECT_THROW((void)restore_snapshot(missing, target), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint(missing, target), std::invalid_argument);
     auto extra = record;
     extra.add("unexpected", true);
-    EXPECT_THROW((void)restore_snapshot(extra, target), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint(extra, target), std::invalid_argument);
 
     auto states = record.get("states").get<Value::List>();
     states[0] = replace_field(states[0].get<Record>(), "trainability", "true");
-    EXPECT_THROW((void)restore_snapshot(replace_field(record, "states", states), target), std::logic_error);
+    EXPECT_THROW((void)restore_checkpoint(replace_field(record, "states", states), target), std::logic_error);
     states[0] = true;
-    EXPECT_THROW((void)restore_snapshot(replace_field(record, "states", states), target), std::logic_error);
+    EXPECT_THROW((void)restore_checkpoint(replace_field(record, "states", states), target), std::logic_error);
 }
 
 TEST(ParameterPersistenceTest, RejectsInvalidStateReferencesAndUnreferencedStates)
 {
     const auto target = make_pair();
-    const auto record = capture_snapshot(target);
+    const auto record = capture_checkpoint(target);
     const auto &paths = record.get("paths").get<Record>();
     const auto bad_index = replace_field(paths, "first", std::numeric_limits<std::uint64_t>::max());
-    EXPECT_THROW((void)restore_snapshot(replace_field(record, "paths", bad_index), target), std::out_of_range);
+    EXPECT_THROW((void)restore_checkpoint(replace_field(record, "paths", bad_index), target), std::out_of_range);
     const auto wrong_type = replace_field(paths, "first", std::int64_t{0});
-    EXPECT_THROW((void)restore_snapshot(replace_field(record, "paths", wrong_type), target), std::logic_error);
+    EXPECT_THROW((void)restore_checkpoint(replace_field(record, "paths", wrong_type), target), std::logic_error);
 
     auto states = record.get("states").get<Value::List>();
     const auto unused = states.front();
     states.push_back(unused);
-    EXPECT_THROW((void)restore_snapshot(replace_field(record, "states", states), target), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint(replace_field(record, "states", states), target), std::invalid_argument);
 }
 
 TEST(ParameterPersistenceTest, RejectsMissingAndUnexpectedPaths)
 {
     const auto target = make_pair();
-    const auto record = capture_snapshot(target);
+    const auto record = capture_checkpoint(target);
     Record missing_path;
     missing_path.add("first", std::uint64_t{0});
     // Keep the saved representation internally valid so this reaches target path matching.
     const Value::List single_state{record.get("states").get<Value::List>()[0]};
     const auto missing = replace_field(replace_field(record, "states", single_state), "paths", missing_path);
-    EXPECT_THROW((void)restore_snapshot(missing, target), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint(missing, target), std::invalid_argument);
 
     auto extra_paths = record.get("paths").get<Record>();
     extra_paths.add("unexpected", std::uint64_t{0});
-    EXPECT_THROW((void)restore_snapshot(replace_field(record, "paths", extra_paths), target), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint(replace_field(record, "paths", extra_paths), target), std::invalid_argument);
 }
 
 TEST(ParameterPersistenceTest, RejectsSharingMismatchesInBothDirections)
@@ -220,8 +221,8 @@ TEST(ParameterPersistenceTest, RejectsSharingMismatchesInBothDirections)
     const auto shared = builder.add({full(Shape{2}, 0.0F)});
     const auto tied = std::move(builder).finish(ParameterPair{shared, shared});
 
-    EXPECT_THROW((void)restore_snapshot(capture_snapshot(tied), distinct), std::invalid_argument);
-    EXPECT_THROW((void)restore_snapshot(capture_snapshot(distinct), tied), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint(capture_checkpoint(tied), distinct), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint(capture_checkpoint(distinct), tied), std::invalid_argument);
     EXPECT_EQ(tied.tree().first(), tied.tree().second());
     EXPECT_NE(distinct.tree().first(), distinct.tree().second());
 }
@@ -237,9 +238,34 @@ TEST(ParameterPersistenceTest, RejectsSpecificationMismatchesWithoutChangingTarg
         const auto source = target.transform([&](nn::ParameterId id, const nn::ParameterState &state) {
             return nn::ParameterState{id == first ? incompatible : state.value, state.metadata};
         });
-        EXPECT_THROW((void)restore_snapshot(capture_snapshot(source), target), std::invalid_argument);
+        EXPECT_THROW((void)restore_checkpoint(capture_checkpoint(source), target), std::invalid_argument);
     }
     EXPECT_EQ(to_vector(target.value(first)), (std::vector<float>{1.0F, 1.0F}));
     EXPECT_EQ(to_vector(target.value(second)), (std::vector<float>{2.0F, 2.0F}));
+}
+
+TEST(ParameterPersistenceTest, RejectsMismatchedOptimizerPayloads)
+{
+    const auto snapshot = ParameterBuilder{}.finish(EmptyTree{});
+    const AdamW adamw{0.1F, 0.0F};
+    const RMSProp rmsprop{0.1F};
+    const SGD sgd{0.1F};
+    const auto parameters = capture_checkpoint(snapshot);
+    const auto adamw_record = capture_checkpoint(snapshot, adamw, adamw.initialize(snapshot));
+    const auto rmsprop_record = capture_checkpoint(snapshot, rmsprop, rmsprop.initialize(snapshot));
+    const auto sgd_record = capture_checkpoint(snapshot, sgd, sgd.initialize(snapshot));
+
+    EXPECT_THROW((void)restore_checkpoint<AdamW>(parameters, snapshot), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint<RMSProp>(parameters, snapshot), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint<SGD>(parameters, snapshot), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint(adamw_record, snapshot), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint(rmsprop_record, snapshot), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint(sgd_record, snapshot), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint<AdamW>(rmsprop_record, snapshot), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint<AdamW>(sgd_record, snapshot), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint<RMSProp>(adamw_record, snapshot), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint<RMSProp>(sgd_record, snapshot), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint<SGD>(adamw_record, snapshot), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint<SGD>(rmsprop_record, snapshot), std::invalid_argument);
 }
 } // namespace minitensor::nn::test

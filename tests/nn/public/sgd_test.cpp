@@ -169,7 +169,7 @@ TEST(SGDCheckpointPersistenceTest, ResumesWithRestoredParametersAndLearningRate)
     ASSERT_NE(source_id, target_id);
     const SGD optimizer{0.125F};
     const auto record = capture_checkpoint(source, optimizer, optimizer.initialize(source));
-    const auto [restored, restored_optimizer, restored_state] = restore_sgd_checkpoint(record, target);
+    const auto [restored, restored_optimizer, restored_state] = restore_checkpoint<SGD>(record, target);
 
     EXPECT_EQ(restored.tree().weight(), target_id);
     EXPECT_FLOAT_EQ(item(restored.value(target_id)), item(source.value(source_id)));
@@ -191,6 +191,6 @@ TEST(SGDCheckpointPersistenceTest, RejectsInvalidLearningRate)
     const auto &sgd = record.get("sgd").get<Record>();
     const auto invalid = replace_field(sgd, "learning_rate", -1.0F);
 
-    EXPECT_THROW((void)restore_sgd_checkpoint(replace_field(record, "sgd", invalid), snapshot), std::invalid_argument);
+    EXPECT_THROW((void)restore_checkpoint<SGD>(replace_field(record, "sgd", invalid), snapshot), std::invalid_argument);
 }
 } // namespace minitensor::nn::test
