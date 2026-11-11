@@ -124,7 +124,5 @@ class AdamW final
     float epsilon_;
 };
 
-// Optimizer state must be leafified after each step to release the graph
-// retained by its moment tensors.
 [[nodiscard]] AdamW::State leafify_optimizer_state(AdamW::State state);
 } // namespace minitensor::nn

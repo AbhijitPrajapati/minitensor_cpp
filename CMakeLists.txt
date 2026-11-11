@@ -109,6 +109,7 @@ target_sources(
         src/nn/parameter.cpp
         src/nn/modules/linear.cpp
         src/nn/optimizers/adamw.cpp
+        src/nn/optimizers/rmsprop.cpp
         src/nn/optimizers/sgd.cpp
         src/nn/loss.cpp
         src/persistence/record.cpp
