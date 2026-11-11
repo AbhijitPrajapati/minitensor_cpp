@@ -14,6 +14,11 @@
 
 namespace minitensor::nn
 {
+namespace detail
+{
+class RMSPropStateCodec;
+}
+
 class RMSProp final
 {
   public:
@@ -32,6 +37,8 @@ class RMSProp final
 
         friend class RMSProp;
         friend State leafify_optimizer_state(State state);
+
+        friend class detail::RMSPropStateCodec;
     };
 
     RMSProp(float learning_rate, float alpha = 0.9F, float epsilon = 1e-8F);

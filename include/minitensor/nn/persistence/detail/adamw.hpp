@@ -5,10 +5,12 @@
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 
 #include <minitensor/nn/optimizers/adamw.hpp>
 #include <minitensor/nn/parameters/parameter.hpp>
+#include <minitensor/nn/persistence/detail/optimizer_persistence.hpp>
 #include <minitensor/nn/persistence/detail/snapshot_binding.hpp>
 #include <minitensor/persistence/record.hpp>
 #include <minitensor/tensor.hpp>
@@ -129,5 +131,61 @@ class AdamWStateCodec
     // Only used for the capture accumulator.
     const AdamW::State &state_;
     persistence::Value::List moments_;
+};
+
+template <>
+struct OptimizerPersistence<AdamW>
+{
+    static constexpr std::string_view payload_name{"adamw"};
+
+    class Capture
+    {
+      public:
+        Capture(const AdamW &optimizer, const AdamW::State &state) : optimizer_{optimizer}, state_capture_{state}
+        {
+        }
+
+        void add_parameter(std::size_t index, ParameterId id, const ParameterState &parameter)
+        {
+            state_capture_.add_parameter(index, id, parameter);
+        }
+
+        [[nodiscard]] persistence::Record finish() &&
+        {
+            persistence::Record record;
+            record.add("learning_rate", optimizer_.learning_rate());
+            record.add("weight_decay", optimizer_.weight_decay());
+            record.add("beta1", optimizer_.beta1());
+            record.add("beta2", optimizer_.beta2());
+            record.add("epsilon", optimizer_.epsilon());
+            std::move(state_capture_).finish(record);
+            return record;
+        }
+
+      private:
+        const AdamW &optimizer_;
+        AdamWStateCodec state_capture_;
+    };
+
+    static void validate_payload(const persistence::Record &record)
+    {
+        if (!record.contains({"learning_rate", "weight_decay", "beta1", "beta2", "epsilon", "step", "moments"}, true))
+        {
+            throw std::invalid_argument{"AdamW checkpoint does not contain the expected fields"};
+        }
+    }
+
+    [[nodiscard]] static AdamW restore_optimizer(const persistence::Record &record)
+    {
+        return AdamW{record.get("learning_rate").get<float>(), record.get("weight_decay").get<float>(),
+                     record.get("beta1").get<float>(), record.get("beta2").get<float>(),
+                     record.get("epsilon").get<float>()};
+    }
+
+    [[nodiscard]] static AdamW::State restore_state(const persistence::Record &record, const ParameterBinding &binding,
+                                                    const ParameterMap &parameters)
+    {
+        return AdamWStateCodec::restore(record, binding, parameters);
+    }
 };
 } // namespace minitensor::nn::detail
