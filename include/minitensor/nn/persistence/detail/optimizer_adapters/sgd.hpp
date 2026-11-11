@@ -8,7 +8,7 @@
 #include <minitensor/nn/parameters/parameter.hpp>
 #include <minitensor/nn/parameters/parameter_id.hpp>
 #include <minitensor/nn/persistence/detail/optimizer_persistence.hpp>
-#include <minitensor/nn/persistence/detail/snapshot_binding.hpp>
+#include <minitensor/nn/persistence/detail/parameter_binding.hpp>
 #include <minitensor/persistence/record.hpp>
 
 namespace minitensor::nn::detail
