@@ -1,13 +1,12 @@
 #include "binary.hpp"
 
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <ios>
-#include <istream>
 #include <limits>
-#include <ostream>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -16,420 +15,422 @@
 #include <vector>
 
 #include <minitensor/data.hpp>
-#include <minitensor/persistence/record.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
+#include "binary_format.hpp"
+#include "binary_io.hpp"
+
 namespace minitensor::persistence::detail
 {
-
 namespace
 {
+using namespace binary;
 
-constexpr std::string_view magic = "MTARCH";
-
-constexpr std::size_t max_nesting_depth = 64;
-
-std::size_t child_depth(std::size_t remaining_depth)
+// Empty tensors also need representable contiguous strides when reconstructed.
+void validate_dimensions(std::span<const Extent> dimensions)
 {
-    if (remaining_depth == 0)
+    std::uint64_t product = 1;
+    for (Extent extent : dimensions)
     {
-        throw std::length_error{"archive nesting depth exceeds limit"};
+        if (extent < 0)
+        {
+            throw std::invalid_argument{"negative archive tensor extent"};
+        }
+        if (extent > 1)
+        {
+            const auto size = static_cast<std::uint64_t>(extent);
+            if (product > static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) / size)
+            {
+                throw std::length_error{"archive tensor strides overflow"};
+            }
+            product *= size;
+        }
     }
-    return remaining_depth - 1;
 }
 
-enum class WireKind : std::uint8_t
+template <typename T>
+void grow(std::vector<T> &values, std::size_t required, std::size_t maximum)
 {
-    Bool = 0x01,
-    Int64 = 0x02,
-    UInt64 = 0x03,
-    Float32 = 0x04,
-    Float64 = 0x05,
-    String = 0x06,
-    Tensor = 0x07,
-    Record = 0x08,
-    List = 0x09,
+    if (required > values.capacity())
+    {
+        const auto capacity = std::min(maximum, std::max(required, 2 * values.capacity()));
+        values.reserve(capacity);
+    }
+}
+
+class Writer
+{
+  public:
+    void record(const Record &record, std::size_t depth = 0)
+    {
+        if (record.size() > max_fields)
+        {
+            throw std::length_error{"record field count exceeds archive limit"};
+        }
+        budget_.record(record.size());
+        number(static_cast<std::uint32_t>(record.size()));
+        for (const auto &[name, value] : record)
+        {
+            text(name, max_text_bytes);
+            write_value(value, depth);
+        }
+    }
+
+    void finish(std::ostream &output)
+    {
+        emit_archive(output, payload_);
+    }
+
+  private:
+    template <std::unsigned_integral T>
+    void number(T value)
+    {
+        std::array<std::byte, sizeof(T)> bytes;
+        store_le<T>(bytes, value);
+        payload_.append(bytes);
+    }
+
+    void tag(Kind kind)
+    {
+        number(static_cast<std::uint8_t>(kind));
+    }
+
+    void text(std::string_view value, std::size_t limit)
+    {
+        if (value.size() > limit)
+        {
+            throw std::length_error{"text length exceeds archive limit"};
+        }
+        budget_.text(value.size());
+        number(static_cast<std::uint32_t>(value.size()));
+        payload_.append(std::as_bytes(std::span{value}));
+    }
+
+    template <typename T>
+    void elements(const Tensor &tensor)
+    {
+        const auto values = to_vector<T>(tensor);
+        const auto bytes = std::as_bytes(std::span{values});
+        if constexpr (std::endian::native == std::endian::little)
+        {
+            payload_.append(bytes);
+        }
+        else
+        {
+            std::array<std::byte, frame_bytes> buffer;
+            for (std::size_t offset = 0; offset < bytes.size();)
+            {
+                const auto count = std::min(buffer.size(), bytes.size() - offset);
+                std::copy_n(bytes.data() + offset, count, buffer.data());
+                for (std::size_t element = 0; element < count; element += sizeof(T))
+                {
+                    std::reverse(buffer.begin() + element, buffer.begin() + element + sizeof(T));
+                }
+                payload_.append(std::span{buffer}.first(count));
+                offset += count;
+            }
+        }
+    }
+
+    void tensor(const Tensor &tensor)
+    {
+        TensorType dtype;
+        std::size_t element_bytes;
+        switch (tensor.dtype())
+        {
+        case DType::Float32:
+            dtype = TensorType::Float32;
+            element_bytes = 4;
+            break;
+        case DType::Int64:
+            dtype = TensorType::Int64;
+            element_bytes = 8;
+            break;
+        default:
+            throw std::invalid_argument{"unsupported archive tensor dtype"};
+        }
+        if (tensor.rank() > max_tensor_rank)
+        {
+            throw std::length_error{"tensor rank exceeds archive limit "};
+        }
+        if (tensor.numel() > max_tensor_bytes / element_bytes)
+        {
+            throw std::length_error{"tensor element count exceeds archive limit "};
+        }
+        validate_dimensions(tensor.shape().dimensions());
+        budget_.tensor(tensor.numel() * element_bytes, tensor.rank());
+        number(static_cast<std::uint8_t>(dtype));
+        number(static_cast<std::uint32_t>(tensor.rank()));
+        for (Extent extent : tensor.shape())
+        {
+            number(static_cast<std::uint64_t>(extent));
+        }
+        switch (dtype)
+        {
+        case TensorType::Float32:
+            elements<float>(tensor);
+            return;
+        case TensorType::Int64:
+            elements<std::int64_t>(tensor);
+            return;
+        }
+        throw std::invalid_argument{"unsupported archive tensor dtype"};
+    }
+
+    void write_value(const Value &value, std::size_t depth)
+    {
+        switch (value.kind())
+        {
+        case Value::Kind::Bool:
+            tag(Kind::Bool);
+            number<std::uint8_t>(value.get<bool>() ? 1 : 0);
+            return;
+        case Value::Kind::Int64:
+            tag(Kind::Int64);
+            number(std::bit_cast<std::uint64_t>(value.get<std::int64_t>()));
+            return;
+        case Value::Kind::UInt64:
+            tag(Kind::UInt64);
+            number(value.get<std::uint64_t>());
+            return;
+        case Value::Kind::Float32:
+            tag(Kind::Float32);
+            number(std::bit_cast<std::uint32_t>(value.get<float>()));
+            return;
+        case Value::Kind::Float64:
+            tag(Kind::Float64);
+            number(std::bit_cast<std::uint64_t>(value.get<double>()));
+            return;
+        case Value::Kind::String:
+            tag(Kind::String);
+            text(value.get<std::string>(), max_text_bytes);
+            return;
+        case Value::Kind::Tensor:
+            tag(Kind::Tensor);
+            tensor(value.get<Tensor>());
+            return;
+        case Value::Kind::Record:
+            tag(Kind::Record);
+            record(value.get<Record>(), child_depth(depth));
+            return;
+        case Value::Kind::List: {
+            const auto next_depth = child_depth(depth);
+            const auto &list = value.get<Value::List>();
+            if (list.size() > max_list_values)
+            {
+                throw std::length_error{"list value count exceeds archive limit"};
+            }
+            budget_.list(list.size());
+            tag(Kind::List);
+            number(static_cast<std::uint32_t>(list.size()));
+            for (const auto &element : list)
+            {
+                write_value(element, next_depth);
+            }
+            return;
+        }
+        }
+        throw std::invalid_argument{"unsupported archive value kind"};
+    }
+
+    Spool payload_;
+    Budget budget_;
 };
 
-enum class WireDType : std::uint8_t
+class Reader
 {
-    Float32 = 0x01,
-    Int64 = 0x02,
+  public:
+    Reader(ArchiveInput &input, Device device) : input_{input}, device_{device}
+    {
+    }
+
+    [[nodiscard]] Record record(std::size_t depth = 0)
+    {
+        const auto count = size(max_fields, "record field count");
+        input_.require(static_cast<std::uint64_t>(count) * 5);
+        budget_.record(count);
+        Record record;
+        for (std::size_t index = 0; index < count; ++index)
+        {
+            const auto name = text();
+            if (record.contains(name))
+            {
+                input_.fail("duplicate archive field name");
+            }
+            record.add(name, read_value(depth));
+        }
+        return record;
+    }
+
+  private:
+    template <std::unsigned_integral T>
+    [[nodiscard]] T number()
+    {
+        std::array<std::byte, sizeof(T)> bytes;
+        input_.read(bytes);
+        return load_le<T>(bytes);
+    }
+
+    [[nodiscard]] std::size_t size(std::size_t limit, std::string_view description)
+    {
+        const auto count = number<std::uint32_t>();
+        if (!std::in_range<std::size_t>(count) || count > limit)
+        {
+            throw std::length_error{std::string{description} + " exceeds archive limit"};
+        }
+        return static_cast<std::size_t>(count);
+    }
+
+    [[nodiscard]] std::string text()
+    {
+        const auto count = size(max_text_bytes, "text length");
+        input_.require(count);
+        budget_.text(count);
+        std::string value(count, '\0');
+        input_.read(std::as_writable_bytes(std::span{value.data(), value.size()}));
+        return value;
+    }
+
+    template <typename T>
+    [[nodiscard]] Tensor elements(Shape shape)
+    {
+        const auto numel = shape.numel();
+        if (numel > max_tensor_bytes / sizeof(T))
+        {
+            throw std::length_error{"tensor element count exceeds archive limit"};
+        }
+        input_.require(static_cast<std::uint64_t>(numel) * sizeof(T));
+        budget_.tensor(numel * sizeof(T), shape.rank());
+        // Grow only as payload arrives. A forged length never allocates the
+        // entire tensor up front, even when a framed archive is truncated.
+        std::vector<T> values;
+        while (values.size() < numel)
+        {
+            const auto offset = values.size();
+            const auto count = std::min(frame_bytes / sizeof(T), numel - offset);
+            grow(values, offset + count, numel);
+            values.resize(offset + count);
+            auto bytes = std::as_writable_bytes(std::span{values}.subspan(offset, count));
+            input_.read(bytes);
+            if constexpr (std::endian::native == std::endian::big)
+            {
+                for (std::size_t element = 0; element < bytes.size(); element += sizeof(T))
+                {
+                    std::reverse(bytes.begin() + element, bytes.begin() + element + sizeof(T));
+                }
+            }
+        }
+        return from_data<T>(std::span<const T>{values}, std::move(shape), device_);
+    }
+
+    [[nodiscard]] Tensor tensor()
+    {
+        const auto dtype = static_cast<TensorType>(number<std::uint8_t>());
+        if (dtype != TensorType::Float32 && dtype != TensorType::Int64)
+        {
+            input_.fail("unknown archive tensor dtype");
+        }
+        const auto rank = size(max_tensor_rank, "tensor rank");
+        input_.require(static_cast<std::uint64_t>(rank) * 8);
+        std::vector<Extent> dimensions;
+        dimensions.reserve(rank);
+        for (std::size_t axis = 0; axis < rank; ++axis)
+        {
+            const auto extent = number<std::uint64_t>();
+            if (!std::in_range<Extent>(extent) || !std::in_range<std::size_t>(extent))
+            {
+                throw std::length_error{"archive tensor extent is too large"};
+            }
+            dimensions.push_back(static_cast<Extent>(extent));
+        }
+        validate_dimensions(dimensions);
+        Shape shape{std::move(dimensions)};
+        switch (dtype)
+        {
+        case TensorType::Float32:
+            return elements<float>(std::move(shape));
+        case TensorType::Int64:
+            return elements<std::int64_t>(std::move(shape));
+        }
+        input_.fail("unknown archive tensor dtype");
+    }
+
+    [[nodiscard]] Value read_value(std::size_t depth)
+    {
+        const auto kind = static_cast<Kind>(number<std::uint8_t>());
+        switch (kind)
+        {
+        case Kind::Bool: {
+            const auto value = number<std::uint8_t>();
+            if (value > 1)
+            {
+                input_.fail("invalid archive boolean");
+            }
+            return Value{value != 0};
+        }
+        case Kind::Int64:
+            return Value{std::bit_cast<std::int64_t>(number<std::uint64_t>())};
+        case Kind::UInt64:
+            return Value{number<std::uint64_t>()};
+        case Kind::Float32:
+            return Value{std::bit_cast<float>(number<std::uint32_t>())};
+        case Kind::Float64:
+            return Value{std::bit_cast<double>(number<std::uint64_t>())};
+        case Kind::String:
+            return Value{text()};
+        case Kind::Tensor:
+            return Value{tensor()};
+        case Kind::Record:
+            return Value{record(child_depth(depth))};
+        case Kind::List: {
+            const auto next_depth = child_depth(depth);
+            const auto count = size(max_list_values, "list value count");
+            input_.require(count);
+            budget_.list(count);
+            Value::List values;
+            for (std::size_t index = 0; index < count; ++index)
+            {
+                auto value = read_value(next_depth);
+                grow(values, index + 1, count);
+                values.emplace_back(std::move(value));
+            }
+            return Value{std::move(values)};
+        }
+        }
+        input_.fail("unknown archive value kind");
+    }
+
+    ArchiveInput &input_;
+    Device device_;
+    Budget budget_;
 };
-
-// Safely write bytes to output stream.
-void write_bytes(std::ostream &output, std::span<const std::byte> bytes)
-{
-    if (bytes.empty())
-    {
-        return;
-    }
-    if (!std::in_range<std::streamsize>(bytes.size()))
-    {
-        throw std::length_error{"archive write is too large"};
-    }
-
-    output.write(reinterpret_cast<const char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
-    if (!output)
-    {
-        throw std::ios_base::failure{"failed to write archive bytes"};
-    }
-}
-
-// Safely read bytes from input stream.
-void read_bytes(std::istream &input, std::span<std::byte> bytes)
-{
-    if (bytes.empty())
-    {
-        return;
-    }
-    if (!std::in_range<std::streamsize>(bytes.size()))
-    {
-        throw std::length_error{"archive read is too large"};
-    }
-
-    input.read(reinterpret_cast<char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
-    if (!input)
-    {
-        throw std::ios_base::failure{"failed to read archive bytes"};
-    }
-}
-
-void write_u8(std::ostream &output, std::uint8_t value)
-{
-    const std::array bytes{static_cast<std::byte>(value)};
-    write_bytes(output, bytes);
-}
-
-std::uint8_t read_u8(std::istream &input)
-{
-    std::array<std::byte, 1> bytes{};
-    read_bytes(input, bytes);
-    return std::to_integer<std::uint8_t>(bytes[0]);
-}
-
-void write_u32(std::ostream &output, std::uint32_t value)
-{
-    std::array<std::byte, 4> bytes{};
-    for (auto &byte : bytes)
-    {
-        // Keep rightmost 8 bits.
-        byte = static_cast<std::byte>(value & 0xFFu);
-        value >>= 8; // Shift to get the next 8 bits next time.
-    }
-    write_bytes(output, bytes);
-}
-
-std::uint32_t read_u32(std::istream &input)
-{
-    std::array<std::byte, 4> bytes{};
-    read_bytes(input, bytes);
-
-    std::uint32_t value = 0;
-    for (std::size_t i = 0; i < bytes.size(); ++i)
-    {
-        // Add bytes right-to-left.
-        const auto byte = std::to_integer<std::uint32_t>(bytes[i]);
-        value |= byte << (8 * i);
-    }
-    return value;
-}
-
-void write_u64(std::ostream &output, std::uint64_t value)
-{
-    std::array<std::byte, 8> bytes{};
-    for (auto &byte : bytes)
-    {
-        // Keep rightmost 8 bits.
-        byte = static_cast<std::byte>(value & 0xFFu);
-        value >>= 8; // Shift to get the next 8 bit next time.
-    }
-    write_bytes(output, bytes);
-}
-
-std::uint64_t read_u64(std::istream &input)
-{
-    std::array<std::byte, 8> bytes{};
-    read_bytes(input, bytes);
-
-    std::uint64_t value = 0;
-    for (std::size_t i = 0; i < bytes.size(); ++i)
-    {
-        // Add bytes right-to-left.
-        const auto byte = std::to_integer<std::uint64_t>(bytes[i]);
-        value |= byte << (8 * i);
-    }
-    return value;
-}
-
-// Safely convert size_t to uint32 and write.
-void write_size(std::ostream &output, std::size_t size)
-{
-    if (size > std::numeric_limits<std::uint32_t>::max())
-    {
-        throw std::overflow_error("size is too large to fit in uint32");
-    }
-    write_u32(output, static_cast<std::uint32_t>(size));
-}
-
-// Safely read a uint32 size and convert to size_t.
-std::size_t read_size(std::istream &input, std::size_t limit)
-{
-    const std::uint32_t size = read_u32(input);
-    if (!std::in_range<std::size_t>(size) || size > limit)
-    {
-        throw std::length_error{"size exceeds read limit"};
-    }
-    return static_cast<std::size_t>(size);
-}
-
-// Write string size and bytes.
-void write_string(std::ostream &output, std::string_view string)
-{
-    write_size(output, string.size());
-    write_bytes(output, std::as_bytes(std::span{string}));
-}
-
-// Read string size and bytes.
-std::string read_string(std::istream &input, std::size_t max_bytes)
-{
-    const std::size_t size = read_size(input, max_bytes);
-    std::string result(size, '\0');
-    read_bytes(input, std::as_writable_bytes(std::span{result.data(), result.size()}));
-    return result;
-}
-
-// Write tensor DType, rank, and dimensions.
-void write_tensor_info(std::ostream &output, WireDType dtype, const Tensor &tensor)
-{
-    write_u8(output, static_cast<std::uint8_t>(dtype));
-    write_size(output, tensor.rank());
-    for (Extent extent : tensor.shape())
-    {
-        write_u64(output, static_cast<std::uint64_t>(extent));
-    }
-}
-
-// Write tensor info and elements.
-void write_tensor(std::ostream &output, const Tensor &tensor)
-{
-    switch (tensor.dtype())
-    {
-    case minitensor::DType::Float32:
-        write_tensor_info(output, WireDType::Float32, tensor);
-        for (float element : to_vector<float>(tensor))
-        {
-            write_u32(output, std::bit_cast<std::uint32_t>(element));
-        }
-        return;
-    case DType::Int64:
-        write_tensor_info(output, WireDType::Int64, tensor);
-        for (std::int64_t element : to_vector<std::int64_t>(tensor))
-        {
-            write_u64(output, static_cast<std::uint64_t>(element));
-        }
-        return;
-    }
-}
-
-Shape read_tensor_shape(std::istream &input, std::size_t max_rank)
-{
-    const std::size_t rank = read_size(input, max_rank);
-    std::vector<Extent> dimensions;
-    dimensions.reserve(rank);
-
-    for (std::size_t axis = 0; axis < rank; ++axis)
-    {
-        const std::uint64_t extent = read_u64(input);
-        if (!std::in_range<Extent>(extent) || !std::in_range<std::size_t>(extent))
-        {
-            throw std::length_error{"archive tensor extent is too large"};
-        }
-        dimensions.push_back(static_cast<Extent>(extent));
-    }
-    return Shape(std::move(dimensions));
-}
-
-Tensor read_tensor(std::istream &input, Device device, std::size_t max_rank, std::size_t max_tensor_bytes)
-{
-    const auto dtype = static_cast<WireDType>(read_u8(input));
-
-    Shape shape = read_tensor_shape(input, max_rank);
-    const std::size_t numel = shape.numel();
-
-    switch (dtype)
-    {
-    case WireDType::Float32: {
-        if (numel > max_tensor_bytes / 4)
-        {
-            throw std::length_error{"archive tensor exceeds byte limit"};
-        }
-        std::vector<float> elements(numel);
-        for (float &element : elements)
-        {
-            element = std::bit_cast<float>(read_u32(input));
-        }
-        return from_data(elements, std::move(shape), device);
-    }
-
-    case WireDType::Int64: {
-        if (numel > max_tensor_bytes / 8)
-        {
-            throw std::length_error{"archive tensor exceeds byte limit"};
-        }
-        std::vector<std::int64_t> elements(numel);
-        for (std::int64_t &element : elements)
-        {
-            element = std::bit_cast<std::int64_t>(read_u64(input));
-        }
-        return from_data(elements, std::move(shape), device);
-    }
-    }
-    throw std::invalid_argument{"unknown archive tensor dtype"};
-}
-
-void write_subrecord(std::ostream &output, const Record &record, std::size_t depth);
-Record read_subrecord(std::istream &input, const Record::ReadOptions &options, std::size_t depth);
-
-void write_value(std::ostream &output, const Value &value, std::size_t depth)
-{
-    switch (value.kind())
-    {
-    case Value::Kind::Bool:
-        write_u8(output, static_cast<std::uint8_t>(WireKind::Bool));
-        write_u8(output, value.get<bool>() ? 1 : 0);
-        return;
-    case Value::Kind::String:
-        write_u8(output, static_cast<std::uint8_t>(WireKind::String));
-        write_string(output, value.get<std::string>());
-        return;
-    case Value::Kind::UInt64:
-        write_u8(output, static_cast<std::uint8_t>(WireKind::UInt64));
-        write_u64(output, value.get<std::uint64_t>());
-        return;
-    case Value::Kind::Int64:
-        write_u8(output, static_cast<std::uint8_t>(WireKind::Int64));
-        write_u64(output, static_cast<std::uint64_t>(value.get<std::int64_t>()));
-        return;
-    case Value::Kind::Float32:
-        write_u8(output, static_cast<std::uint8_t>(WireKind::Float32));
-        write_u32(output, std::bit_cast<std::uint32_t>(value.get<float>()));
-        return;
-    case Value::Kind::Float64:
-        write_u8(output, static_cast<std::uint8_t>(WireKind::Float64));
-        write_u64(output, std::bit_cast<std::uint64_t>(value.get<double>()));
-        return;
-    case Value::Kind::Tensor:
-        write_u8(output, static_cast<std::uint8_t>(WireKind::Tensor));
-        write_tensor(output, value.get<Tensor>());
-        return;
-    case Value::Kind::Record: {
-        const auto remaining_depth = child_depth(depth);
-        write_u8(output, static_cast<std::uint8_t>(WireKind::Record));
-        write_subrecord(output, value.get<Record>(), remaining_depth);
-        return;
-    }
-    case Value::Kind::List:
-        const auto remaining_depth = child_depth(depth);
-        write_u8(output, static_cast<std::uint8_t>(WireKind::List));
-        const auto &list = value.get<Value::List>();
-        write_size(output, list.size());
-        for (const Value &v : list)
-        {
-            write_value(output, v, remaining_depth);
-        }
-        return;
-    }
-}
-
-Value read_value(std::istream &input, const Record::ReadOptions &options, std::size_t depth)
-{
-    const auto kind = static_cast<WireKind>(read_u8(input));
-    switch (kind)
-    {
-    case WireKind::Bool: {
-        const std::uint8_t bool_byte = read_u8(input);
-        if (bool_byte > 1)
-        {
-            throw std::invalid_argument{"invalid boolean"};
-        }
-        return Value(bool_byte != 0);
-    }
-    case WireKind::String:
-        return Value(read_string(input, options.max_string_bytes));
-    case WireKind::UInt64:
-        return Value(read_u64(input));
-    case WireKind::Int64:
-        return Value(static_cast<std::int64_t>(read_u64(input)));
-    case WireKind::Float32:
-        return Value(std::bit_cast<float>(read_u32(input)));
-    case WireKind::Float64:
-        return Value(std::bit_cast<double>(read_u64(input)));
-    case WireKind::Tensor:
-        return Value(read_tensor(input, options.device, options.max_tensor_rank, options.max_tensor_payload_bytes));
-    case WireKind::Record:
-        return Value(read_subrecord(input, options, child_depth(depth)));
-    case WireKind::List:
-        const auto remaining_depth = child_depth(depth);
-        const std::size_t size = read_size(input, options.max_values_per_list);
-        std::vector<Value> values;
-        values.reserve(size);
-        for (std::size_t i = 0; i < size; ++i)
-        {
-            values.push_back(Value(read_value(input, options, remaining_depth)));
-        }
-        return Value(std::move(values));
-    }
-
-    throw std::invalid_argument{"unknown archive value kind"};
-}
-
-void write_subrecord(std::ostream &output, const Record &record, std::size_t depth)
-{
-    write_size(output, record.size());
-    for (const auto &[field, value] : record)
-    {
-        write_string(output, field);
-        write_value(output, value, depth);
-    }
-}
-
-Record read_subrecord(std::istream &input, const Record::ReadOptions &options, std::size_t depth)
-{
-    const std::size_t field_count = read_size(input, options.max_fields_per_record);
-    Record record;
-    for (std::size_t i = 0; i < field_count; ++i)
-    {
-        const std::string name = read_string(input, options.max_field_bytes);
-        record.add(name, read_value(input, options, depth));
-    }
-    return record;
-}
-
 } // namespace
 
 void write_record(std::ostream &output, const Record &record)
 {
-    write_bytes(output, std::as_bytes(std::span{magic}));
-    write_u8(output, 1);
-    write_subrecord(output, record, max_nesting_depth);
+    if (!output || output.rdbuf() == nullptr)
+    {
+        throw std::ios_base::failure{"archive destination is not writable"};
+    }
+    Writer writer;
+    writer.record(record);
+    writer.finish(output);
 }
 
-Record read_record(std::istream &input, const Record::ReadOptions &options)
+Record read_record(std::istream &input, const Record::ReadOptions &options, ArchiveBoundary boundary)
 {
-    std::string archive_magic(magic.size(), '\0');
-    read_bytes(input, std::as_writable_bytes(std::span{archive_magic.data(), archive_magic.size()}));
-    if (archive_magic != magic)
+    binary::ArchiveInput archive{input};
+    try
     {
-        throw std::invalid_argument{"not a MiniTensor archive"};
+        Reader reader{archive, options.device};
+        auto record = reader.record();
+        archive.finish(boundary);
+        return record;
     }
-
-    const std::uint8_t archive_version = read_u8(input);
-    if (archive_version != 1)
+    catch (const std::length_error &error)
     {
-        throw std::invalid_argument{"unsupported archive version"};
+        throw std::length_error{std::string{error.what()} + " at payload byte " + std::to_string(archive.consumed())};
     }
-    return read_subrecord(input, options, max_nesting_depth);
 }
 } // namespace minitensor::persistence::detail

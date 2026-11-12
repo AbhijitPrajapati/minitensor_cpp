@@ -153,12 +153,6 @@ class Record final
     {
         ReadOptions() {};
         Device device{Device::cpu()};
-        std::size_t max_fields_per_record = 1'000'000;
-        std::size_t max_values_per_list = 1'000'000;
-        std::size_t max_field_bytes = 1024 * 1024;
-        std::size_t max_string_bytes = 1024 * 1024;
-        std::size_t max_tensor_rank = 64;
-        std::size_t max_tensor_payload_bytes = 256 * 1024 * 1024;
     };
 
     Record() = default;

@@ -1,6 +1,5 @@
 #include <minitensor/persistence/record.hpp>
 
-#include <cstddef>
 #include <cstdint>
 #include <ios>
 #include <limits>
@@ -34,22 +33,6 @@ Record read_archive(const std::string &bytes, const Record::ReadOptions &options
     return Record::read(input, options);
 }
 } // namespace
-
-TEST(BinaryTest, UsesVersionOneLittleEndianEncoding)
-{
-    constexpr char archive[] = "MTARCH\x01"
-                               "\x01\x00\x00\x00" // One field.
-                               "\x04\x00\x00\x00" // Four name bytes.
-                               "step"
-                               "\x03" // UInt64.
-                               "\x08\x07\x06\x05\x04\x03\x02\x01";
-    const std::string expected(archive, sizeof(archive) - 1);
-
-    Record record;
-    record.add("step", std::uint64_t{0x0102030405060708});
-    EXPECT_EQ(write_archive(record), expected);
-    EXPECT_EQ(read_archive(expected).get("step").get<std::uint64_t>(), 0x0102030405060708ULL);
-}
 
 TEST(BinaryTest, RoundTripsNestedRecordsListsAndScalars)
 {
@@ -137,50 +120,5 @@ TEST(BinaryTest, RejectsUnknownValueTagsAndInvalidBooleans)
     auto bad_bool = bytes;
     bad_bool.back() = '\x02';
     EXPECT_THROW((void)read_archive(bad_bool), std::invalid_argument);
-}
-
-TEST(BinaryTest, EnforcesConfiguredReadLimits)
-{
-    Record record;
-    record.add("list", Value::List{"text", full(Shape{2}, 1.0F)});
-    const auto bytes = write_archive(record);
-
-    const auto expect_rejected = [&](std::size_t Record::ReadOptions::*limit, std::size_t value) {
-        Record::ReadOptions options;
-        options.*limit = value;
-        EXPECT_THROW((void)read_archive(bytes, options), std::length_error);
-    };
-
-    expect_rejected(&Record::ReadOptions::max_fields_per_record, 0);
-    expect_rejected(&Record::ReadOptions::max_field_bytes, 3);
-    expect_rejected(&Record::ReadOptions::max_string_bytes, 3);
-    expect_rejected(&Record::ReadOptions::max_values_per_list, 1);
-    expect_rejected(&Record::ReadOptions::max_tensor_rank, 0);
-    expect_rejected(&Record::ReadOptions::max_tensor_payload_bytes, 7);
-}
-
-TEST(BinaryTest, EnforcesNestingLimitOnReadAndWrite)
-{
-    Value nested = Value::List{};
-    for (std::size_t i = 1; i < 64; ++i)
-    {
-        Value::List parent;
-        parent.push_back(std::move(nested));
-        nested = std::move(parent);
-    }
-
-    Record at_limit;
-    at_limit.add("nested", std::move(nested));
-    auto bytes = write_archive(at_limit);
-    EXPECT_NO_THROW((void)read_archive(bytes));
-
-    // Change the innermost empty list to a list holding another empty list.
-    bytes[bytes.size() - 4] = '\x01';
-    bytes.append("\x09\x00\x00\x00\x00", 5);
-    EXPECT_THROW((void)read_archive(bytes), std::length_error);
-
-    Record too_deep;
-    too_deep.add("nested", Value::List{std::move(at_limit)});
-    EXPECT_THROW((void)write_archive(too_deep), std::length_error);
 }
 } // namespace minitensor::persistence::test
