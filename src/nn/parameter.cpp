@@ -1,4 +1,4 @@
-#include <minitensor/nn/parameter.hpp>
+#include <minitensor/nn/parameters/parameter.hpp>
 
 #include <atomic>
 #include <limits>
@@ -9,27 +9,7 @@
 
 namespace minitensor::nn
 {
-Parameter::Parameter(ParameterId id, Tensor value, ParameterMetadata metadata)
-    : id_(id), value_(std::move(value)), metadata_(metadata)
-{
-}
-
-ParameterId Parameter::id() const noexcept
-{
-    return id_;
-}
-
-const Tensor &Parameter::value() const noexcept
-{
-    return value_;
-}
-
-const ParameterMetadata &Parameter::metadata() const noexcept
-{
-    return metadata_;
-}
-
-ParameterId Parameter::make_id()
+ParameterId ParameterBuilder::make_id()
 {
     using value_type = ParameterId::value_type;
     static std::atomic<value_type> next{1};
@@ -46,33 +26,17 @@ ParameterId Parameter::make_id()
     return ParameterId{current};
 }
 
-Parameter::Parameter(Tensor value, ParameterMetadata metadata)
-    : id_(make_id()), value_(std::move(value)), metadata_(metadata)
+ParameterId ParameterBuilder::add(ParameterState state)
 {
-}
+    ParameterId id = make_id();
+    auto [it, inserted] = parameters_.emplace(id, std::move(state));
 
-Parameter Parameter::with_metadata(ParameterMetadata metadata) const
-{
-    return Parameter{id_, value_, metadata};
-}
-
-Parameter Parameter::with_value(Tensor value) const
-{
-    if (value.shape() != value_.shape())
+    if (!inserted)
     {
-        throw std::invalid_argument{"replacement value must have the same shape"};
+        throw std::logic_error{"duplicate parameter ID"};
     }
 
-    if (value.dtype() != value_.dtype())
-    {
-        throw std::invalid_argument{"replacement value must have the same dtype"};
-    }
-
-    if (value.device() != value_.device())
-    {
-        throw std::invalid_argument{"replacement value must be on the same device"};
-    }
-
-    return Parameter{id_, std::move(value), metadata_};
+    return id;
 }
+
 } // namespace minitensor::nn

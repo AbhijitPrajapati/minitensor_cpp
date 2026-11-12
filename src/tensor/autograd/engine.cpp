@@ -15,7 +15,6 @@
 
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/graph/fwd.hpp"
-#include "tensor/graph/node.hpp"
 #include "tensor/graph/value.hpp"
 #include "tensor/tensor_access.hpp"
 #include "vjp_registry.hpp"

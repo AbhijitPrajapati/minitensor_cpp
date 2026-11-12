@@ -1,6 +1,29 @@
-cmake_minimum_required(VERSION 4.0.2)
+cmake_minimum_required(VERSION 3.24...4.0)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(minitensor_cpp VERSION 0.1.0 LANGUAGES CXX)
+
+# Sanitizer flag configuration
+option(ENABLE_SANITIZERS "Enable ASan and UBSan" OFF)
+
+if(ENABLE_SANITIZERS)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        add_compile_options(
+            -fsanitize=address,undefined
+            -fno-omit-frame-pointer
+            -fno-sanitize-recover=all
+        )
+
+        add_link_options(
+            -fsanitize=address,undefined
+        )
+    else()
+        # Only for developement
+        message(FATAL_ERROR
+            "Sanitizers configured only for GCC")
+    endif()
+endif()
 
 # STATIC -> static library (linked at compile time)
 add_library(minitensor STATIC)
@@ -15,8 +38,9 @@ target_sources(
         src/tensor/data.cpp
         src/tensor/evaluation.cpp
         src/tensor/random.cpp
-        src/tensor/core/dense_size.cpp
         src/tensor/core/axis.cpp
+        src/tensor/core/reduction.cpp
+        src/tensor/core/broadcasting.cpp
         src/tensor/apply_operation.cpp
         src/tensor/graph/apply_primitive.cpp
         src/tensor/graph/node.cpp
@@ -55,6 +79,7 @@ target_sources(
         src/tensor/primitives/reduction/logsumexp.cpp
         src/tensor/storage/layout.cpp
         src/tensor/storage/materialization.cpp
+        src/tensor/storage/dense_size.cpp
         src/tensor/backend/cpu/cpu_buffer.cpp
         src/tensor/backend/cpu/cpu_runtime.cpp
         src/tensor/backend/cpu/register_kernels.cpp
@@ -84,6 +109,7 @@ target_sources(
         src/nn/parameter.cpp
         src/nn/modules/linear.cpp
         src/nn/optimizers/adamw.cpp
+        src/nn/optimizers/rmsprop.cpp
         src/nn/optimizers/sgd.cpp
         src/nn/loss.cpp
 )
@@ -104,10 +130,10 @@ target_compile_features(minitensor PUBLIC cxx_std_20)
 # No compiler-specific extentions are used
 set_target_properties(minitensor PROPERTIES CXX_EXTENSIONS OFF)
 
-# Set compile-specific flags to catch mistakes
+# Set compiler-specific flags for MSVC
 if(MSVC)
     target_compile_options(minitensor PRIVATE /W4 /permissive-)
-else()
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
     target_compile_options(minitensor PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
@@ -124,9 +150,10 @@ if(BUILD_TESTING)
     FetchContent_Declare(
         googletest
         URL https://github.com/google/googletest/archive/refs/tags/v1.18.0.zip
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    if(MSVC)
+        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    endif()
     set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
     add_subdirectory(tests)

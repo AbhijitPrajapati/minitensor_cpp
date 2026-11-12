@@ -1,3 +1,4 @@
+# Function to add test executable
 function(minitensor_add_test_executable target test_name labels)
     add_executable(${target} ${ARGN})
     target_link_libraries(${target} PRIVATE minitensor GTest::gtest_main)
@@ -5,9 +6,10 @@ function(minitensor_add_test_executable target test_name labels)
     target_compile_features(${target} PRIVATE cxx_std_20)
     set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
 
+    # Same compiler-specific flags for MSVC
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /permissive-)
-    else()
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
         target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
     endif()
 
@@ -56,8 +58,10 @@ minitensor_add_test_executable(
     nn/public/gradients_test.cpp
     nn/public/leafification_test.cpp
     nn/public/linear_test.cpp
+    nn/public/module_test.cpp
     nn/public/loss_test.cpp
     nn/public/adamw_test.cpp
+    nn/public/rmsprop_test.cpp
     nn/public/sgd_test.cpp
 )
 
@@ -66,13 +70,14 @@ minitensor_add_test_executable(
     tensor.internal
     "tensor;internal"
     tensor/internal/core/axis_test.cpp
-    tensor/internal/core/dense_size_test.cpp
     tensor/internal/core/broadcasting_test.cpp
+    tensor/internal/core/reduction_test.cpp
     tensor/internal/graph/graph_test.cpp
     tensor/internal/graph/ownership_test.cpp
     tensor/internal/graph/primitive_id_test.cpp
     tensor/internal/storage/layout_test.cpp
     tensor/internal/storage/materialization_test.cpp
+    tensor/internal/storage/dense_size_test.cpp
     tensor/internal/dispatch/kernel_registry_test.cpp
     tensor/internal/dispatch/tensor_view_test.cpp
     tensor/internal/execution/evaluator_test.cpp

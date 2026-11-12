@@ -1,12 +1,10 @@
 #include "uniform.hpp"
 
 #include <cmath>
-#include <optional>
 #include <span>
 #include <stdexcept>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 #include <minitensor/random.hpp>
 #include <minitensor/types.hpp>

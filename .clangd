@@ -1,0 +1,6 @@
+# Allow clangd to ignore GCC-specific flags injected by CMake 
+CompileFlags:
+  Remove: 
+    - -fmodules-ts
+    - -fmodule-mapper=*
+    - -fdeps-format=*

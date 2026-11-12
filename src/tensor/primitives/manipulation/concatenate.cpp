@@ -1,7 +1,6 @@
 #include "concatenate.hpp"
 
 #include <limits>
-#include <optional>
 #include <span>
 #include <stdexcept>
 #include <string_view>

@@ -5,7 +5,6 @@
 #include <stdexcept>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 #include <minitensor/types.hpp>
 
@@ -32,7 +31,7 @@ TensorSpec BroadcastToPrimitive::infer(std::span<const TensorSpec> inputs) const
     }
     const TensorSpec &input = inputs.front();
 
-    const Shape broadcasted_shape{broadcast_extents(input.shape, shape_)};
+    const Shape broadcasted_shape{broadcast_extents(input.shape.dimensions(), shape_.dimensions())};
     if (broadcasted_shape != shape_)
     {
         throw std::invalid_argument{"requested shape is incompatible for broadcasting"};

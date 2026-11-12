@@ -1,7 +1,5 @@
 #include <minitensor/data.hpp>
 
-#include <algorithm>
-#include <cstdint>
 #include <span>
 #include <stdexcept>
 #include <utility>

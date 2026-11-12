@@ -9,12 +9,12 @@
 
 #include "environment.hpp"
 #include "tensor/backend/device_runtime.hpp"
-#include "tensor/core/dense_size.hpp"
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/graph/fwd.hpp"
 #include "tensor/graph/leaf.hpp"
 #include "tensor/graph/value.hpp"
 #include "tensor/storage/buffer.hpp"
+#include "tensor/storage/dense_size.hpp"
 #include "tensor/storage/layout.hpp"
 #include "tensor/storage/materialization.hpp"
 

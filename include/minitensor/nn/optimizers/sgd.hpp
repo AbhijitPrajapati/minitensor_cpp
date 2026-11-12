@@ -3,7 +3,7 @@
 #include <utility>
 
 #include <minitensor/nn/gradients.hpp>
-#include <minitensor/nn/parameter.hpp>
+#include <minitensor/nn/parameters/parameter.hpp>
 #include <minitensor/ops/elementwise.hpp>
 #include <minitensor/tensor.hpp>
 
@@ -22,17 +22,18 @@ class SGD final
     explicit SGD(float learning_rate);
 
     template <typename Tree>
-    [[nodiscard]] State initialize(const Tree &) const noexcept
+    [[nodiscard]] State initialize(const ParameterSnapshot<Tree> &) const noexcept
     {
         return {};
     }
 
     template <typename Tree>
-    [[nodiscard]] std::pair<Tree, State> step(Tree parameters, State state, const ParameterGradients &gradients) const
+    [[nodiscard]] std::pair<ParameterSnapshot<Tree>, State> step(ParameterSnapshot<Tree> snapshot, State state,
+                                                                 const ParameterGradients &gradients) const
     {
-        Tree updated = detail::transform_parameter_values_with_gradients(
-            std::move(parameters), gradients, [&](const Parameter &parameter, const Tensor &gradient) {
-                return parameter.value() - learning_rate_ * gradient;
+        auto updated = detail::transform_parameter_values_with_gradients(
+            std::move(snapshot), gradients, [&](ParameterId, const Tensor &parameter, const Tensor &gradient) {
+                return parameter - learning_rate_ * gradient;
             });
         return {std::move(updated), std::move(state)};
     }
