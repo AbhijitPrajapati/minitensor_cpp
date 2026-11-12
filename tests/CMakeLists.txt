@@ -32,7 +32,6 @@ minitensor_add_test_executable(
     tensor/public/data_test.cpp
     tensor/public/evaluation_test.cpp
     tensor/public/random_test.cpp
-    tensor/public/random_key_persistence_test.cpp
     tensor/public/autograd_test.cpp
 )
 
@@ -56,7 +55,6 @@ minitensor_add_test_executable(
     "nn;public"
     nn/public/parameter_test.cpp
     nn/public/parameter_tree_test.cpp
-    nn/public/parameter_persistence_test.cpp
     nn/public/gradients_test.cpp
     nn/public/leafification_test.cpp
     nn/public/linear_test.cpp
@@ -64,8 +62,6 @@ minitensor_add_test_executable(
     nn/public/loss_test.cpp
     nn/public/adamw_test.cpp
     nn/public/rmsprop_test.cpp
-    nn/public/adamw_checkpoint_test.cpp
-    nn/public/rmsprop_checkpoint_test.cpp
     nn/public/sgd_test.cpp
 )
 
@@ -113,12 +109,4 @@ minitensor_add_test_executable(
 target_include_directories(
     minitensor_tensor_cpu_tests
     PRIVATE ${PROJECT_SOURCE_DIR}/src
-)
-
-minitensor_add_test_executable(
-    minitensor_persistence_public_tests
-    persistence.public
-    "persistence;public"
-    persistence/public/record_test.cpp
-    persistence/public/binary_test.cpp
 )

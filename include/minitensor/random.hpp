@@ -39,15 +39,10 @@ class RandomKey final
     friend struct detail::RandomKeyAccess;
 
     friend RandomKey fold_in(RandomKey key, std::uint64_t data) noexcept;
-    friend persistence::Record capture_random_key(const RandomKey &key);
-    friend RandomKey restore_random_key(const persistence::Record &record);
 
     std::array<std::uint64_t, 2> words_;
 };
 
 [[nodiscard]] std::array<RandomKey, 2> split(RandomKey key) noexcept;
 [[nodiscard]] RandomKey fold_in(RandomKey key, std::uint64_t data) noexcept;
-
-[[nodiscard]] persistence::Record capture_random_key(const RandomKey &key);
-[[nodiscard]] RandomKey restore_random_key(const persistence::Record &record);
 } // namespace minitensor

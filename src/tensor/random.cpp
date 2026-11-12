@@ -3,8 +3,6 @@
 #include <array>
 #include <cstdint>
 
-#include <minitensor/persistence/record.hpp>
-
 namespace minitensor
 {
 namespace
@@ -31,23 +29,5 @@ RandomKey fold_in(RandomKey key, std::uint64_t data) noexcept
     const std::uint64_t first_data = mix(data);
     const std::uint64_t second_data = mix(data ^ golden_ratio);
     return RandomKey{mix(key.words_[0] ^ first_data), mix(key.words_[1] ^ second_data)};
-}
-
-constexpr persistence::detail::RecordHeaderSchema random_key_schema{"random_key", 1};
-
-persistence::Record capture_random_key(const RandomKey &key)
-{
-    persistence::Record record = persistence::detail::make_object_record(random_key_schema);
-    record.add("first", key.words_[0]);
-    record.add("second", key.words_[1]);
-    return record;
-}
-
-RandomKey restore_random_key(const persistence::Record &record)
-{
-    persistence::detail::validate_object_record(record, random_key_schema, {"first", "second"});
-    const auto first = record.get("first").get<std::uint64_t>();
-    const auto second = record.get("second").get<std::uint64_t>();
-    return RandomKey{first, second};
 }
 } // namespace minitensor

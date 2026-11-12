@@ -17,12 +17,6 @@
 
 namespace minitensor::nn
 {
-namespace detail
-{
-template <typename Optimizer>
-struct OptimizerPersistence;
-}
-
 class AdamW final
 {
   public:
@@ -57,8 +51,6 @@ class AdamW final
 
         friend class AdamW;
         friend State leafify_optimizer_state(State state);
-
-        friend struct detail::OptimizerPersistence<AdamW>;
     };
 
     AdamW(float learning_rate, float weight_decay, float beta1 = 0.9F, float beta2 = 0.999F, float epsilon = 1e-8F);

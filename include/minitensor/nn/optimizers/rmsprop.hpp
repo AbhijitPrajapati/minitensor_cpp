@@ -14,12 +14,6 @@
 
 namespace minitensor::nn
 {
-namespace detail
-{
-template <typename Optimizer>
-struct OptimizerPersistence;
-}
-
 class RMSProp final
 {
   public:
@@ -38,8 +32,6 @@ class RMSProp final
 
         friend class RMSProp;
         friend State leafify_optimizer_state(State state);
-
-        friend struct detail::OptimizerPersistence<RMSProp>;
     };
 
     RMSProp(float learning_rate, float alpha = 0.9F, float epsilon = 1e-8F);
