@@ -5,9 +5,10 @@
             "name": "base",
             "hidden": true,
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build",
+            "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
-                "BUILD_TESTING": true
+                "BUILD_TESTING": true,
+                "ENABLE_CUDA": false
             }
         },
         {
@@ -70,6 +71,22 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
+        },
+        {
+            "name": "gcc-debug-cuda",
+            "inherits": "gcc-debug",
+            "cacheVariables": {
+                "ENABLE_CUDA": true,
+                "CMAKE_CUDA_ARCHITECTURES": "native"
+            }
+        },
+        {
+            "name": "gcc-release-cuda",
+            "inherits": "gcc-release",
+            "cacheVariables": {
+                "ENABLE_CUDA": true,
+                "CMAKE_CUDA_ARCHITECTURES": "native"
+            }
         }
     ],
     "buildPresets": [
@@ -88,6 +105,14 @@
         {
             "name": "msvc-release",
             "configurePreset": "msvc-release"
+        },
+        {
+            "name": "gcc-debug-cuda",
+            "configurePreset": "gcc-debug-cuda"
+        },
+        {
+            "name": "gcc-release-cuda",
+            "configurePreset": "gcc-release-cuda"
         }
     ],
     "testPresets": [
@@ -109,6 +134,16 @@
         {
             "name": "msvc-release",
             "configurePreset": "msvc-release",
+            "output": { "outputOnFailure": true }
+        },
+        {
+            "name": "gcc-debug-cuda",
+            "configurePreset": "gcc-debug-cuda",
+            "output": { "outputOnFailure": true }
+        },
+        {
+            "name": "gcc-release-cuda",
+            "configurePreset": "gcc-release-cuda",
             "output": { "outputOnFailure": true }
         }
     ]

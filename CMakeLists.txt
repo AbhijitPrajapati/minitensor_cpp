@@ -4,29 +4,61 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(minitensor_cpp VERSION 0.1.0 LANGUAGES CXX)
 
+# CUDA configuration
+option(ENABLE_CUDA "Build the CUDA backend" OFF)
+
+if(ENABLE_CUDA)
+    enable_language(CUDA)
+    find_package(CUDAToolkit REQUIRED)
+endif()
+
 # Sanitizer flag configuration
 option(ENABLE_SANITIZERS "Enable ASan and UBSan" OFF)
 
 if(ENABLE_SANITIZERS)
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        add_compile_options(
-            -fsanitize=address,undefined
-            -fno-omit-frame-pointer
-            -fno-sanitize-recover=all
-        )
-
-        add_link_options(
-            -fsanitize=address,undefined
-        )
-    else()
-        # Only for developement
-        message(FATAL_ERROR
-            "Sanitizers configured only for GCC")
+    if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        message(FATAL_ERROR "Sanitizers configured only for GCC")
     endif()
+
+    add_compile_options(
+        "$<$<COMPILE_LANGUAGE:CXX>:-fsanitize=address,undefined>"
+        "$<$<COMPILE_LANGUAGE:CXX>:-fno-omit-frame-pointer>"
+        "$<$<COMPILE_LANGUAGE:CXX>:-fno-sanitize-recover=all>"
+    )
+
+    add_link_options(
+        "$<HOST_LINK:$<$<LINK_LANG_AND_ID:CXX,GNU>:-fsanitize=address;-fsanitize=undefined>>"
+        "$<HOST_LINK:$<$<LINK_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=-fsanitize=address;-Xcompiler=-fsanitize=undefined>>"
+    )
 endif()
 
 # STATIC -> static library (linked at compile time)
 add_library(minitensor STATIC)
+
+if(ENABLE_CUDA)
+    # Link the CUDA runtime.
+    target_link_libraries(minitensor PRIVATE CUDA::cudart)
+
+    # Preprocessor macro enabling CUDA for source files.
+    target_compile_definitions(
+        minitensor PRIVATE ENABLE_CUDA=1
+    )
+
+    # Set compilation standard.
+    set_target_properties(minitensor PROPERTIES
+        CUDA_STANDARD 20
+        CUDA_STANDARD_REQUIRED ON
+        CUDA_EXTENSIONS OFF
+        CUDA_RUNTIME_LIBRARY Shared
+    )
+
+    # Add CUDA-specific source.
+    target_sources(minitensor PRIVATE
+        src/tensor/backend/cuda/cuda_buffer.cpp
+        src/tensor/backend/cuda/cuda_runtime.cpp
+        src/tensor/backend/cuda/register_kernels.cpp
+    )
+endif()
 
 # Specify all source files the library needs
 target_sources(
@@ -130,12 +162,11 @@ target_compile_features(minitensor PUBLIC cxx_std_20)
 # No compiler-specific extentions are used
 set_target_properties(minitensor PROPERTIES CXX_EXTENSIONS OFF)
 
-# Set compiler-specific flags for MSVC
-if(MSVC)
-    target_compile_options(minitensor PRIVATE /W4 /permissive-)
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
-    target_compile_options(minitensor PRIVATE -Wall -Wextra -Wpedantic)
-endif()
+# Set compiler-specific flags
+target_compile_options(minitensor PRIVATE
+    "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/W4;/permissive->"
+    "$<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang,AppleClang>:-Wall;-Wextra;-Wpedantic>"
+)
 
 # Add demo executable
 add_executable(minitensor_demo demo.cpp)

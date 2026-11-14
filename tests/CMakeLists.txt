@@ -110,3 +110,23 @@ target_include_directories(
     minitensor_tensor_cpu_tests
     PRIVATE ${PROJECT_SOURCE_DIR}/src
 )
+
+if(ENABLE_CUDA)
+    minitensor_add_test_executable(
+        minitensor_tensor_cuda_tests
+        tensor.backend.cuda
+        "tensor;backend;cuda"
+        tensor/backend/cuda/runtime_test.cpp
+        tensor/backend/cuda/buffer_test.cpp
+    )
+
+    target_include_directories(
+        minitensor_tensor_cuda_tests
+        PRIVATE ${PROJECT_SOURCE_DIR}/src
+    )
+
+    target_link_libraries(
+        minitensor_tensor_cuda_tests
+        PRIVATE CUDA::cudart
+    )
+endif()

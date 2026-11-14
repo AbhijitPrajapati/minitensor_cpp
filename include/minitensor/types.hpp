@@ -103,6 +103,7 @@ inline constexpr DType dtype_of_v = detail::DTypeOf<T>::value;
 enum class DeviceType : std::uint8_t
 {
     Cpu,
+    Cuda,
 };
 
 class Device final
@@ -112,6 +113,11 @@ class Device final
     [[nodiscard]] static constexpr Device cpu(std::uint32_t index = 0) noexcept
     {
         return Device{DeviceType::Cpu, index};
+    }
+
+    [[nodiscard]] static constexpr Device cuda(std::uint32_t index = 0) noexcept
+    {
+        return Device{DeviceType::Cuda, index};
     }
 
     [[nodiscard]] constexpr DeviceType type() const noexcept
