@@ -6,7 +6,7 @@
 #include <minitensor/types.hpp>
 
 #include "cuda_buffer.hpp"
-#include "detail/safety.hpp"
+#include "detail/cuda_check.hpp"
 
 namespace minitensor::detail::cuda
 {

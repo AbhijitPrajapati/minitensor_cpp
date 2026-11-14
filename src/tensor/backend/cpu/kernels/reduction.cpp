@@ -1,4 +1,4 @@
-#pragma once
+#include "tensor/backend/cpu/kernels/registrations.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -13,12 +13,20 @@
 
 #include "tensor/backend/cpu/detail/buffer_access.hpp"
 #include "tensor/backend/cpu/iteration/reduction.hpp"
+#include "tensor/backend/dtype_dispatch.hpp"
+#include "tensor/dispatch/kernel_key.hpp"
+#include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/dispatch/tensor_view.hpp"
+#include "tensor/graph/primitive.hpp"
+#include "tensor/primitives/reduction/logsumexp.hpp"
+#include "tensor/primitives/reduction/sum.hpp"
 #include "tensor/storage/layout.hpp"
 
 namespace minitensor::detail::cpu
 {
-template <CpuElement T, typename Accumulator, typename Operation>
+namespace
+{
+template <TensorElement T, typename Accumulator, typename Operation>
     requires std::invocable<Operation &, Accumulator, T> &&
              std::convertible_to<std::invoke_result_t<Operation &, Accumulator, T>, Accumulator> &&
              std::convertible_to<Accumulator, T>
@@ -56,7 +64,18 @@ void reduce_values(const TensorView &input, MutableTensorView output, std::span<
     });
 }
 
-template <CpuElement T>
+void run_sum(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
+{
+    assert(inputs.size() == 1);
+    const auto &sum = dynamic_cast<const SumPrimitive &>(primitive);
+
+    dispatch_floating_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        reduce_values<T>(inputs.front(), output, sum.axes(), T{},
+                         [](T accumulator, T value) { return accumulator + value; });
+    });
+}
+
+template <TensorElement T>
     requires std::floating_point<T>
 void reduce_logsumexp(const TensorView &input, MutableTensorView output, std::span<const Shape::size_type> axes)
 {
@@ -100,7 +119,7 @@ void reduce_logsumexp(const TensorView &input, MutableTensorView output, std::sp
             }
         });
 
-        // We begin with the maximum and subtract the maximum from each input
+        // Begin with the maximum and subtract the maximum from each input
         // before exponentiating and accumulating to avoid numerical instability.
         T result;
 
@@ -133,5 +152,23 @@ void reduce_logsumexp(const TensorView &input, MutableTensorView output, std::sp
 
         output_data[output_offset + output_linear] = result;
     });
+}
+
+void run_logsumexp(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                   MutableTensorView output)
+{
+    assert(inputs.size() == 1);
+    const auto &logsumexp = dynamic_cast<const LogSumExpPrimitive &>(primitive);
+
+    dispatch_floating_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        reduce_logsumexp<T>(inputs.front(), output, logsumexp.axes());
+    });
+}
+} // namespace
+
+void register_reduction_kernels(KernelRegistry &registry)
+{
+    registry.register_kernel(KernelKey{SumPrimitive::ID, DeviceType::Cpu}, run_sum);
+    registry.register_kernel(KernelKey{LogSumExpPrimitive::ID, DeviceType::Cpu}, run_logsumexp);
 }
 } // namespace minitensor::detail::cpu

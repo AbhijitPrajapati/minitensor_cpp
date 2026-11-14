@@ -1,18 +1,27 @@
-#pragma once
+#include "tensor/backend/cpu/kernels/registrations.hpp"
 
 #include <algorithm>
 #include <cassert>
+#include <span>
+#include <type_traits>
 
 #include <minitensor/types.hpp>
 
 #include "tensor/backend/cpu/detail/buffer_access.hpp"
 #include "tensor/backend/cpu/iteration/matmul.hpp"
+#include "tensor/backend/dtype_dispatch.hpp"
+#include "tensor/dispatch/kernel_key.hpp"
+#include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/dispatch/tensor_view.hpp"
+#include "tensor/graph/primitive.hpp"
+#include "tensor/primitives/linalg/matmul.hpp"
 #include "tensor/storage/layout.hpp"
 
 namespace minitensor::detail::cpu
 {
-template <CpuElement T>
+namespace
+{
+template <TensorElement T>
 void dot(const TensorView &lhs, const TensorView &rhs, MutableTensorView output)
 {
     assert(lhs.dtype() == dtype_of_v<T>);
@@ -47,7 +56,7 @@ void dot(const TensorView &lhs, const TensorView &rhs, MutableTensorView output)
     output_data[static_cast<std::size_t>(output.layout().offset())] = accumulator;
 }
 
-template <CpuElement T>
+template <TensorElement T>
 void gemv(const TensorView &matrix, const TensorView &vector, MutableTensorView output, const MatmulPlan &plan)
 {
     assert(matrix.dtype() == dtype_of_v<T>);
@@ -122,7 +131,7 @@ void gemv(const TensorView &matrix, const TensorView &vector, MutableTensorView 
     });
 }
 
-template <CpuElement T>
+template <TensorElement T>
 void vector_matrix(const TensorView &vector, const TensorView &matrix, MutableTensorView output, const MatmulPlan &plan)
 {
     assert(vector.dtype() == dtype_of_v<T>);
@@ -195,7 +204,7 @@ void vector_matrix(const TensorView &vector, const TensorView &matrix, MutableTe
     });
 }
 
-template <CpuElement T>
+template <TensorElement T>
 void gemm(const TensorView &lhs, const TensorView &rhs, MutableTensorView output, const MatmulPlan &plan)
 {
     assert(lhs.dtype() == dtype_of_v<T>);
@@ -285,7 +294,7 @@ void gemm(const TensorView &lhs, const TensorView &rhs, MutableTensorView output
     });
 }
 
-template <CpuElement T>
+template <TensorElement T>
 void matmul_dispatch(const TensorView &lhs, const TensorView &rhs, MutableTensorView output)
 {
     assert(lhs.dtype() == dtype_of_v<T>);
@@ -321,5 +330,22 @@ void matmul_dispatch(const TensorView &lhs, const TensorView &rhs, MutableTensor
     {
         gemm<T>(lhs, rhs, output, plan);
     }
+}
+
+void run_matmul(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                MutableTensorView output)
+{
+    assert(inputs.size() == 2);
+    assert(output.layout().is_contiguous(output.shape()));
+    (void)dynamic_cast<const MatmulPrimitive &>(primitive);
+
+    dispatch_floating_dtype(
+        output.dtype(), [&]<typename T>(std::type_identity<T>) { matmul_dispatch<T>(inputs[0], inputs[1], output); });
+}
+} // namespace
+
+void register_linalg_kernels(KernelRegistry &registry)
+{
+    registry.register_kernel(KernelKey{MatmulPrimitive::ID, DeviceType::Cpu}, run_matmul);
 }
 } // namespace minitensor::detail::cpu

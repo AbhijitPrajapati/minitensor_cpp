@@ -8,12 +8,9 @@
 
 namespace minitensor::detail::cpu
 {
-template <typename T>
-concept CpuElement = TensorElement<T>;
-
 // These helper functions access cpu buffers and return pointers.
 
-template <CpuElement T>
+template <TensorElement T>
 [[nodiscard]] const T *data(const TensorView &view)
 {
     assert(view.dtype() == dtype_of_v<T>);
@@ -21,7 +18,7 @@ template <CpuElement T>
     return reinterpret_cast<const T *>(buffer.data());
 }
 
-template <CpuElement T>
+template <TensorElement T>
 [[nodiscard]] T *data(const MutableTensorView &view)
 {
     assert(view.dtype() == dtype_of_v<T>);

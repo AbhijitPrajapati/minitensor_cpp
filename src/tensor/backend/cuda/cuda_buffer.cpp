@@ -4,38 +4,37 @@
 #include <stdexcept>
 #include <utility>
 
-#include "detail/safety.hpp"
+#include "detail/cuda_check.hpp"
 
 namespace minitensor::detail::cuda
 {
 
+// Explicit device management is used instead of the device guard for the low level buffer.
+
 CudaBuffer::CudaBuffer(std::size_t size_bytes, Device device) : device_(device), size_bytes_(size_bytes)
 {
+    // Validate the device, even for empty buffers.
     if (device_.type() != DeviceType::Cuda)
     {
         throw std::invalid_argument{"cuda device is required"};
     }
-
-    // Device index must be a valid CUDA device index.
     if (!std::in_range<int>(device_.index()))
     {
         throw std::invalid_argument{"CUDA device index is too large"};
     }
-
     if (size_bytes_ == 0)
     {
         return;
     }
 
+    // Store the previous device.
     const int target_device = static_cast<int>(device_.index());
-
-    // Store the index of the previous device.
     int previous_device = 0;
     cuda_check(cudaGetDevice(&previous_device), "cudaGetDevice");
 
     try
     {
-        // Set the buffer device.
+        // Set the device.
         cuda_check(cudaSetDevice(target_device), "cudaSetDevice");
 
         // Allocate device memory.
@@ -48,21 +47,18 @@ CudaBuffer::CudaBuffer(std::size_t size_bytes, Device device) : device_(device),
     }
     catch (...)
     {
-        // The destructor will not run if construction fails.
-        // Release any allocation successfully acquired above.
-        // Use cuda_report to preserve the existing exception rather than throwing.
+        // A failed constructor will not run this buffer's destructor. Report errors without throwing.
         if (data_ != nullptr)
         {
+            // Free remaining device memory.
             if (cuda_report(cudaSetDevice(target_device), "select CUDA device for constructor cleanup"))
             {
                 cuda_report(cudaFree(data_), "free allocation after constructor failure");
             }
         }
 
-        // Attempt to restore the previous device.
+        // Preserve the original exception even if cleanup or restoration fails.
         cuda_report(cudaSetDevice(previous_device), "restore CUDA device after constructor failure");
-
-        // Preserve the original exception.
         throw;
     }
 }
@@ -74,28 +70,23 @@ CudaBuffer::~CudaBuffer()
         return;
     }
 
-    // Store the index of the previous device.
+    // Store the previous device.
     int previous_device = 0;
     if (!cuda_report(cudaGetDevice(&previous_device), "get CUDA device during buffer destruction"))
     {
-        // Return on failure.
         return;
     }
 
+    // Attempt to set the target device. Report on failure.
     const int target_device = static_cast<int>(device_.index());
-
-    // Set the target device.
     if (!cuda_report(cudaSetDevice(target_device), "select CUDA device during buffer destruction"))
     {
-        // Attempt to leave the caller's device selection unchanged on failure.
         cuda_report(cudaSetDevice(previous_device), "restore CUDA device after selection failure");
         return;
     }
 
-    // Free device memory. Use cuda_report to continue restoration on failure.
+    // Free memory and reset device.
     cuda_report(cudaFree(data_), "cudaFree");
-
-    // Restore previous device.
     cuda_report(cudaSetDevice(previous_device), "restore CUDA device during buffer destruction");
 }
 

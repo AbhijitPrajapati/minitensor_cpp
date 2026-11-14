@@ -1,4 +1,4 @@
-#pragma once
+#include "tensor/backend/cpu/kernels/registrations.hpp"
 
 #include <algorithm>
 #include <array>
@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdint>
 #include <numbers>
+#include <span>
 #include <type_traits>
 
 #include <minitensor/random.hpp>
@@ -13,12 +14,21 @@
 
 #include "tensor/backend/cpu/detail/buffer_access.hpp"
 #include "tensor/backend/cpu/detail/random_engine.hpp"
+#include "tensor/backend/dtype_dispatch.hpp"
+#include "tensor/dispatch/kernel_key.hpp"
+#include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/dispatch/tensor_view.hpp"
+#include "tensor/graph/primitive.hpp"
+#include "tensor/primitives/creation/full.hpp"
+#include "tensor/primitives/creation/normal.hpp"
+#include "tensor/primitives/creation/uniform.hpp"
 #include "tensor/storage/layout.hpp"
 
 namespace minitensor::detail::cpu
 {
-template <CpuElement T>
+namespace
+{
+template <TensorElement T>
 void fill(MutableTensorView output, T fill_value)
 {
     assert(output.dtype() == dtype_of_v<T>);
@@ -36,7 +46,18 @@ void fill(MutableTensorView output, T fill_value)
     std::fill_n(output_data + output_offset, numel, fill_value);
 }
 
-template <CpuElement T>
+void run_full(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs, MutableTensorView output)
+{
+    assert(inputs.empty());
+    (void)inputs;
+
+    const auto &full = dynamic_cast<const FullPrimitive &>(primitive);
+
+    dispatch_dtype(output.dtype(),
+                   [&]<typename T>(std::type_identity<T>) { fill(output, full.fill_value().get<T>()); });
+}
+
+template <TensorElement T>
 void uniform(MutableTensorView output, T low, T high, RandomKey key)
 {
     assert(output.dtype() == dtype_of_v<T>);
@@ -85,7 +106,22 @@ void uniform(MutableTensorView output, T low, T high, RandomKey key)
     }
 }
 
-template <CpuElement T>
+void run_uniform(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                 MutableTensorView output)
+{
+    assert(inputs.empty());
+    (void)inputs;
+
+    const auto &uniform_primitive = dynamic_cast<const UniformPrimitive &>(primitive);
+
+    dispatch_floating_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        const auto low = static_cast<T>(uniform_primitive.low());
+        const auto high = static_cast<T>(uniform_primitive.high());
+        uniform(output, low, high, uniform_primitive.key());
+    });
+}
+
+template <TensorElement T>
 void normal(MutableTensorView output, T mean, T std_dev, RandomKey key)
 {
     assert(output.dtype() == dtype_of_v<T>);
@@ -138,5 +174,28 @@ void normal(MutableTensorView output, T mean, T std_dev, RandomKey key)
         base += count;
         ++block_idx;
     }
+}
+
+void run_normal(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                MutableTensorView output)
+{
+    assert(inputs.empty());
+    (void)inputs;
+
+    const auto &normal_primitive = dynamic_cast<const NormalPrimitive &>(primitive);
+
+    dispatch_floating_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        const auto mean = static_cast<T>(normal_primitive.mean());
+        const auto std_dev = static_cast<T>(normal_primitive.std_dev());
+        normal(output, mean, std_dev, normal_primitive.key());
+    });
+}
+} // namespace
+
+void register_creation_kernels(KernelRegistry &registry)
+{
+    registry.register_kernel(KernelKey{FullPrimitive::ID, DeviceType::Cpu}, run_full);
+    registry.register_kernel(KernelKey{UniformPrimitive::ID, DeviceType::Cpu}, run_uniform);
+    registry.register_kernel(KernelKey{NormalPrimitive::ID, DeviceType::Cpu}, run_normal);
 }
 } // namespace minitensor::detail::cpu

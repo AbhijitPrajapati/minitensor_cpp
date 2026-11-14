@@ -1,12 +1,12 @@
-#pragma once
+#include "tensor/backend/cpu/kernels/registrations.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cassert>
-#include <concepts>
 #include <cstdint>
 #include <span>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -14,12 +14,24 @@
 
 #include "tensor/backend/cpu/detail/buffer_access.hpp"
 #include "tensor/backend/cpu/iteration/elementwise.hpp"
+#include "tensor/backend/dtype_dispatch.hpp"
+#include "tensor/dispatch/kernel_key.hpp"
+#include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/dispatch/tensor_view.hpp"
+#include "tensor/graph/primitive.hpp"
+#include "tensor/primitives/manipulation/basic_index.hpp"
+#include "tensor/primitives/manipulation/concatenate.hpp"
+#include "tensor/primitives/manipulation/contiguous.hpp"
+#include "tensor/primitives/manipulation/gather.hpp"
+#include "tensor/primitives/manipulation/reshape.hpp"
 #include "tensor/storage/layout.hpp"
 
 namespace minitensor::detail::cpu
 {
-template <CpuElement T>
+namespace
+{
+
+template <TensorElement T>
 void copy_strided(const Shape &shape, const T *source_data, const Layout &source_layout, T *destination_data,
                   const Layout &destination_layout)
 {
@@ -70,7 +82,7 @@ void copy_strided(const Shape &shape, const T *source_data, const Layout &source
     });
 }
 
-template <CpuElement T>
+template <TensorElement T>
 void copy_to_contiguous(const TensorView &input, MutableTensorView output)
 {
     assert(input.dtype() == dtype_of_v<T>);
@@ -87,7 +99,18 @@ void copy_to_contiguous(const TensorView &input, MutableTensorView output)
     copy_strided(input.shape(), data<T>(input), input.layout(), data<T>(output), destination_layout);
 }
 
-template <CpuElement T>
+void run_contiguous(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                    MutableTensorView output)
+{
+    assert(inputs.size() == 1);
+    assert(dynamic_cast<const ContiguousPrimitive *>(&primitive) != nullptr ||
+           dynamic_cast<const ReshapePrimitive *>(&primitive) != nullptr);
+
+    dispatch_dtype(output.dtype(),
+                   [&]<typename T>(std::type_identity<T>) { copy_to_contiguous<T>(inputs.front(), output); });
+}
+
+template <TensorElement T>
 void concatenate_copy(std::span<const TensorView> inputs, MutableTensorView output, Shape::size_type axis)
 {
     assert(!inputs.empty());
@@ -126,7 +149,18 @@ void concatenate_copy(std::span<const TensorView> inputs, MutableTensorView outp
     assert(axis_start == output.shape()[axis]);
 }
 
-template <CpuElement T>
+void run_concatenate(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                     MutableTensorView output)
+{
+    assert(!inputs.empty());
+    const auto &concatenate_primitive = dynamic_cast<const ConcatenatePrimitive &>(primitive);
+
+    dispatch_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        concatenate_copy<T>(inputs, output, concatenate_primitive.axis());
+    });
+}
+
+template <TensorElement T>
 void basic_index_scatter_copy(const TensorView &input, MutableTensorView output, const Layout &destination_layout)
 {
     assert(input.dtype() == dtype_of_v<T>);
@@ -152,7 +186,21 @@ void basic_index_scatter_copy(const TensorView &input, MutableTensorView output,
     copy_strided(input.shape(), data<T>(input), input.layout(), output_data, destination_layout);
 }
 
-template <CpuElement T>
+void run_basic_index_scatter(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                             MutableTensorView output)
+{
+    assert(inputs.size() == 1);
+    const auto &basic_index_scatter = dynamic_cast<const BasicIndexScatterPrimitive &>(primitive);
+    const BasicIndexParameters &parameters = basic_index_scatter.parameters();
+    assert(inputs.front().shape() == parameters.output_shape());
+    assert(output.shape() == parameters.input_shape());
+
+    dispatch_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        basic_index_scatter_copy<T>(inputs.front(), output, parameters.derive_layout(output.layout()));
+    });
+}
+
+template <TensorElement T>
 void gather_copy(const TensorView &source, const TensorView &indices, MutableTensorView output, Shape::size_type axis)
 {
     assert(source.dtype() == dtype_of_v<T>);
@@ -219,7 +267,18 @@ void gather_copy(const TensorView &source, const TensorView &indices, MutableTen
     });
 }
 
-template <CpuElement T>
+void run_gather(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                MutableTensorView output)
+{
+    assert(inputs.size() == 2);
+    const auto &gather = dynamic_cast<const GatherPrimitive &>(primitive);
+
+    dispatch_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        gather_copy<T>(inputs[0], inputs[1], output, gather.axis());
+    });
+}
+
+template <TensorElement T>
     requires std::floating_point<T>
 void gather_scatter_add(const TensorView &updates, const TensorView &indices, MutableTensorView output,
                         Shape::size_type axis)
@@ -300,5 +359,27 @@ void gather_scatter_add(const TensorView &updates, const TensorView &indices, Mu
             target_base_offset += strides[2];
         }
     });
+}
+
+void run_gather_scatter_add(DeviceRuntime &, const Primitive &primitive, std::span<const TensorView> inputs,
+                            MutableTensorView output)
+{
+    assert(inputs.size() == 2);
+    const auto &scatter = dynamic_cast<const GatherScatterAddPrimitive &>(primitive);
+
+    dispatch_floating_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
+        gather_scatter_add<T>(inputs[0], inputs[1], output, scatter.axis());
+    });
+}
+} // namespace
+
+void register_copy_kernels(KernelRegistry &registry)
+{
+    registry.register_kernel(KernelKey{ContiguousPrimitive::ID, DeviceType::Cpu}, run_contiguous);
+    registry.register_kernel(KernelKey{ReshapePrimitive::ID, DeviceType::Cpu}, run_contiguous);
+    registry.register_kernel(KernelKey{ConcatenatePrimitive::ID, DeviceType::Cpu}, run_concatenate);
+    registry.register_kernel(KernelKey{BasicIndexScatterPrimitive::ID, DeviceType::Cpu}, run_basic_index_scatter);
+    registry.register_kernel(KernelKey{GatherPrimitive::ID, DeviceType::Cpu}, run_gather);
+    registry.register_kernel(KernelKey{GatherScatterAddPrimitive::ID, DeviceType::Cpu}, run_gather_scatter_add);
 }
 } // namespace minitensor::detail::cpu

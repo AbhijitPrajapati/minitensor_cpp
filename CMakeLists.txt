@@ -57,6 +57,7 @@ if(ENABLE_CUDA)
         src/tensor/backend/cuda/cuda_buffer.cpp
         src/tensor/backend/cuda/cuda_runtime.cpp
         src/tensor/backend/cuda/register_kernels.cpp
+        src/tensor/backend/cuda/kernels/creation.cu
     )
 endif()
 
@@ -119,11 +120,11 @@ target_sources(
         src/tensor/backend/cpu/iteration/elementwise.cpp
         src/tensor/backend/cpu/iteration/matmul.cpp
         src/tensor/backend/cpu/iteration/reduction.cpp
-        src/tensor/backend/cpu/kernels/creation/kernels.cpp
-        src/tensor/backend/cpu/kernels/elementwise/kernels.cpp
-        src/tensor/backend/cpu/kernels/copy/kernels.cpp
-        src/tensor/backend/cpu/kernels/reduction/kernels.cpp
-        src/tensor/backend/cpu/kernels/linalg/kernels.cpp
+        src/tensor/backend/cpu/kernels/creation.cpp
+        src/tensor/backend/cpu/kernels/elementwise.cpp
+        src/tensor/backend/cpu/kernels/copy.cpp
+        src/tensor/backend/cpu/kernels/reduction.cpp
+        src/tensor/backend/cpu/kernels/linalg.cpp
         src/tensor/dispatch/kernel_registry.cpp
         src/tensor/dispatch/tensor_view.cpp
         src/tensor/execution/evaluator.cpp
