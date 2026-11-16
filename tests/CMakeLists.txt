@@ -118,6 +118,9 @@ if(ENABLE_CUDA)
         "tensor;backend;cuda"
         tensor/backend/cuda/runtime_test.cpp
         tensor/backend/cuda/buffer_test.cpp
+        tensor/backend/cuda/registration_test.cpp
+        tensor/backend/cuda/creation_test.cpp
+        tensor/backend/cuda/copy_test.cpp
     )
 
     target_include_directories(

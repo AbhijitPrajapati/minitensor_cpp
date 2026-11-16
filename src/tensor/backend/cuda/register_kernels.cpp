@@ -7,5 +7,6 @@ namespace minitensor::detail::cuda
 void register_kernels(KernelRegistry &registry)
 {
     register_creation_kernels(registry);
+    register_copy_kernels(registry);
 }
 } // namespace minitensor::detail::cuda

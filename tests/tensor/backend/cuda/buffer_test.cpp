@@ -38,6 +38,7 @@ TEST_F(CudaDeviceTest, RejectsUnavailableDevicesAndRestoresTheCurrentDevice)
     // Valid ordinals end at device_count_ - 1.
     EXPECT_THROW((detail::cuda::CudaBuffer{4, Device::cuda(static_cast<std::uint32_t>(device_count_))}),
                  std::runtime_error);
+    EXPECT_EQ(cudaGetLastError(), cudaErrorInvalidDevice);
 
     int current_device = -1;
     ASSERT_EQ(cudaGetDevice(&current_device), cudaSuccess);

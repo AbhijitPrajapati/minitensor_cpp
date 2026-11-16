@@ -1,4 +1,3 @@
-#include "tensor/backend/cuda/detail/device_guard.hpp"
 #include "tensor/backend/cuda/kernels/registrations.hpp"
 
 #include <algorithm>
@@ -10,6 +9,7 @@
 
 #include "tensor/backend/cuda/detail/buffer_access.hpp"
 #include "tensor/backend/cuda/detail/cuda_check.hpp"
+#include "tensor/backend/cuda/detail/device_guard.hpp"
 #include "tensor/backend/device_runtime.hpp"
 #include "tensor/backend/dtype_dispatch.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
@@ -50,7 +50,6 @@ void run_full(DeviceRuntime &runtime, const Primitive &primitive, std::span<cons
         return;
     }
 
-    // Bound the grid size; each thread can fill multiple elements.
     constexpr unsigned int threads = 256;
     constexpr std::size_t max_blocks = 65535;
     const auto blocks = static_cast<unsigned int>(std::min(count / threads + (count % threads != 0), max_blocks));

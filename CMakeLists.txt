@@ -58,6 +58,7 @@ if(ENABLE_CUDA)
         src/tensor/backend/cuda/cuda_runtime.cpp
         src/tensor/backend/cuda/register_kernels.cpp
         src/tensor/backend/cuda/kernels/creation.cu
+        src/tensor/backend/cuda/kernels/copy.cu
     )
 endif()
 
