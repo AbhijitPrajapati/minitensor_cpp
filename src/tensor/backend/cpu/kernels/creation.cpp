@@ -13,8 +13,8 @@
 #include <minitensor/types.hpp>
 
 #include "tensor/backend/cpu/detail/buffer_access.hpp"
-#include "tensor/backend/cpu/detail/random_engine.hpp"
 #include "tensor/backend/dtype_dispatch.hpp"
+#include "tensor/backend/random_engine.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/dispatch/tensor_view.hpp"
@@ -22,6 +22,7 @@
 #include "tensor/primitives/creation/full.hpp"
 #include "tensor/primitives/creation/normal.hpp"
 #include "tensor/primitives/creation/uniform.hpp"
+#include "tensor/random_key_access.hpp"
 #include "tensor/storage/layout.hpp"
 
 namespace minitensor::detail::cpu
@@ -58,7 +59,7 @@ void run_full(DeviceRuntime &, const Primitive &primitive, std::span<const Tenso
 }
 
 template <TensorElement T>
-void uniform(MutableTensorView output, T low, T high, RandomKey key)
+void uniform(MutableTensorView output, T low, T high, std::uint64_t key_first, std::uint64_t key_second)
 {
     assert(output.dtype() == dtype_of_v<T>);
     static_assert(std::is_floating_point_v<T>);
@@ -88,8 +89,8 @@ void uniform(MutableTensorView output, T low, T high, RandomKey key)
 
     while (base < numel)
     {
-        const RandomBlock block = random_block(key, block_idx);
-        const std::size_t count = std::min<std::size_t>(block.words.size(), numel - base);
+        const RandomBlock block = random_block(key_first, key_second, block_idx);
+        const std::size_t count = std::min<std::size_t>(RandomBlock::word_count, numel - base);
         for (std::size_t lane = 0; lane < count; ++lane)
         {
             const double unit = static_cast<double>(unit_uniform(block.words[lane]));
@@ -117,12 +118,13 @@ void run_uniform(DeviceRuntime &, const Primitive &primitive, std::span<const Te
     dispatch_floating_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
         const auto low = static_cast<T>(uniform_primitive.low());
         const auto high = static_cast<T>(uniform_primitive.high());
-        uniform(output, low, high, uniform_primitive.key());
+        auto [first, second] = RandomKeyAccess::words(uniform_primitive.key());
+        uniform(output, low, high, first, second);
     });
 }
 
 template <TensorElement T>
-void normal(MutableTensorView output, T mean, T std_dev, RandomKey key)
+void normal(MutableTensorView output, T mean, T std_dev, std::uint64_t key_first, std::uint64_t key_second)
 {
     assert(output.dtype() == dtype_of_v<T>);
     static_assert(std::is_floating_point_v<T>);
@@ -152,7 +154,7 @@ void normal(MutableTensorView output, T mean, T std_dev, RandomKey key)
 
     while (base < numel)
     {
-        const RandomBlock block = random_block(key, block_idx);
+        const RandomBlock block = random_block(key_first, key_second, block_idx);
         std::array<double, 4> standard_normals{};
         for (std::size_t pair = 0; pair < 2; ++pair)
         {
@@ -187,7 +189,8 @@ void run_normal(DeviceRuntime &, const Primitive &primitive, std::span<const Ten
     dispatch_floating_dtype(output.dtype(), [&]<typename T>(std::type_identity<T>) {
         const auto mean = static_cast<T>(normal_primitive.mean());
         const auto std_dev = static_cast<T>(normal_primitive.std_dev());
-        normal(output, mean, std_dev, normal_primitive.key());
+        auto [first, second] = RandomKeyAccess::words(normal_primitive.key());
+        normal(output, mean, std_dev, first, second);
     });
 }
 } // namespace

@@ -19,8 +19,6 @@
 #include "minitensor/tensor.hpp"
 #include "minitensor/types.hpp"
 
-// #include <cuda_runtime.h>
-
 namespace mt = minitensor;
 
 struct SpiralDataset final
@@ -161,65 +159,56 @@ class ThreeSpiralModel final
 
 int main()
 {
-    // int count = 0;
-    // const cudaError_t status = cudaGetDeviceCount(&count);
-    // if (status != cudaSuccess)
-    // {
-    //     throw std::runtime_error{cudaGetErrorString(status)};
-    // }
-    // std::cout << count;
+    // Random keys are explicitly managed by the user.
+    auto [dataset_key, model_key] = mt::split(mt::RandomKey{54});
+    auto [train_key, test_key] = mt::split(dataset_key);
 
-    // // Random keys are explicitly managed by the user.
-    // auto [dataset_key, model_key] = mt::split(mt::RandomKey{54});
-    // auto [train_key, test_key] = mt::split(dataset_key);
+    SpiralDataset train_set = make_spiral_dataset(100, train_key);
 
-    // SpiralDataset train_set = make_spiral_dataset(100, train_key);
+    const mt::Tensor &train_inputs = train_set.inputs;
+    const mt::Tensor &train_classes = train_set.classes;
 
-    // const mt::Tensor &train_inputs = train_set.inputs;
-    // const mt::Tensor &train_classes = train_set.classes;
+    ThreeSpiralModel model(64);
+    auto parameters = mt::nn::initialize(model, model_key);
 
-    // ThreeSpiralModel model(64);
-    // auto parameters = mt::nn::initialize(model, model_key);
+    // Optimizer state is seperately managed from the optimizer instance.
+    mt::nn::AdamW optimizer(0.01F, 0.0001F);
+    auto optimizer_state = optimizer.initialize(parameters);
 
-    // // Optimizer state is seperately managed from the optimizer instance.
-    // mt::nn::AdamW optimizer(0.01F, 0.0001F);
-    // auto optimizer_state = optimizer.initialize(parameters);
+    for (std::size_t epoch = 1; epoch <= 500; ++epoch)
+    {
+        // The user provides the parameters along with the inputs during the forward pass.
+        mt::Tensor logits = mt::nn::forward(model, parameters, train_inputs);
+        mt::Tensor loss = mt::nn::categorical_cross_entropy_with_logits(logits, train_classes);
 
-    // for (std::size_t epoch = 1; epoch <= 500; ++epoch)
-    // {
-    //     // The user provides the parameters along with the inputs during the forward pass.
-    //     mt::Tensor logits = mt::nn::forward(model, parameters, train_inputs);
-    //     mt::Tensor loss = mt::nn::categorical_cross_entropy_with_logits(logits, train_classes);
+        if (epoch % 25 == 0)
+        {
+            // No computation is performed until the loss is requested.
+            std::cout << "Epoch: " << epoch << " Loss: " << mt::item<float>(loss) << "\n";
+        }
 
-    //     if (epoch % 25 == 0)
-    //     {
-    //         // No computation is performed until the loss is requested.
-    //         std::cout << "Epoch: " << epoch << " Loss: " << mt::item<float>(loss) << "\n";
-    //     }
+        // Gradient computation only adds to the lazy graph. It does not execute
+        // until resulting Tensors are evaluated.
+        auto gradients = mt::nn::parameter_gradients(loss, parameters);
 
-    //     // Gradient computation only adds to the lazy graph. It does not execute
-    //     // until resulting Tensors are evaluated.
-    //     auto gradients = mt::nn::parameter_gradients(loss, parameters);
+        // Parameters and optimizer state are immutable by design.
+        auto [new_parameters, new_state] = optimizer.step(std::move(parameters), std::move(optimizer_state), gradients);
 
-    //     // Parameters and optimizer state are immutable by design.
-    //     auto [new_parameters, new_state] = optimizer.step(std::move(parameters), std::move(optimizer_state),
-    //     gradients);
+        // In order to avoid an unmanagable computation graph, both states
+        // must be leafified at the end of each training step. This process
+        // inherently involve evaluating the Tensors.
+        parameters = mt::nn::leafify_parameter_values(std::move(new_parameters));
+        optimizer_state = mt::nn::leafify_optimizer_state(std::move(new_state));
+    }
 
-    //     // In order to avoid an unmanagable computation graph, both states
-    //     // must be leafified at the end of each training step. This process
-    //     // inherently involve evaluating the Tensors.
-    //     parameters = mt::nn::leafify_parameter_values(std::move(new_parameters));
-    //     optimizer_state = mt::nn::leafify_optimizer_state(std::move(new_state));
-    // }
+    // Testing to check for generalizability
+    SpiralDataset test_set = make_spiral_dataset(20, test_key);
 
-    // // Testing to check for generalizability
-    // SpiralDataset test_set = make_spiral_dataset(20, test_key);
+    const mt::Tensor &test_inputs = test_set.inputs;
+    const mt::Tensor &test_classes = test_set.classes;
 
-    // const mt::Tensor &test_inputs = test_set.inputs;
-    // const mt::Tensor &test_classes = test_set.classes;
+    mt::Tensor test_logits = mt::nn::forward(model, parameters, test_inputs);
+    mt::Tensor test_loss = mt::nn::categorical_cross_entropy_with_logits(test_logits, test_classes);
 
-    // mt::Tensor test_logits = mt::nn::forward(model, parameters, test_inputs);
-    // mt::Tensor test_loss = mt::nn::categorical_cross_entropy_with_logits(test_logits, test_classes);
-
-    // std::cout << "\n" << "Test Loss: " << mt::item<float>(test_loss) << "\n";
+    std::cout << "\n" << "Test Loss: " << mt::item<float>(test_loss) << "\n";
 }

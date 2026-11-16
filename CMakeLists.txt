@@ -117,7 +117,6 @@ target_sources(
         src/tensor/backend/cpu/cpu_buffer.cpp
         src/tensor/backend/cpu/cpu_runtime.cpp
         src/tensor/backend/cpu/register_kernels.cpp
-        src/tensor/backend/cpu/detail/random_engine.cpp
         src/tensor/backend/cpu/iteration/elementwise.cpp
         src/tensor/backend/cpu/iteration/matmul.cpp
         src/tensor/backend/cpu/iteration/reduction.cpp
