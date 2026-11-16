@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-#include "runtime_registry.hpp"
+#include "runtime_pool.hpp"
 #include "tensor/backend/device_runtime.hpp"
 #include "tensor/core/tensor_spec.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
@@ -49,7 +49,7 @@ enum class VisitState
 class EvaluationPlanner final
 {
   public:
-    EvaluationPlanner(const RuntimeRegistry &runtimes, const KernelRegistry &kernels) noexcept
+    EvaluationPlanner(const RuntimePool &runtimes, const KernelRegistry &kernels) noexcept
         : runtimes_{runtimes}, kernels_{kernels}
     {
     }
@@ -112,7 +112,7 @@ class EvaluationPlanner final
         if (primitive.requires_kernel_support())
         {
             const TensorSpec &output_spec = value->spec();
-            DeviceRuntime &runtime = runtimes_.get(output_spec.device);
+            DeviceRuntime &runtime = runtimes_.runtime_for(output_spec.device);
             const KernelKey key{node->primitive().id(), output_spec.device.type()};
             kernel = PlannedKernel{&runtime, &kernels_.get(key)};
         }
@@ -121,7 +121,7 @@ class EvaluationPlanner final
         states_.at(value.get()) = VisitState::Finished;
     }
 
-    const RuntimeRegistry &runtimes_;
+    const RuntimePool &runtimes_;
     const KernelRegistry &kernels_;
     std::unordered_map<const Value *, VisitState> states_;
     EvaluationPlan plan_;
@@ -188,7 +188,7 @@ void execute_step(const PlannedStep &step)
 
 } // namespace
 
-Evaluator::Evaluator(RuntimeRegistry &runtimes, const KernelRegistry &kernels) noexcept
+Evaluator::Evaluator(RuntimePool &runtimes, const KernelRegistry &kernels) noexcept
     : runtimes_{runtimes}, kernels_{kernels}
 {
 }

@@ -10,15 +10,16 @@
 
 namespace minitensor::detail
 {
-// Each device has its own runtime.
-class RuntimeRegistry final
+// Owns one runtime per device: CPU zero is eager, while CUDA runtimes are cached on demand.
+class RuntimePool final
 {
   public:
+    RuntimePool();
+
+    [[nodiscard]] DeviceRuntime &runtime_for(const Device &device) const;
     void register_runtime(std::unique_ptr<DeviceRuntime> runtime);
-    [[nodiscard]] bool contains(const Device &device) const;
-    [[nodiscard]] DeviceRuntime &get(const Device &device) const;
 
   private:
-    std::unordered_map<Device, std::unique_ptr<DeviceRuntime>, DeviceHash> runtimes_;
+    mutable std::unordered_map<Device, std::unique_ptr<DeviceRuntime>, DeviceHash> runtimes_;
 };
 } // namespace minitensor::detail

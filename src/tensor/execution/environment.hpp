@@ -4,7 +4,7 @@
 
 #include <minitensor/types.hpp>
 
-#include "runtime_registry.hpp"
+#include "runtime_pool.hpp"
 #include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/graph/fwd.hpp"
 
@@ -21,7 +21,7 @@ class ExecutionEnvironment final
     DeviceRuntime &runtime_for(const Device &device);
 
   private:
-    RuntimeRegistry runtimes_;
+    RuntimePool runtimes_;
     KernelRegistry kernels_;
 };
 

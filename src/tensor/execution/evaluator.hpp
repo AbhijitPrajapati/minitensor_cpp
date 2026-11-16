@@ -6,17 +6,17 @@
 
 namespace minitensor::detail
 {
-class RuntimeRegistry;
+class RuntimePool;
 class KernelRegistry;
 
 class Evaluator final
 {
   public:
-    Evaluator(RuntimeRegistry &runtimes, const KernelRegistry &kernels) noexcept;
+    Evaluator(RuntimePool &runtimes, const KernelRegistry &kernels) noexcept;
     void evaluate(std::span<const ValueRef> roots);
 
   private:
-    const RuntimeRegistry &runtimes_;
+    const RuntimePool &runtimes_;
     const KernelRegistry &kernels_;
 };
 } // namespace minitensor::detail

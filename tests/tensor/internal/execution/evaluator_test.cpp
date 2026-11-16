@@ -15,7 +15,7 @@
 #include "tensor/dispatch/kernel_registry.hpp"
 #include "tensor/dispatch/tensor_view.hpp"
 #include "tensor/execution/evaluator.hpp"
-#include "tensor/execution/runtime_registry.hpp"
+#include "tensor/execution/runtime_pool.hpp"
 #include "tensor/graph/apply_primitive.hpp"
 #include "tensor/graph/node.hpp"
 #include "tensor/graph/value.hpp"
@@ -61,7 +61,7 @@ class EvaluatorTest : public testing::Test
 
     void SetUp() override
     {
-        auto runtime = std::make_unique<TestRuntime>();
+        auto runtime = std::make_unique<TestRuntime>(Device::cpu(1));
         runtime_ = runtime.get();
         runtimes_.register_runtime(std::move(runtime));
         kernels_.register_kernel(identity_key_,
@@ -73,9 +73,9 @@ class EvaluatorTest : public testing::Test
                                  });
     }
 
-    const detail::TensorSpec spec_{Shape{2, 3}, DType::Float32, Device::cpu()};
+    const detail::TensorSpec spec_{Shape{2, 3}, DType::Float32, Device::cpu(1)};
     const detail::KernelKey identity_key_{IdentitySpecPrimitive::ID, DeviceType::Cpu};
-    detail::RuntimeRegistry runtimes_;
+    detail::RuntimePool runtimes_;
     detail::KernelRegistry kernels_;
     TestRuntime *runtime_{nullptr};
     std::vector<KernelCall> calls_;
@@ -125,14 +125,15 @@ TEST_F(EvaluatorTest, ExecutesSharedGraphsOnceInTopologicalOrder)
 
 TEST(EvaluatorStorageSharingTest, RequiresNeitherRuntimeNorKernel)
 {
-    const detail::TensorSpec spec{Shape{2, 3}, DType::Float32, Device::cpu()};
+    const detail::TensorSpec spec{Shape{2, 3}, DType::Float32, Device::cpu(1)};
     const detail::ValueRef input = std::make_shared<detail::Value>(spec);
-    input->materialize(detail::Materialization{make_test_buffer(6 * sizeof(float)), detail::Layout{{1, 2}}});
+    input->materialize(
+        detail::Materialization{make_test_buffer(6 * sizeof(float), spec.device), detail::Layout{{1, 2}}});
     const std::array<detail::ValueRef, 1> inputs{input};
     const detail::ValueRef output =
         detail::apply_primitive(std::make_unique<IdentityStorageSharingPrimitive>(), inputs);
 
-    detail::RuntimeRegistry runtimes;
+    detail::RuntimePool runtimes;
     detail::KernelRegistry kernels;
     detail::Evaluator evaluator{runtimes, kernels};
     evaluator.evaluate(std::array<detail::ValueRef, 1>{output});
@@ -154,9 +155,9 @@ TEST_F(EvaluatorTest, RejectsNullAndUnmaterializedLeaves)
 
 TEST(EvaluatorPlanningTest, MissingRuntimeLeavesOutputUntouched)
 {
-    const detail::TensorSpec spec{Shape{2}, DType::Float32, Device::cpu()};
+    const detail::TensorSpec spec{Shape{2}, DType::Float32, Device::cpu(1)};
     const detail::ValueRef output = apply_identity(make_materialized_leaf(spec));
-    detail::RuntimeRegistry runtimes;
+    detail::RuntimePool runtimes;
     detail::KernelRegistry kernels;
     kernels.register_kernel({IdentitySpecPrimitive::ID, DeviceType::Cpu},
                             [](detail::DeviceRuntime &, const detail::Primitive &, std::span<const detail::TensorView>,
@@ -169,7 +170,7 @@ TEST(EvaluatorPlanningTest, MissingRuntimeLeavesOutputUntouched)
 
 TEST(EvaluatorPlanningTest, MissingKernelFailsBeforeAnyExecution)
 {
-    const detail::TensorSpec spec{Shape{2}, DType::Float32, Device::cpu()};
+    const detail::TensorSpec spec{Shape{2}, DType::Float32, Device::cpu(1)};
     const detail::ValueRef leaf = make_materialized_leaf(spec);
     const detail::ValueRef valid = apply_identity(leaf);
     const std::array<detail::ValueRef, 1> inputs{leaf};
@@ -177,8 +178,8 @@ TEST(EvaluatorPlanningTest, MissingKernelFailsBeforeAnyExecution)
     const detail::ValueRef unavailable =
         detail::apply_primitive(std::make_unique<DestructionTrackedPrimitive>(destroyed), inputs);
 
-    detail::RuntimeRegistry runtimes;
-    auto runtime = std::make_unique<TestRuntime>();
+    detail::RuntimePool runtimes;
+    auto runtime = std::make_unique<TestRuntime>(Device::cpu(1));
     TestRuntime *runtime_address = runtime.get();
     runtimes.register_runtime(std::move(runtime));
     detail::KernelRegistry kernels;
@@ -198,10 +199,10 @@ TEST(EvaluatorPlanningTest, MissingKernelFailsBeforeAnyExecution)
 
 TEST(EvaluatorExecutionTest, KernelFailureDoesNotInstallPartialStorage)
 {
-    const detail::TensorSpec spec{Shape{2}, DType::Float32, Device::cpu()};
+    const detail::TensorSpec spec{Shape{2}, DType::Float32, Device::cpu(1)};
     const detail::ValueRef output = apply_identity(make_materialized_leaf(spec));
-    detail::RuntimeRegistry runtimes;
-    auto runtime = std::make_unique<TestRuntime>();
+    detail::RuntimePool runtimes;
+    auto runtime = std::make_unique<TestRuntime>(Device::cpu(1));
     TestRuntime *runtime_address = runtime.get();
     runtimes.register_runtime(std::move(runtime));
     detail::KernelRegistry kernels;

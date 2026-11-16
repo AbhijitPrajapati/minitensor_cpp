@@ -81,7 +81,7 @@ minitensor_add_test_executable(
     tensor/internal/dispatch/kernel_registry_test.cpp
     tensor/internal/dispatch/tensor_view_test.cpp
     tensor/internal/execution/evaluator_test.cpp
-    tensor/internal/execution/runtime_registry_test.cpp
+    tensor/internal/execution/runtime_pool_test.cpp
     tensor/internal/autograd/engine_test.cpp
     tensor/internal/autograd/reduce_to_shape_test.cpp
     tensor/internal/autograd/vjp_registry_test.cpp
@@ -112,6 +112,8 @@ target_include_directories(
 )
 
 if(ENABLE_CUDA)
+    target_compile_definitions(minitensor_tensor_internal_tests PRIVATE MINITENSOR_TEST_ENABLE_CUDA=1)
+
     minitensor_add_test_executable(
         minitensor_tensor_cuda_tests
         tensor.backend.cuda

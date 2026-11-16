@@ -1,18 +1,15 @@
 #include "environment.hpp"
 
-#include <memory>
 #include <span>
 
 #include <minitensor/types.hpp>
 
 #include "evaluator.hpp"
-#include "tensor/backend/cpu/cpu_runtime.hpp"
 #include "tensor/backend/cpu/register_kernels.hpp"
 #include "tensor/backend/device_runtime.hpp"
 #include "tensor/graph/fwd.hpp"
 
 #ifdef ENABLE_CUDA
-#include "tensor/backend/cuda/cuda_runtime.hpp"
 #include "tensor/backend/cuda/register_kernels.hpp"
 #endif
 
@@ -20,11 +17,8 @@ namespace minitensor::detail
 {
 ExecutionEnvironment::ExecutionEnvironment()
 {
-    runtimes_.register_runtime(std::make_unique<cpu::CpuRuntime>());
     cpu::register_kernels(kernels_);
-
 #ifdef ENABLE_CUDA
-    runtimes_.register_runtime(std::make_unique<cuda::CudaRuntime>());
     cuda::register_kernels(kernels_);
 #endif
 }
@@ -37,7 +31,7 @@ void ExecutionEnvironment::evaluate(std::span<const ValueRef> roots)
 
 DeviceRuntime &ExecutionEnvironment::runtime_for(const Device &device)
 {
-    return runtimes_.get(device);
+    return runtimes_.runtime_for(device);
 }
 
 ExecutionEnvironment &environment()

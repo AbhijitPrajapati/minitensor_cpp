@@ -129,7 +129,7 @@ target_sources(
         src/tensor/dispatch/kernel_registry.cpp
         src/tensor/dispatch/tensor_view.cpp
         src/tensor/execution/evaluator.cpp
-        src/tensor/execution/runtime_registry.cpp
+        src/tensor/execution/runtime_pool.cpp
         src/tensor/execution/environment.cpp
         src/tensor/execution/host_transfer.cpp
         src/tensor/autograd/engine.cpp
