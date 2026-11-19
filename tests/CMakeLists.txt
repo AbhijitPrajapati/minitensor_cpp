@@ -18,6 +18,21 @@ function(minitensor_add_test_executable target test_name labels)
 endfunction()
 
 minitensor_add_test_executable(
+    minitensor_persistence_public_tests
+    persistence.public
+    "persistence;public"
+    persistence/public/tensors_test.cpp
+    persistence/public/parameters_test.cpp
+)
+
+minitensor_add_test_executable(
+    minitensor_persistence_internal_tests
+    persistence.internal
+    "persistence;internal"
+    persistence/internal/archive_test.cpp
+)
+
+minitensor_add_test_executable(
     minitensor_tensor_public_tests
     tensor.public
     "tensor;public"

@@ -145,6 +145,8 @@ target_sources(
         src/nn/optimizers/rmsprop.cpp
         src/nn/optimizers/sgd.cpp
         src/nn/loss.cpp
+        src/persistence/archive.cpp
+        src/persistence/tensors.cpp
 )
 
 # Specify all header files the library needs
