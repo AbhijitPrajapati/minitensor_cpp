@@ -137,6 +137,7 @@ if(ENABLE_CUDA)
         tensor/backend/cuda/buffer_test.cpp
         tensor/backend/cuda/registration_test.cpp
         tensor/backend/cuda/creation_test.cpp
+        tensor/backend/cuda/elementwise_test.cpp
         tensor/backend/cuda/copy_test.cpp
     )
 

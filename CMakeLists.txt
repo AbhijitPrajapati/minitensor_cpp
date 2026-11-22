@@ -44,6 +44,11 @@ if(ENABLE_CUDA)
         minitensor PRIVATE ENABLE_CUDA=1
     )
 
+    # Enable extended lambdas
+    target_compile_options(minitensor PRIVATE
+        "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>"
+    )
+
     # Set compilation standard.
     set_target_properties(minitensor PROPERTIES
         CUDA_STANDARD 20
@@ -58,6 +63,7 @@ if(ENABLE_CUDA)
         src/tensor/backend/cuda/cuda_runtime.cpp
         src/tensor/backend/cuda/register_kernels.cpp
         src/tensor/backend/cuda/kernels/creation.cu
+        src/tensor/backend/cuda/kernels/elementwise.cu
         src/tensor/backend/cuda/kernels/copy.cu
     )
 endif()

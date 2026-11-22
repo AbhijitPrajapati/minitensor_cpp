@@ -17,6 +17,7 @@
 #include "tensor/backend/cuda/detail/buffer_access.hpp"
 #include "tensor/backend/cuda/detail/cuda_check.hpp"
 #include "tensor/backend/cuda/detail/device_guard.hpp"
+#include "tensor/backend/cuda/iteration/strided.cuh"
 #include "tensor/backend/device_runtime.hpp"
 #include "tensor/backend/dtype_dispatch.hpp"
 #include "tensor/dispatch/kernel_key.hpp"
@@ -36,37 +37,28 @@ namespace
 
 template <TensorElement T, bool DestinationContiguous>
 __global__ void copy_strided_kernel(const T *source, T *destination, std::size_t count, const std::int64_t *extents,
-                                    const std::int64_t *source_strides, const std::int64_t *destination_strides,
-                                    std::size_t rank, std::int64_t source_offset, std::int64_t destination_offset)
+                                    const std::int64_t *strides, std::size_t rank, std::int64_t source_offset,
+                                    std::int64_t destination_offset)
 {
     const std::size_t start = static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
     const std::size_t step = static_cast<std::size_t>(gridDim.x) * blockDim.x;
 
     for (std::size_t linear = start; linear < count; linear += step)
     {
-        std::size_t remaining = linear;
-        std::int64_t source_index = source_offset;
-        std::int64_t destination_index = destination_offset;
-
-        for (std::size_t axis = rank; axis > 0;)
+        std::int64_t offsets[DestinationContiguous ? 1 : 2]{source_offset};
+        if constexpr (!DestinationContiguous)
         {
-            --axis;
-
-            const auto extent = static_cast<std::size_t>(extents[axis]);
-            const auto coordinate = static_cast<std::int64_t>(remaining % extent);
-
-            remaining /= extent;
-            source_index += coordinate * source_strides[axis];
-            if constexpr (!DestinationContiguous)
-            {
-                destination_index += coordinate * destination_strides[axis];
-            }
+            offsets[1] = destination_offset;
         }
+        strided_offsets(linear, extents, strides, rank, offsets);
         if constexpr (DestinationContiguous)
         {
-            destination_index += static_cast<std::int64_t>(linear);
+            destination[destination_offset + static_cast<std::int64_t>(linear)] = source[offsets[0]];
         }
-        destination[destination_index] = source[source_index];
+        else
+        {
+            destination[offsets[1]] = source[offsets[0]];
+        }
     }
 }
 
@@ -115,7 +107,6 @@ void copy_strided(DeviceRuntime &runtime, const Shape &shape, const T *source, c
     const auto &buffer = dynamic_cast<const CudaBuffer &>(*metadata_buffer);
     const auto *extents = reinterpret_cast<const std::int64_t *>(buffer.data());
     const auto *device_source_strides = extents + rank;
-    const auto *device_destination_strides = destination_contiguous ? nullptr : device_source_strides + rank;
     metadata_buffers.push_back(std::move(metadata_buffer));
 
     constexpr unsigned int threads = 256;
@@ -125,16 +116,13 @@ void copy_strided(DeviceRuntime &runtime, const Shape &shape, const T *source, c
     // Split cases for contigous destinations.
     if (destination_contiguous)
     {
-        // Use nullptr for destination strides if the destination is contiguous.
         copy_strided_kernel<T, true><<<blocks, threads>>>(source, destination, count, extents, device_source_strides,
-                                                          nullptr, rank, source_layout.offset(),
-                                                          destination_layout.offset());
+                                                          rank, source_layout.offset(), destination_layout.offset());
     }
     else
     {
         copy_strided_kernel<T, false><<<blocks, threads>>>(source, destination, count, extents, device_source_strides,
-                                                           device_destination_strides, rank, source_layout.offset(),
-                                                           destination_layout.offset());
+                                                           rank, source_layout.offset(), destination_layout.offset());
     }
     cuda_check(cudaGetLastError(), "launch strided copy kernel");
 }
@@ -298,23 +286,6 @@ void check_indexing_error(DeviceRuntime &runtime, const IndexingMetadata &metada
     }
 }
 
-template <std::size_t OperandCount>
-__device__ void indexing_offsets(std::size_t linear, const std::int64_t *extents, const std::int64_t *strides,
-                                 std::size_t rank, std::int64_t (&offsets)[OperandCount])
-{
-    for (std::size_t axis = rank; axis > 0;)
-    {
-        --axis;
-        const auto extent = static_cast<std::size_t>(extents[axis]);
-        const auto coordinate = static_cast<std::int64_t>(linear % extent);
-        linear /= extent;
-        for (std::size_t operand = 0; operand < OperandCount; ++operand)
-        {
-            offsets[operand] += coordinate * strides[operand * rank + axis];
-        }
-    }
-}
-
 template <TensorElement T>
 __global__ void gather_kernel(const T *source, const std::int64_t *indices, T *destination, std::size_t count,
                               const std::int64_t *extents, const std::int64_t *strides, std::size_t rank,
@@ -326,7 +297,7 @@ __global__ void gather_kernel(const T *source, const std::int64_t *indices, T *d
     for (std::size_t linear = start; linear < count; linear += step)
     {
         std::int64_t offsets[2]{source_offset, indices_offset};
-        indexing_offsets(linear, extents, strides, rank, offsets);
+        strided_offsets(linear, extents, strides, rank, offsets);
         const std::int64_t index = indices[offsets[1]];
         if (index < 0 || index >= axis_extent)
         {
@@ -393,7 +364,7 @@ __global__ void gather_scatter_add_kernel(const T *updates, const std::int64_t *
     for (std::size_t linear = start; linear < count; linear += step)
     {
         std::int64_t offsets[3]{updates_offset, indices_offset, destination_offset};
-        indexing_offsets(linear, extents, strides, rank, offsets);
+        strided_offsets(linear, extents, strides, rank, offsets);
         const std::int64_t index = indices[offsets[1]];
         if (index < 0 || index >= axis_extent)
         {
