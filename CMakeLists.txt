@@ -62,9 +62,12 @@ if(ENABLE_CUDA)
         src/tensor/backend/cuda/cuda_buffer.cpp
         src/tensor/backend/cuda/cuda_runtime.cpp
         src/tensor/backend/cuda/register_kernels.cpp
+        src/tensor/backend/cuda/iteration/matmul.cpp
         src/tensor/backend/cuda/kernels/creation.cu
         src/tensor/backend/cuda/kernels/elementwise.cu
         src/tensor/backend/cuda/kernels/copy.cu
+        src/tensor/backend/cuda/kernels/linalg.cu
+
     )
 endif()
 
