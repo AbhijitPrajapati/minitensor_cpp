@@ -139,6 +139,7 @@ if(ENABLE_CUDA)
         tensor/backend/cuda/creation_test.cpp
         tensor/backend/cuda/elementwise_test.cpp
         tensor/backend/cuda/linalg_test.cpp
+        tensor/backend/cuda/reduction_test.cpp
         tensor/backend/cuda/copy_test.cpp
     )
 
