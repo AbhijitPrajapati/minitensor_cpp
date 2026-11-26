@@ -13,6 +13,7 @@
 #include "minitensor/nn/modules/linear.hpp"
 #include "minitensor/nn/optimizers/adamw.hpp"
 #include "minitensor/nn/parameters.hpp"
+#include "minitensor/nn/transfer.hpp"
 #include "minitensor/ops/creation.hpp"
 #include "minitensor/ops/elementwise.hpp"
 #include "minitensor/random.hpp"
@@ -171,7 +172,8 @@ int main()
     const mt::Tensor &train_classes = minitensor::to_device(train_set.classes, device);
 
     ThreeSpiralModel model(64);
-    auto parameters = mt::nn::initialize(model, model_key, {mt::DType::Float32, device});
+    auto parameters = mt::nn::initialize(model, model_key);
+    parameters = minitensor::nn::to_device(std::move(parameters), device);
 
     // Optimizer state is seperately managed from the optimizer instance.
     mt::nn::AdamW optimizer(0.01F, 0.0001F);

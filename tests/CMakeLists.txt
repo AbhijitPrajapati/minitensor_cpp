@@ -72,6 +72,7 @@ minitensor_add_test_executable(
     nn/public/parameter_tree_test.cpp
     nn/public/gradients_test.cpp
     nn/public/leafification_test.cpp
+    nn/public/transfer_test.cpp
     nn/public/linear_test.cpp
     nn/public/module_test.cpp
     nn/public/loss_test.cpp
@@ -127,6 +128,9 @@ target_include_directories(
 )
 
 if(ENABLE_CUDA)
+    # Link CUDA to the tests that require it.
+    target_compile_definitions(minitensor_nn_public_tests PRIVATE MINITENSOR_TEST_ENABLE_CUDA=1)
+    target_link_libraries(minitensor_nn_public_tests PRIVATE CUDA::cudart)
     target_compile_definitions(minitensor_tensor_internal_tests PRIVATE MINITENSOR_TEST_ENABLE_CUDA=1)
     target_compile_definitions(minitensor_tensor_public_tests PRIVATE MINITENSOR_TEST_ENABLE_CUDA=1)
     target_link_libraries(minitensor_tensor_public_tests PRIVATE CUDA::cudart)
