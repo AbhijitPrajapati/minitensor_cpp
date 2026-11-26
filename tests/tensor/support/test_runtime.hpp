@@ -54,6 +54,11 @@ class TestRuntime final : public detail::DeviceRuntime
         throw std::logic_error{"TestRuntime does not provide byte-addressable storage"};
     }
 
+    void copy_buffer(detail::Buffer &, std::size_t, const detail::Buffer &, std::size_t, std::size_t) override
+    {
+        throw std::logic_error{"TestRuntime does not provide byte-addressable storage"};
+    }
+
     [[nodiscard]] std::span<const std::size_t> allocation_sizes() const noexcept
     {
         return allocation_sizes_;

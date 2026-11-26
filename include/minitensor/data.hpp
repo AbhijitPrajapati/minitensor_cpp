@@ -41,6 +41,10 @@ template <typename Range>
     return from_data<T>(std::span<const T>(std::ranges::data(data), std::ranges::size(data)), std::move(shape), device);
 }
 
+// Same-device transfers return the original handle without evaluation. Cross-device transfers materialize a new leaf,
+// preserving shape and dtype.
+[[nodiscard]] Tensor to_device(const Tensor &tensor, Device device);
+
 // Templated function definitions must be visible to all compilation units
 // unless an external definition is specified.
 extern template std::vector<float> to_vector<float>(const Tensor &tensor);

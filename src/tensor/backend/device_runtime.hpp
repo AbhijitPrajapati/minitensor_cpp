@@ -23,6 +23,7 @@ class DeviceRuntime
                                 std::span<const std::byte> source) = 0;
     virtual void copy_to_host(std::span<std::byte> destination, const Buffer &source,
                               std::size_t source_offset_bytes) = 0;
+    virtual void copy_buffer(Buffer &, std::size_t, const Buffer &, std::size_t, std::size_t) = 0;
 
   protected:
     DeviceRuntime() = default;

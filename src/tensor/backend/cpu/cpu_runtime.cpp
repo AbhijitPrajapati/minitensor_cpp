@@ -85,4 +85,42 @@ void CpuRuntime::copy_to_host(std::span<std::byte> destination, const Buffer &so
     }
     std::memcpy(destination.data(), buffer->data() + source_offset_bytes, destination.size());
 }
+void CpuRuntime::copy_buffer(Buffer &destination, std::size_t destination_offset_bytes, const Buffer &source,
+                             std::size_t source_offset_bytes, std::size_t byte_count)
+{
+    // Verify both endpoints are CPU buffers.
+    auto *target = dynamic_cast<CpuBuffer *>(&destination);
+    const auto *origin = dynamic_cast<const CpuBuffer *>(&source);
+    if (!target || !origin)
+    {
+        throw std::invalid_argument{"CpuRuntime requires CpuBuffer endpoints"};
+    }
+    if (target->device() != device() && origin->device() != device())
+    {
+        throw std::invalid_argument{"neither copy endpoint belongs to this runtime"};
+    }
+    // Storage bounds check.
+    if (destination_offset_bytes > target->size_bytes() ||
+        byte_count > target->size_bytes() - destination_offset_bytes || source_offset_bytes > origin->size_bytes() ||
+        byte_count > origin->size_bytes() - source_offset_bytes)
+    {
+        throw std::out_of_range{"buffer copy exceeds source or destination storage"};
+    }
+    if (byte_count == 0 || (target == origin && destination_offset_bytes == source_offset_bytes))
+    {
+        return;
+    }
+    if (target == origin)
+    {
+        // Check for overlap.
+        const auto distance = destination_offset_bytes > source_offset_bytes
+                                  ? destination_offset_bytes - source_offset_bytes
+                                  : source_offset_bytes - destination_offset_bytes;
+        if (distance < byte_count)
+        {
+            throw std::invalid_argument{"buffer copy ranges overlap"};
+        }
+    }
+    std::memcpy(target->data() + destination_offset_bytes, origin->data() + source_offset_bytes, byte_count);
+}
 } // namespace minitensor::detail::cpu

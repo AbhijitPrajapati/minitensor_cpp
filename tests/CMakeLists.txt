@@ -128,6 +128,8 @@ target_include_directories(
 
 if(ENABLE_CUDA)
     target_compile_definitions(minitensor_tensor_internal_tests PRIVATE MINITENSOR_TEST_ENABLE_CUDA=1)
+    target_compile_definitions(minitensor_tensor_public_tests PRIVATE MINITENSOR_TEST_ENABLE_CUDA=1)
+    target_link_libraries(minitensor_tensor_public_tests PRIVATE CUDA::cudart)
 
     minitensor_add_test_executable(
         minitensor_tensor_cuda_tests

@@ -5,8 +5,6 @@
 #include <utility>
 #include <vector>
 
-#include <minitensor/evaluation.hpp>
-#include <minitensor/ops/manipulation.hpp>
 #include <minitensor/tensor.hpp>
 #include <minitensor/types.hpp>
 
@@ -14,7 +12,7 @@
 #include "tensor/graph/fwd.hpp"
 #include "tensor/tensor_access.hpp"
 
-#include "tensor/execution/host_transfer.hpp"
+#include "tensor/execution/transfer.hpp"
 
 namespace minitensor
 {
@@ -39,11 +37,8 @@ std::vector<T> to_vector(const Tensor &tensor)
         throw std::invalid_argument{"requested host type does not match tensor dtype"};
     }
 
-    const Tensor contiguous_tensor = contiguous(tensor);
-    eval(contiguous_tensor);
-    const detail::ValueRef &value = detail::TensorAccess::value(contiguous_tensor);
     std::vector<T> result(tensor.numel());
-    detail::copy_value_to_host(std::as_writable_bytes(std::span<T>(result)), value);
+    detail::copy_value_to_host(std::as_writable_bytes(std::span<T>(result)), detail::TensorAccess::value(tensor));
     return result;
 }
 
@@ -55,6 +50,11 @@ T item(const Tensor &tensor)
         throw std::invalid_argument{"item() requires a single tensor element"};
     }
     return to_vector<T>(tensor).front();
+}
+
+Tensor to_device(const Tensor &tensor, Device device)
+{
+    return detail::TensorAccess::make(detail::transfer_value(detail::TensorAccess::value(tensor), device));
 }
 
 // Templates are instantiated explicitely

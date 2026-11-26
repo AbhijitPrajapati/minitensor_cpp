@@ -141,7 +141,7 @@ target_sources(
         src/tensor/execution/evaluator.cpp
         src/tensor/execution/runtime_pool.cpp
         src/tensor/execution/environment.cpp
-        src/tensor/execution/host_transfer.cpp
+        src/tensor/execution/transfer.cpp
         src/tensor/autograd/engine.cpp
         src/tensor/autograd/reduce_to_shape.cpp
         src/tensor/autograd/vjp_registry.cpp

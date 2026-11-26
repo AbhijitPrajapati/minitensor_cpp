@@ -163,13 +163,15 @@ int main()
     auto [dataset_key, model_key] = mt::split(mt::RandomKey{54});
     auto [train_key, test_key] = mt::split(dataset_key);
 
+    mt::Device device = mt::Device::cpu();
+
     SpiralDataset train_set = make_spiral_dataset(100, train_key);
 
-    const mt::Tensor &train_inputs = train_set.inputs;
-    const mt::Tensor &train_classes = train_set.classes;
+    const mt::Tensor &train_inputs = minitensor::to_device(train_set.inputs, device);
+    const mt::Tensor &train_classes = minitensor::to_device(train_set.classes, device);
 
     ThreeSpiralModel model(64);
-    auto parameters = mt::nn::initialize(model, model_key);
+    auto parameters = mt::nn::initialize(model, model_key, {mt::DType::Float32, device});
 
     // Optimizer state is seperately managed from the optimizer instance.
     mt::nn::AdamW optimizer(0.01F, 0.0001F);
