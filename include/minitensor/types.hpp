@@ -141,6 +141,10 @@ class Device final
     std::uint32_t index_{0};
 };
 
+// Device queries/availability
+[[nodiscard]] std::uint32_t device_count(DeviceType type);
+[[nodiscard]] bool is_device_available(Device device);
+
 // User-facing structure for Tensor specifications
 struct TensorOptions final
 {

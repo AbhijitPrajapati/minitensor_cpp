@@ -59,6 +59,7 @@ if(ENABLE_CUDA)
 
     # Add CUDA-specific source.
     target_sources(minitensor PRIVATE
+        src/tensor/backend/cuda/device_query.cpp
         src/tensor/backend/cuda/cuda_buffer.cpp
         src/tensor/backend/cuda/cuda_runtime.cpp
         src/tensor/backend/cuda/register_kernels.cpp

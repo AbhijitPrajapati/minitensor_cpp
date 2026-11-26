@@ -9,6 +9,10 @@
 #include <utility>
 #include <vector>
 
+#ifdef ENABLE_CUDA
+#include "tensor/backend/cuda/device_query.hpp"
+#endif
+
 namespace minitensor
 {
 Shape::Shape(std::initializer_list<value_type> dimensions)
@@ -122,5 +126,27 @@ std::string_view dtype_name(DType dtype)
         return "int64";
     }
     throw std::invalid_argument{"unrecognized dtype"};
+}
+
+std::uint32_t device_count(DeviceType type)
+{
+    switch (type)
+    {
+    case DeviceType::Cpu:
+        // Only a single CPU device is registered on initialization.
+        return 1;
+    case DeviceType::Cuda:
+#ifdef ENABLE_CUDA
+        return detail::cuda::cuda_device_count();
+#else
+        return 0;
+#endif
+    }
+    throw std::invalid_argument{"unrecognized device type"};
+}
+
+bool is_device_available(Device device)
+{
+    return device.index() < device_count(device.type());
 }
 } // namespace minitensor

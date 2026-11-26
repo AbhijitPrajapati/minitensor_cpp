@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <concepts>
+#include <cstdint>
 #include <limits>
 #include <ranges>
 #include <stdexcept>
@@ -10,7 +11,9 @@
 
 #include <gtest/gtest.h>
 
-#include "tensor/support/tensor_assertions.hpp"
+#ifdef MINITENSOR_TEST_ENABLE_CUDA
+#include <cuda_runtime_api.h>
+#endif
 
 namespace minitensor::test
 {
@@ -103,6 +106,47 @@ TEST(DeviceTest, DefaultsToCpuZeroAndPreservesIndices)
     EXPECT_EQ(indexed.type(), DeviceType::Cpu);
     EXPECT_EQ(indexed.index(), 3);
     EXPECT_NE(indexed, default_device);
+}
+
+TEST(DeviceTest, ReportsOnlyCpuZeroAsAvailable)
+{
+    EXPECT_EQ(device_count(DeviceType::Cpu), 1U);
+    EXPECT_TRUE(is_device_available(Device::cpu()));
+    EXPECT_FALSE(is_device_available(Device::cpu(1)));
+    EXPECT_FALSE(is_device_available(Device::cpu(std::numeric_limits<std::uint32_t>::max())));
+}
+
+TEST(DeviceTest, ReportsCudaAvailability)
+{
+#ifdef MINITENSOR_TEST_ENABLE_CUDA
+    int expected_count = 0;
+    const cudaError_t status = cudaGetDeviceCount(&expected_count);
+    if (status == cudaErrorNoDevice || status == cudaErrorInsufficientDriver)
+    {
+        expected_count = 0;
+    }
+    else
+    {
+        ASSERT_EQ(status, cudaSuccess) << cudaGetErrorString(status);
+    }
+    ASSERT_GE(expected_count, 0);
+    const auto expected = static_cast<std::uint32_t>(expected_count);
+#else
+    const std::uint32_t expected = 0;
+#endif
+
+    EXPECT_EQ(device_count(DeviceType::Cuda), expected);
+    for (std::uint32_t index = 0; index < expected; ++index)
+    {
+        EXPECT_TRUE(is_device_available(Device::cuda(index))) << "CUDA device " << index;
+    }
+    EXPECT_FALSE(is_device_available(Device::cuda(expected)));
+    EXPECT_FALSE(is_device_available(Device::cuda(std::numeric_limits<std::uint32_t>::max())));
+}
+
+TEST(DeviceTest, RejectsUnknownDeviceTypes)
+{
+    EXPECT_THROW((void)device_count(static_cast<DeviceType>(255)), std::invalid_argument);
 }
 
 TEST(TensorOptionsTest, HasValueSemantics)
